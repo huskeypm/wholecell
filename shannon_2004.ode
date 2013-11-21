@@ -482,6 +482,7 @@ i_Ca_SL_tot = i_CaL_Ca_SL - two*i_NaCa_SL + i_Cab_SL + i_Cap_SL
 
 component("Cell")
 i_Stim = Conditional(And(Ge(time - floor(time/stim_period)*stim_period, stim_start), Le(time - floor(time/stim_period)*stim_period, stim_start + stim_duration), ), -stim_amplitude, 0)
+monitor(i_Stim)   
 
 comment("The ODE system: 39 states")
 dh_dt = alpha_h*(one - h) - beta_h*h
