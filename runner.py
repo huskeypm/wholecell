@@ -1,17 +1,11 @@
-## Separated CK/ATPase fluxes
+## This script is heavily based on runner.py from my sarcomere model
+## on bitbucket
 ## Params
 
 
-Vmax_MM_f_idx=7
-Vmax_MM_b_idx=6
-Vmax_Mi_b_idx=14
-Vmax_Mi_f_idx=15
-ATPcyt_idx = 0
-ADPcyt_idx = 1
-Vcyt_idx = 29
-Vims_idx = 30
+substrate_idx=7
 
-import vanbeek_model_2007 as model
+import shannon_2004 as model
 import numpy as np
 from scipy.integrate import odeint
 import matplotlib.pyplot as plt
@@ -27,11 +21,8 @@ def propagator():
 
 
   # disable CK activity
-  vCK = 0
-  params[Vmax_MM_f_idx] *= vCK
-  params[Vmax_MM_b_idx] *= vCK
-  params[Vmax_Mi_f_idx] *= vCK
-  params[Vmax_Mi_b_idx] *= vCK
+  if 0:
+    params[substrate_idx] = value;
 
 
   ## get steady state first 
@@ -361,12 +352,6 @@ def separateFluxes(model,s,pi,tsteps,warn=False):
   dc= f - s
   dcdt = dc/dT
 
-  #print "s0", states[0,ATP_idx]
-  #print "JCKMM %f" % jAvg[JCKMM_idx]
-  #print "Jhyd %f" % jAvg[Jhyd_idx]
-  #print "JdiffADP %f" % jAvg[JdiffADP_idx]
-  #print "JdiffATP %f" % jAvg[JdiffATP_idx]
-
   #dy[0] = (J_diff_ATP - J_CKMM - J_hyd)/V_cyt
   #dy[1] = (J_CKMM + J_diff_ADP + J_hyd)/V_cyt
   Vcyt = pi[Vcyt_idx]
@@ -434,88 +419,6 @@ def validation():
 
 
 
-# validation of implementation of ODE model
-# compare against fig10, row 1 of 
-# van Beek, Cell Physiology, vol 293 no 3 
-def validation2(): 
-  s=model.init_values()
-  pdef=model.default_parameters()
-  t=0; dt=10; dtn=0.01; tsteps = np.linspace(t, t+dt, (dt)/dtn+1)
-
-  # default params 
-  pi = np.copy(pdef)
-  results_d = empty()
-  results_d.vCK = 1.0
-  results_d.states = odeint(model.rhs,s,tsteps,(pi,))
-  
-  # no ck
-  pi= np.copy(pdef)
-  vCK = 1e-9         
-  pi[Vmax_MM_f_idx] *= vCK
-  pi[Vmax_MM_b_idx] *= vCK
-  pi[Vmax_Mi_f_idx] *= vCK
-  pi[Vmax_Mi_b_idx] *= vCK
-  results_nock = empty()
-  results_nock.vCK = vCK
-  results_nock.states= odeint(model.rhs,s,tsteps,(pi,))
-  
-  
-  # low ck
-  pi= np.copy(pdef)
-  vCK = 0.02
-  pi[Vmax_MM_f_idx] *= vCK
-  pi[Vmax_MM_b_idx] *= vCK
-  pi[Vmax_Mi_f_idx] *= vCK
-  pi[Vmax_Mi_b_idx] *= vCK
-  results_lowck = empty()
-  results_lowck.vCK = vCK
-  results_lowck.states= odeint(model.rhs,s,tsteps,(pi,))
-  
-  # 3x
-  pi= np.copy(pdef)
-  vCK = 3.0       
-  pi[Vmax_MM_f_idx] *= vCK
-  pi[Vmax_MM_b_idx] *= vCK
-  pi[Vmax_Mi_f_idx] *= vCK
-  pi[Vmax_Mi_b_idx] *= vCK
-  results_3x= empty()
-  results_3x.vCK = vCK
-  results_3x.states= odeint(model.rhs,s,tsteps,(pi,))
-  
-  # 1/2
-  pi= np.copy(pdef)
-  vCK = 1e-9
-  pi[Vmax_MM_f_idx] *= vCK
-  pi[Vmax_MM_b_idx] *= vCK
-  results_MiCKonly= empty()
-  results_MiCKonly.vCK = vCK
-  results_MiCKonly.states= odeint(model.rhs,s,tsteps,(pi,))
-  
-  # plot 
-  plt.figure()
-  plt.title("van beek: ADPcyt vs time") 
-  ##plt.plot(tsteps,results_3x.states[:,ADPcyt_idx],'k.', label="vCK=%f"%results_3x.vCK)
-  plt.plot(tsteps,results_d.states[:,ADPcyt_idx],'k-',linewidth=2.0,label="vCK=%f"%results_d.vCK)
-  plt.plot(tsteps,results_lowck.states[:,ADPcyt_idx],'k.-',label="vCK=%f"%results_lowck.vCK)
-  ##plt.plot(tsteps,results_nock.states[:,ADPcyt_idx],'k--', label="vCK=%f"%results_nock.vCK)
-  ##plt.plot(tsteps,results_MiCKonly.states[:,ADPcyt_idx],'r--', label="MiCK only")
-  plt.legend()
-  plt.ylim([0,200])
-  plt.xlim([9.2,10])
-  plt.ylabel("[ADP] [uM]")
-  plt.xlabel("time [s]")
-  plt.gcf().savefig("ADP_vb.png") 
-  
-  plt.plot(tsteps,results_d.states[:,ADPcyt_idx],'k-',linewidth=2.0,label="vCK=%f"%results_d.vCK)
-  
-  
-  #print "Plots of J_syns do not correspond to times (have emnail to Johan) " 
-  #J_syns= np.asarray(model.ns["J_syns"])
-  #plot(J_syns[:,])
-  
-  print "WARNING: not a unit test - need to compare w van Beek fig"  
-  
-
 
 import sys
 #
@@ -540,6 +443,8 @@ Notes:
 
 """
   remap = "none"
+
+  raise RuntimeError("ONLY FOR SARCOMERE") 
 
   if len(sys.argv) < 2:
       raise RuntimeError(msg)

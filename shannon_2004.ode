@@ -390,6 +390,8 @@ tau_f = one/(0.0197*exp(-(0.0337*(V + 14.5))**two) + 0.02)
 component("Ical fca gate")
 fCa_SL = one - fCaB_SL
 fCa_jct = one - fCaB_jct
+monitor(fCa_SL) 
+monitor(fCa_jct) 
 
 component("Inaca")
 temp_jct = (exp(eta*V*F/(Rgas*T))*Na_jct**HNa*Cao - exp((eta - one)*V*F/(Rgas*T))*Nao**HNa*Ca_jct)/(one + ksat*exp((eta - one)*V*F/(Rgas*T)))
@@ -400,6 +402,7 @@ Ka_jct = one/(one + (Kd_act/Ca_jct)**three)
 i_NaCa_jct = Fx_NCX_jct*V_max*Ka_jct*Q_NCX*temp_jct/(K_mCai*Nao**HNa*(one + (Na_jct/K_mNai)**HNa) + K_mNao**HNa*Ca_jct*(one + Ca_jct/K_mCai) + K_mCao*Na_jct**HNa + Na_jct**HNa*Cao + Nao**HNa*Ca_jct)
 i_NaCa_SL = Fx_NCX_SL*V_max*Ka_SL*Q_NCX*temp_SL/(K_mCai*Nao**HNa*(one + (Na_SL/K_mNai)**HNa) + K_mNao**HNa*Ca_SL*(one + Ca_SL/K_mCai) + K_mCao*Na_SL**HNa + Na_SL**HNa*Cao + Nao**HNa*Ca_SL)
 i_NaCa = i_NaCa_jct + i_NaCa_SL
+monitor(i_NaCa)   
 
 component("Icap")
 Q_SLCaP = Q10_SLCaP**((T - 310)/ten)
@@ -426,6 +429,7 @@ j_leak_SR = KSRleak*(Ca_SR - Ca_jct)
 component("Jpump sr")
 Q_SRCaP = Q10_SRCaP**((T - 310)/ten)
 j_pump_SR = Q_SRCaP*V_max_Jpump*((Cai/Kmf)**H_Jpump - (Ca_SR/Kmr)**H_Jpump)/(one + (Cai/Kmf)**H_Jpump + (Ca_SR/Kmr)**H_Jpump)
+monitor(j_pump_SR)
 
 component("Ion diffusion")
 J_Na_jct_SL = (Na_jct - Na_SL)*1.8313e-14
