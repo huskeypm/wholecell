@@ -7,6 +7,9 @@ V_idx=38
 ## PARAMS
 # stim_period=(121
 stim_period_pIdx=121
+V_max_Jpump_pIdx = 71 # SERCA
+V_max_pIdx = 45 # NCX
+
 
 ## Misc
 mM_to_uM = 1e3
@@ -62,16 +65,25 @@ def init():
 
 
 # run simulation 
-def runner(dt=1000,dtn=5,stim_period=1000):
+def runner(dt=1000,dtn=5,\
+           stim_period=1000,\
+  #         V_max_Jpump = 0.0053114, # SERCA, [mM/ms]
+  #         V_max = 9, # NCX, [uA/uF]
+           mxsteps=500):
+
   s = model.s; t =model.t; p = model.p
   
   # Important variables, states
   p[stim_period_pIdx]=stim_period
+  #p[V_max_Jpump_pIdx]= V_max_Jpump 
+  #p[V_max_pIdx] = V_max
+
+
   
   # Basic run and grab outcomes
   tsteps = np.linspace(t, t+dt, (dt)/dtn+1)
   
-  states = odeint(model.rhs,s,tsteps,(p,))
+  states = odeint(model.rhs,s,tsteps,(p,),mxstep=mxsteps)
   
   # get monitored variables
   (ts,js)=monitorstepper(model,states,np.copy(p),tsteps)
