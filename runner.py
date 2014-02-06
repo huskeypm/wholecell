@@ -1,3 +1,6 @@
+
+from separate import * # This imports separate fluxes
+
 ## STATE VAR
 #Cai=37, V=38
 Cai_idx=37; 
@@ -143,6 +146,9 @@ def plotting(p,states,ts,js,case="default"):
   plt.legend(loc=0)
 
   plt.gcf().savefig(case+"_fluxes.png",dpi=300)
+
+  # returning only 
+  return js[:,j_rel_SR]
 
 # <codecell>
 

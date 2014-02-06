@@ -1,9 +1,9 @@
 # #
+# Template for interfacing gotran models 
 # Example combining ode model with PDE simulation 
 
 import sys
-sys.path.append("/home/huskeypm/sources/sarcomere/vanbeek/") 
-sys.path.append("/net/home/huskeypm/sources/sarcomere/vanbeek/") 
+sys.path.append("/home/huskeypm/localTemp/wholecell")
 import runner
 import sympy
 import numpy as np
@@ -12,13 +12,13 @@ import numpy as np
 from dolfin import * 
 
 namespace = np.__dict__.copy()
-TF = 50; dT = 5  # validated
-TF = 2; dT = 0.05 # validated
+TF = 50; dT = 5  
+TF = 2; dT = 0.05 
 ms_to_s = 1e-3
 s_to_ms = 1e3 
 mM_to_uM = 1e3 
-ATPpde_idx = 0
-ADPpde_idx = 1
+Cai_idx = 0
+CaTnC_idx = 1
 
 reducedDiff=False
 debug=False
@@ -46,15 +46,8 @@ class empty:pass
 class ODEModel():
   def __init__(self,t0=0,tF=10,vCK=0,ckMode="mitoonly"):
     # Look these up w param_indices func
-    self.Vmax_MM_f_idx=7
-    self.Vmax_MM_b_idx=6
-    self.Vmax_Mi_b_idx=14
-    self.Vmax_Mi_f_idx=15
-    self.ATPcyt_idx = 0
-    self.ADPcyt_idx = 1
-    self.Vcyt_idx=29
-
-    self.vCK = vCK
+    self.Caicyt_idx = 0
+    self.CaTnCcyt_idx = 1
  
     self.dtn=0.01; # [s] for finding steady state
     self.incr = 11;# for propagating 
@@ -89,7 +82,7 @@ class ODEModel():
     #print finalStateSS
 
     # return relevant subset 
-    statesSS_subset = statesSS[ :,[self.ATPcyt_idx, self.ADPcyt_idx ]]
+    statesSS_subset = statesSS[ :,[self.Caicyt_idx, self.CaTnCcyt_idx ]]
     return(tstepsSS,statesSS_subset)
 
   # advance ODE model by dT from t0 for a given state distribution
@@ -105,14 +98,14 @@ class ODEModel():
     #incr =  np.int(np.round((tf-t0)/np.float(self.dtn)))+1
     tsteps = np.linspace(t0, tf, incr)
     initvalsi = np.ndarray.flatten(self.statesPrev)
-    print "ODE Init", initvalsi[ [self.ATPcyt_idx, self.ADPcyt_idx] ]
+    print "ODE Init", initvalsi[ [self.Caicyt_idx, self.CaTnCcyt_idx] ]
     print "t0 %f tf %f " % (t0,tf)
 
     #if(mode=="stateFlux"):
     #if(1):
     #  statesi= odeint(model.rhs,initvalsi,tsteps,(self.params,))
       # plot next
-      #pEst,=plt.plot(tsteps,statesi[:,self.ATPcyt_idx],'k--')
+      #pEst,=plt.plot(tsteps,statesi[:,self.Caicyt_idx],'k--')
 
       # get init/final states 
     #  states0    = np.ndarray.flatten(statesi[0,]) # matched 'initvalsi'
@@ -141,9 +134,9 @@ class ODEModel():
 
      
     # return relevant subset 
-    statesF_subset = statesF[[self.ATPcyt_idx, self.ADPcyt_idx ]]
-    dStatedt_subset = dStatedt[[self.ATPcyt_idx, self.ADPcyt_idx ]]
-    statesTraj_subset = statesi[:,[self.ATPcyt_idx, self.ADPcyt_idx ]]
+    statesF_subset = statesF[[self.Caicyt_idx, self.CaTnCcyt_idx ]]
+    dStatedt_subset = dStatedt[[self.Caicyt_idx, self.CaTnCcyt_idx ]]
+    statesTraj_subset = statesi[:,[self.Caicyt_idx, self.CaTnCcyt_idx ]]
     tsteps_ms = tsteps*s_to_ms
 
 
@@ -153,14 +146,14 @@ class ODEModel():
   # store values into steady state 
   def updateStates(self,cATP,cADP):
     old = np.copy(self.statesPrev)
-    self.statesPrev[self.ATPcyt_idx] = cATP
-    self.statesPrev[self.ADPcyt_idx] = cADP
+    self.statesPrev[self.Caicyt_idx] = cATP
+    self.statesPrev[self.CaTnCcyt_idx] = cADP
 
-    print "ODE/PDE diff: [%f,%f]" % (self.statesPrev[self.ATPcyt_idx]-old[self.ATPcyt_idx],
-                                     self.statesPrev[self.ADPcyt_idx]-old[self.ADPcyt_idx])
+    print "ODE/PDE diff: [%f,%f]" % (self.statesPrev[self.Caicyt_idx]-old[self.Caicyt_idx],
+                                     self.statesPrev[self.CaTnCcyt_idx]-old[self.CaTnCcyt_idx])
 
   def getStates(self):
-    return (self.statesPrev[self.ATPcyt_idx],self.statesPrev[self.ADPcyt_idx] )
+    return (self.statesPrev[self.Caicyt_idx],self.statesPrev[self.CaTnCcyt_idx] )
     
   
   
@@ -185,8 +178,8 @@ def GlobalConc(problem,results):
     print "T %f Conc(%d) %f " % (t,i,results.uAvg[i])
   results.c.append(results.uAvg)
 
-  c1 = results.uAvg[ATPpde_idx]#get last appended value 
-  cb1 = results.uAvg[ADPpde_idx]
+  c1 = results.uAvg[Cai_idx]#get last appended value 
+  cb1 = results.uAvg[CaTnC_idx]
 
   return (c1,cb1)
 
@@ -328,8 +321,8 @@ def runPDE(\
   (dummy,dummy,tstepsExact,statesTrajExact)= odeModel.propagateStates(\
     t0pde,tFpde,incr=1e4)
   odeModel.statesPrev = statesPrev
-  #c0i = odeModel.statesPrev[self.ATPcyt_idx]
-  #c1i = odeModel.statesPrev[self.ADPcyt_idx]
+  #c0i = odeModel.statesPrev[self.Caicyt_idx]
+  #c1i = odeModel.statesPrev[self.CaTnCcyt_idx]
   c0i,cb0i = odeModel.getStates()
   #print c0i,cb0i
   #print odeModel.statesPrev
@@ -536,24 +529,24 @@ def runPDE(\
     ## update PDE 
     # define flux 
     if(mode=="totalFlux"): 
-      atpFlux = stateFlux[ATPpde_idx] # s.b. same as adp flux
+      atpFlux = stateFlux[Cai_idx] # s.b. same as adp flux
       jboundaryExpr.j =Jboundary(atpFlux,vol_sa_ratio=vol_sa_ratio)
 
     elif(mode=="separateFlux"): 
       # It appears that ATP/ADP are equal and opposite, so we can make this assumption here 
       # apply boundary fluxes to surface term 
-      jboundaryExpr.j =Jboundary(odeModel.jBoundary[ATPpde_idx],vol_sa_ratio=vol_sa_ratio)
-      jvolATPaseExpr.j =odeModel.jVolATPase[ATPpde_idx]
-      jvolCKExpr.j =odeModel.jVolCK[ATPpde_idx]
+      jboundaryExpr.j =Jboundary(odeModel.jBoundary[Cai_idx],vol_sa_ratio=vol_sa_ratio)
+      jvolATPaseExpr.j =odeModel.jVolATPase[Cai_idx]
+      jvolCKExpr.j =odeModel.jVolCK[Cai_idx]
 
       # tests to make sure implemented correctly 
       #print "WARNING: hack " 
       #print stateFlux
       #print odeModel.dcdt_ATP
-      #print odeModel.jBoundary[ATPpde_idx]
-      #print odeModel.jVolATPase[ATPpde_idx]
+      #print odeModel.jBoundary[Cai_idx]
+      #print odeModel.jVolATPase[Cai_idx]
       ## try all as boundary (works) 
-      #atpFlux = odeModel.jBoundary[ATPpde_idx] + odeModel.jVolATPase[ATPpde_idx]
+      #atpFlux = odeModel.jBoundary[Cai_idx] + odeModel.jVolATPase[Cai_idx]
       #jboundaryExpr.j =Jboundary(atpFlux,vol_sa_ratio=vol_sa_ratio)
       #jvolATPaseExpr.j = 0.
       ## try all as volume 
@@ -592,8 +585,8 @@ def runPDE(\
     #  vals[i].append(conc)
 
     #print "rename c1,cb1"
-    #c1 = pdeVals[ATPpde_idx]#get last appended value 
-    #cb1 = pdeVals[ADPpde_idx]
+    #c1 = pdeVals[Cai_idx]#get last appended value 
+    #cb1 = pdeVals[CaTnC_idx]
     #ts.append(t)
     jboundarys.append(jboundary)
     jvolATPases.append(jvolATPase)
@@ -601,7 +594,7 @@ def runPDE(\
     results.jdiffs= jboundarys
     results.jATPases = jvolATPases
     results.jCKs = jvolCKs         
-    cFs.append(statesF[ATPpde_idx]) # just want 'ATP' from odeModel
+    cFs.append(statesF[Cai_idx]) # just want 'ATP' from odeModel
     #cs.append(c1)
     #cbs.append(cb1)
 
@@ -621,14 +614,14 @@ def runPDE(\
 #  print "WARNING: merge into plotting"
   # convert lists into arrays
   cFs = np.asarray(cFs)
-  cs = np.asarray(results.c)[:,ATPpde_idx]
-  cbs = np.asarray(results.c)[:,ADPpde_idx]
+  cs = np.asarray(results.c)[:,Cai_idx]
+  cbs = np.asarray(results.c)[:,CaTnC_idx]
 #
 #  ## Plot 
   fig=plt.figure()
   ax1 = fig.add_subplot(111)
   ax1.set_title("[ATP]/[ADP] vs time") 
-  ax1.plot(tstepsExact,statesTrajExact[:,ATPpde_idx],label="[ATP] Exact")
+  ax1.plot(tstepsExact,statesTrajExact[:,Cai_idx],label="[ATP] Exact")
   ax1.plot(ts,cs,'k.',label="[ATP] (PDE) ")
   ax1.plot(ts,cFs,label="[ATP]F (forward ODE solutions)")
   ax1.set_ylabel("[ATP] [uM]") 
@@ -649,11 +642,11 @@ def runPDE(\
 #  plt.legend(loc=0)
 #  plt.gcf().savefig(mode+"js.png")
 
-  ext=statesTrajExact[-1,ATPpde_idx]
+  ext=statesTrajExact[-1,Cai_idx]
   est = c1  # c1 is updated each frame, so this is the most recent
   m = "mode %s: Exact %f != Est %f "%(mode,ext,est)
   if(asserts):
-    ext=statesTrajExact[-1,ATPpde_idx]
+    ext=statesTrajExact[-1,Cai_idx]
     #est=cs[-1]
     est = c1  # c1 is updated each frame, so this is the most recent
     m = "mode %s: Exact %f != Est %f "%(mode,ext,est)
@@ -678,19 +671,19 @@ def testODE():
   t0 = 0.
   tFp = 10e3 # [ms] 
   incr = 100*tFp
-  ADPpde_idx = 1
+  CaTnC_idx = 1
 
   # vCK = 1
   odeModel = ODEModel(vCK=1.0)
   odeModel.setup()
   (dummy,dummy,tstepsExact,statesTrajExact)= odeModel.propagateStates(t0,tFp,incr=incr) 
-  plt.plot(tstepsExact,statesTrajExact[:,ADPpde_idx],label="vCK = 1")       
+  plt.plot(tstepsExact,statesTrajExact[:,CaTnC_idx],label="vCK = 1")       
 
   # vCK = 1
   odeModel = ODEModel(vCK=0.02)
   odeModel.setup()
   (dummy,dummy,tstepsExact,statesTrajExact)= odeModel.propagateStates(t0,tFp,incr=incr) 
-  plt.plot(tstepsExact,statesTrajExact[:,ADPpde_idx],label="vCK = 0")       
+  plt.plot(tstepsExact,statesTrajExact[:,CaTnC_idx],label="vCK = 0")       
   plt.legend(loc=0)
   plt.xlim([9.2e3,10.0e3]) 
 
@@ -703,7 +696,7 @@ def testODE2():
   t0 = 0.
   tFp = 10e3 # [ms] 
   dt=10
-  ATPpde_idx = 0
+  Cai_idx = 0
 
   # vCK = 1
   odeModel = ODEModel(vCK=1.0)
@@ -717,8 +710,8 @@ def testODE2():
     t0 = tf - dt 
     (statesF,stateFlux,dummy,dummy) = odeModel.propagateStates(t0,tf,dt)
     jSum = odeModel.jBoundary + odeModel.jVolATPase + odeModel.jVolCK
-    jConcs.append(stateFlux[ATPpde_idx])
-    jSums.append(jSum[ATPpde_idx])
+    jConcs.append(stateFlux[Cai_idx])
+    jSums.append(jSum[Cai_idx])
 
   plt.plot(jConcs,label="jConc") 
   plt.plot(jSums,label="j individual") 
