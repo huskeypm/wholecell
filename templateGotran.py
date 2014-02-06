@@ -1,15 +1,19 @@
-# #
-# Template for interfacing gotran models 
-# Example combining ode model with PDE simulation 
 
 import sys
 sys.path.append("/home/huskeypm/localTemp/wholecell")
 import runner
 import sympy
-import numpy as np
-import matplotlib.pylab as plt
-import numpy as np
 from dolfin import * 
+
+# for cmd line
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.integrate import odeint
+
+# <codecell>
+
+param_indices = runner.model.param_indices
+state_indices = runner.model.state_indices
 
 namespace = np.__dict__.copy()
 TF = 50; dT = 5  
@@ -17,12 +21,13 @@ TF = 2; dT = 0.05
 ms_to_s = 1e-3
 s_to_ms = 1e3 
 mM_to_uM = 1e3 
-Cai_idx = 0
-CaTnC_idx = 1
-
-reducedDiff=False
+Cai_idx=0
+CaTnC_idx=1
+Caipde_idx = state_indices("Cai")
+CaTnCpde_idx = state_indices("Ca_TroponinC")
 debug=False
-#ckMode = "mitoonly"
+
+# <codecell>
 
 ##
 ## Standard units: 
@@ -34,10 +39,8 @@ debug=False
 ## ODE model 
 ##
 
-import vanbeek_model_2007 as model
-import numpy as np
+import shannon_2004 as model
 from scipy.integrate import odeint
-import matplotlib.pyplot as plt
 class empty:pass
 
 ## contains all ODE model stuff 
@@ -45,9 +48,9 @@ class empty:pass
 # tF [ms] for compatibility
 class ODEModel():
   def __init__(self,t0=0,tF=10,vCK=0,ckMode="mitoonly"):
-    # Look these up w param_indices func
-    self.Caicyt_idx = 0
-    self.CaTnCcyt_idx = 1
+    # just position in array - independent of gotran 
+    self.Caicyt_idx = Cai_idx
+    self.CaTnCcyt_idx = CaTnC_idx
  
     self.dtn=0.01; # [s] for finding steady state
     self.incr = 11;# for propagating 
@@ -68,8 +71,6 @@ class ODEModel():
 
     tstepsSS = np.linspace(self.t0, self.tss, (self.tss-self.t0)/self.dtn+1)
   
-  
-  
     ## get steady state first 
     statesSS= odeint(model.rhs,\
       initvals,tstepsSS,(params,))
@@ -84,6 +85,7 @@ class ODEModel():
     # return relevant subset 
     statesSS_subset = statesSS[ :,[self.Caicyt_idx, self.CaTnCcyt_idx ]]
     return(tstepsSS,statesSS_subset)
+
 
   # advance ODE model by dT from t0 for a given state distribution
   # (statesPrev) 
@@ -123,12 +125,14 @@ class ODEModel():
       statesF    = np.ndarray.flatten(statesi[-1::,])
       
       # store and rescale uM/s as uM/ms
-      self.dcdt_ATP = fluxes.dcdt_ATP * (1/s_to_ms) 
-      self.dcdt_ADP = fluxes.dcdt_ADP * (1/s_to_ms) 
-      dStatedt = np.array([self.dcdt_ATP,self.dcdt_ADP]) 
-      self.jVolATPase = np.array([fluxes.jVolATPaseATP,fluxes.jVolATPaseADP]) * (1/s_to_ms)
-      self.jVolCK = np.array([fluxes.jVolCKATP,fluxes.jVolCKADP]) * (1/s_to_ms)
-      self.jBoundary = np.array([fluxes.jBoundATP,fluxes.jBoundADP]) * (1/s_to_ms)
+      self.dcdt_Cai = fluxes.dcdt_Cai * (1/s_to_ms) 
+      self.dcdt_CaTnC = fluxes.dcdt_CaTnC * (1/s_to_ms) 
+      dStatedt = np.array([self.dcdt_Cai,self.dcdt_CaTnC]) 
+
+      ## TEMPLATE 
+      self.jVolCaiase = 0; # np.array([fluxes.jVolCaiaseCai,fluxes.jVolCaiaseCaTnC]) * (1/s_to_ms)
+      self.jVolCK = 0; # np.array([fluxes.jVolCKCai,fluxes.jVolCKCaTnC]) * (1/s_to_ms)
+      self.jBoundary = 0; # np.array([fluxes.jBoundCai,fluxes.jBoundCaTnC]) * (1/s_to_ms)
 
       self.statesPrev = statesF
 
@@ -144,19 +148,19 @@ class ODEModel():
     return (statesF_subset,dStatedt_subset,tsteps_ms,statesTraj_subset)
 
   # store values into steady state 
-  def updateStates(self,cATP,cADP):
+  def updateStates(self,cCai,cCaTnC):
     old = np.copy(self.statesPrev)
-    self.statesPrev[self.Caicyt_idx] = cATP
-    self.statesPrev[self.CaTnCcyt_idx] = cADP
+    self.statesPrev[self.Caicyt_idx] = cCai
+    self.statesPrev[self.CaTnCcyt_idx] = cCaTnC
 
     print "ODE/PDE diff: [%f,%f]" % (self.statesPrev[self.Caicyt_idx]-old[self.Caicyt_idx],
                                      self.statesPrev[self.CaTnCcyt_idx]-old[self.CaTnCcyt_idx])
 
   def getStates(self):
     return (self.statesPrev[self.Caicyt_idx],self.statesPrev[self.CaTnCcyt_idx] )
-    
-  
-  
+
+# <codecell>
+
 ##
 ## PLOTTING
 ##
@@ -196,6 +200,8 @@ def Report(problem,results,anisotropic=False):
   ## copy from atpSarcomereVanBeek if needed 
   
 
+# <codecell>
+
 
 ##
 ## PDE stuff
@@ -210,9 +216,9 @@ class cparams:
   meshdebug = True  
   tag = ""
   # 
-  atpasedistromode="uniform"
+  Caiasedistromode="uniform"
   ckdistromode="uniform"
-  #atpasedistromode="nonuniform"
+  #Caiasedistromode="nonuniform"
 
   # Chose value from smallest spacing (maximal contraction) 
   #16.43 &   [0.57  0.58  0.82] & 2.4 & 0.45 \\ 
@@ -220,14 +226,14 @@ class cparams:
   Disotropic = np.ones(3)
   Danisotropic = np.array([0.57, 0.58, 0.82])
 
-  # ATP 
-  Datp=0.145 # [um^2/ms]
-  #usevanbeek tATP   = 4.88e3 # [uM] Michailova
+  # Cai 
+  DCai=0.145 # [um^2/ms]
+  #usevanbeek tCai   = 4.88e3 # [uM] Michailova
 
-  # Adp 
-  Dadp=0.145 # [um^2/ms]
-  #c0adp=0.067e3 # [uM]
-  #usevanbeek tADP = 0.113e3 # [uM] Michailova
+  # CaTnC 
+  DCaTnC=0.145 # [um^2/ms]
+  #c0CaTnC=0.067e3 # [uM]
+  #usevanbeek tCaTnC = 0.113e3 # [uM] Michailova
 
   # for half-sacomere mesh 
   xMax= 1.   # longitudinal (along sarco)
@@ -279,6 +285,7 @@ class IMSpace(SubDomain):
     #print x,result 
     return result
 
+# <codecell>
 
 ##
 ## Functions
@@ -307,12 +314,14 @@ def runPDE(\
   tFpde=t0pde + duration
   dt = 10. # [ms]
 
-  
+# <codecell>
+
+
   ##
   ## ODE
   ##
   ## get exact solution 
-  odeModel = ODEModel(t0=t0ode,tF=tFode,ckMode=params.ckMode)
+  odeModel = ODEModel(t0=t0ode,tF=tFode) # ,ckMode=params.ckMode)
   odeModel.setup() 
   #print odeModel.getStates()
   # here we propagate model just so that we can compare exact and PDE solutions 
@@ -357,16 +366,16 @@ def runPDE(\
   c0,cb0 = split(u0)
 
   # mappings
-  indcAtp, indcAdp= set(), set()
-  dm_cAtp, dm_cAdp = ME.sub(0).dofmap(), ME.sub(1).dofmap()
+  indcCai, indcCaTnC= set(), set()
+  dm_cCai, dm_cCaTnC = ME.sub(0).dofmap(), ME.sub(1).dofmap()
   for cell in cells(mesh):
-      indcAtp.update(dm_cAtp.cell_dofs(cell.index()))
-      indcAdp.update(dm_cAdp.cell_dofs(cell.index()))
-  indcAtp = np.fromiter(indcAtp, dtype=np.uintc)
-  indcAdp = np.fromiter(indcAdp, dtype=np.uintc)
+      indcCai.update(dm_cCai.cell_dofs(cell.index()))
+      indcCaTnC.update(dm_cCaTnC.cell_dofs(cell.index()))
+  indcCai = np.fromiter(indcCai, dtype=np.uintc)
+  indcCaTnC = np.fromiter(indcCaTnC, dtype=np.uintc)
 
-  cAtp_values = u.vector()[indcAtp]
-  cAdp_values = u.vector()[indcAdp]
+  cCai_values = u.vector()[indcCai]
+  cCaTnC_values = u.vector()[indcCaTnC]
 
   # Init conts
   init_cond = InitialConditions()
@@ -386,7 +395,7 @@ def runPDE(\
   #print eval(jsyn_expr_str,namespace)
   # replacement 
   jboundaryExpr = Expression("j",j=0)
-  jvolATPaseExpr = Expression("j",j=0)
+  jvolCaiaseExpr = Expression("j",j=0)
   jvolCKExpr = Expression("j",j=0)
 
   ## Decide on diff const 
@@ -395,48 +404,31 @@ def runPDE(\
   # homog of myfilaments has 'z' as the long axis, but in half-sarcomere, 'x' is the long axis 
   Dij = Constant([Dii[2],Dii[0],Dii[1]])
   Dij = diag(Dij)
-  Dij_ATP= Constant(params.Datp) * Dij
-  Dij_ADP = Constant(params.Dadp) * Dij
+  Dij_Cai= Constant(params.DCai) * Dij
+  Dij_CaTnC = Constant(params.DCaTnC) * Dij
 
 
   ## ODE weak form 
-  RHS1 = -inner(Dij_ATP*grad(c),grad(q))*dx
-  RHS2 = -inner(Dij_ADP*grad(cb),grad(v))*dx
+  RHS1 = -inner(Dij_Cai*grad(c),grad(q))*dx
+  RHS2 = -inner(Dij_CaTnC*grad(cb),grad(v))*dx
 
-  # adjust source term depending on how ATPase is distributed
+  # adjust source term depending on how Caiase is distributed
   # This is a work-around (see below)
-  # ATPase 
-  if(params.atpasedistromode=="uniform"):
-    RHS1 +=  jvolATPaseExpr*q*dx
-    RHS2 += -jvolATPaseExpr*v*dx
-  elif(params.atpasedistromode=="nonuniform"):
-    # NOTE: the nonuniform results (even for scale=1) do 
-    # not validate exactly. Don't understand why. 130706 
-    # Hence, we don't validate this part for unit testing 
-    # Compute ATPase density 
-    gDensity = ATPaseDensityInit(ME,mesh,params)
-    scale = Function(V)
-    scale.vector()[:]=gDensity
-    #scale.vector()[:]=1.0      
-    RHS1 +=  scale*jvolATPaseExpr*q*dx
-    RHS2 += -scale*jvolATPaseExpr*v*dx
+  # Caiase 
+  if(params.Caiasedistromode=="uniform"):
+    RHS1 +=  jvolCaiaseExpr*q*dx
+    RHS2 += -jvolCaiaseExpr*v*dx
+  else:
+    raise RuntimeError("ouch") 
+    
   # CK 
   if(params.ckdistromode=="uniform"):
     RHS1 +=  jvolCKExpr*q*dx
     RHS2 += -jvolCKExpr*v*dx
-  elif(params.ckdistromode=="nonuniform"):
-    # NOTE: the nonuniform results (even for scale=1) do 
-    # not validate exactly. Don't understand why. 130706 
-    # Hence, we don't validate this part for unit testing 
-    # Compute ATPase density 
-    gDensity = CKDensityInit(ME,mesh,params)
-    scale = Function(V)
-    scale.vector()[:]=gDensity
-    #scale.vector()[:]=1.0      
-    RHS1 +=  scale*jvolCKExpr*q*dx
-    RHS2 += -scale*jvolCKExpr*v*dx
-
-
+  else:
+    raise RuntimeError("ouch") 
+    
+    
   ## boundary
   subdomains = MeshFunction("uint",mesh,2)
   boundary = IMSpace()
@@ -453,7 +445,7 @@ def runPDE(\
   # define flux terms 
   print "WARNING: not working w eval func"
   jL1 =  jboundaryExpr
-  jL2 =  -jboundaryExpr # this is not generally correct, since ADP/ATP fluxes may varyn
+  jL2 =  -jboundaryExpr # this is not generally correct, since CaTnC/Cai fluxes may varyn
   RHS1  += jL1*q*ds(immarker)
   RHS2  += jL2*v*ds(immarker)
 
@@ -485,17 +477,15 @@ def runPDE(\
 #  problem = empty()
 
   # Initializations for results 
-  # See atpSarc...py
+  # See CaiSarc...py
   #results.x_midsarc_aband = np.array([0.50,0.50,0.5])
   results.ts = []
-  results.adpGradients = []
-  #results.jATP=[]
-  #results.jANT=[]
+  results.CaTnCGradients = []
   results.c = []
   problem.mesh=mesh
   problem.u = u
   problem.params = params
-#
+
   results.ME = ME
   results.u = u
   results.file = file
@@ -506,7 +496,7 @@ def runPDE(\
 
   ## Time stepping
   jboundarys=[]
-  jvolATPases=[]
+  jvolCaiases=[]
   jvolCKs=[]
   vals=[[],[]]
   cs=[]
@@ -529,37 +519,36 @@ def runPDE(\
     ## update PDE 
     # define flux 
     if(mode=="totalFlux"): 
-      atpFlux = stateFlux[Cai_idx] # s.b. same as adp flux
-      jboundaryExpr.j =Jboundary(atpFlux,vol_sa_ratio=vol_sa_ratio)
+      CaiFlux = stateFlux[Cai_idx] 
+      jboundaryExpr.j =Jboundary(CaiFlux,vol_sa_ratio=vol_sa_ratio)
 
     elif(mode=="separateFlux"): 
-      # It appears that ATP/ADP are equal and opposite, so we can make this assumption here 
       # apply boundary fluxes to surface term 
       jboundaryExpr.j =Jboundary(odeModel.jBoundary[Cai_idx],vol_sa_ratio=vol_sa_ratio)
-      jvolATPaseExpr.j =odeModel.jVolATPase[Cai_idx]
+      jvolCaiaseExpr.j =odeModel.jVolCaiase[Cai_idx]
       jvolCKExpr.j =odeModel.jVolCK[Cai_idx]
 
       # tests to make sure implemented correctly 
       #print "WARNING: hack " 
       #print stateFlux
-      #print odeModel.dcdt_ATP
+      #print odeModel.dcdt_Cai
       #print odeModel.jBoundary[Cai_idx]
-      #print odeModel.jVolATPase[Cai_idx]
+      #print odeModel.jVolCaiase[Cai_idx]
       ## try all as boundary (works) 
-      #atpFlux = odeModel.jBoundary[Cai_idx] + odeModel.jVolATPase[Cai_idx]
-      #jboundaryExpr.j =Jboundary(atpFlux,vol_sa_ratio=vol_sa_ratio)
-      #jvolATPaseExpr.j = 0.
+      #CaiFlux = odeModel.jBoundary[Cai_idx] + odeModel.jVolCaiase[Cai_idx]
+      #jboundaryExpr.j =Jboundary(CaiFlux,vol_sa_ratio=vol_sa_ratio)
+      #jvolCaiaseExpr.j = 0.
       ## try all as volume 
       #jboundaryExpr.j =0.
-      #jvolATPaseExpr.j = atpFlux
+      #jvolCaiaseExpr.j = CaiFlux
       
       
 
     # get integrated fluxes 
     totjs = assemble(jboundaryExpr*ds(immarker),mesh=mesh)
     jboundary = totjs/sa * 1/vol_sa_ratio
-    totjs = assemble(jvolATPaseExpr*dx,mesh=mesh)
-    jvolATPase = totjs/vol
+    totjs = assemble(jvolCaiaseExpr*dx,mesh=mesh)
+    jvolCaiase = totjs/vol
     totjs = assemble(jvolCKExpr*dx,mesh=mesh)
     jvolCK = totjs/vol
 
@@ -589,12 +578,12 @@ def runPDE(\
     #cb1 = pdeVals[CaTnC_idx]
     #ts.append(t)
     jboundarys.append(jboundary)
-    jvolATPases.append(jvolATPase)
+    jvolCaiases.append(jvolCaiase)
     jvolCKs.append(jvolCK)
     results.jdiffs= jboundarys
-    results.jATPases = jvolATPases
+    results.jCaiases = jvolCaiases
     results.jCKs = jvolCKs         
-    cFs.append(statesF[Cai_idx]) # just want 'ATP' from odeModel
+    cFs.append(statesF[Cai_idx]) # just want 'Cai' from odeModel
     #cs.append(c1)
     #cbs.append(cb1)
 
@@ -620,25 +609,25 @@ def runPDE(\
 #  ## Plot 
   fig=plt.figure()
   ax1 = fig.add_subplot(111)
-  ax1.set_title("[ATP]/[ADP] vs time") 
-  ax1.plot(tstepsExact,statesTrajExact[:,Cai_idx],label="[ATP] Exact")
-  ax1.plot(ts,cs,'k.',label="[ATP] (PDE) ")
-  ax1.plot(ts,cFs,label="[ATP]F (forward ODE solutions)")
-  ax1.set_ylabel("[ATP] [uM]") 
+  ax1.set_title("[Cai]/[CaTnC] vs time") 
+  ax1.plot(tstepsExact,statesTrajExact[:,Cai_idx],label="[Cai] Exact")
+  ax1.plot(ts,cs,'k.',label="[Cai] (PDE) ")
+  ax1.plot(ts,cFs,label="[Cai]F (forward ODE solutions)")
+  ax1.set_ylabel("[Cai] [uM]") 
   ax1.set_xlabel("t [ms]") 
   ax1.legend(loc=0)
   ax2 = ax1.twinx()
-  ax2.set_ylabel("[ADP] [uM]") 
+  ax2.set_ylabel("[CaTnC] [uM]") 
   ax2.plot(ts,cbs,'r-.',label="cb (PDE) ")
   plt.gcf().savefig(mode+"conc.png")
 #
 #
 #  plt.figure()
 #  jboundarys = np.asarray(jboundarys)
-#  jvolATPases = np.asarray(jvolATPases)
+#  jvolCaiases = np.asarray(jvolCaiases)
 #  #plt.plot(ts,jsyns,label="jhyds")
 #  plt.plot(ts,jboundarys,label="jboundarys")
-#  plt.plot(ts,jvolATPases,label="jvolATPases")
+#  plt.plot(ts,jvolCaiases,label="jvolCaiases")
 #  plt.legend(loc=0)
 #  plt.gcf().savefig(mode+"js.png")
 
@@ -658,6 +647,10 @@ def runPDE(\
   return problem,results 
   
 
+    
+
+# <codecell>
+
 ###
 ### Testing plotting etc 
 ###
@@ -665,7 +658,7 @@ def runPDE(\
 # plots isotropic/anisotropic results
 def plotting(params,resultsiso,resultsaniso):
   1
-  # see atpSarc...py
+  # see CaiSarc...py
 
 def testODE():
   t0 = 0.
@@ -709,7 +702,7 @@ def testODE2():
   for i,tf in enumerate(ts): 
     t0 = tf - dt 
     (statesF,stateFlux,dummy,dummy) = odeModel.propagateStates(t0,tf,dt)
-    jSum = odeModel.jBoundary + odeModel.jVolATPase + odeModel.jVolCK
+    jSum = odeModel.jBoundary + odeModel.jVolCaiase + odeModel.jVolCK
     jConcs.append(stateFlux[Cai_idx])
     jSums.append(jSum[Cai_idx])
 
@@ -725,7 +718,8 @@ def loop(p,duration=1e3,asserts=True,case="noCK"):
     
 
   p.tag = case+"iso"
-  problemi,riso = runPDE(params=p,mode="separateFlux",anisotropic=False,asserts=asserts,duration=duration)
+  #problemi,riso = runPDE(params=p,mode="separateFlux",anisotropic=False,asserts=asserts,duration=duration)
+  problemi,riso = runPDE(params=p,mode="totalFlux",anisotropic=False,asserts=asserts,duration=duration)
  
 
 
@@ -733,10 +727,12 @@ def loop(p,duration=1e3,asserts=True,case="noCK"):
 def Test1(do="all"):
     cparams.plot = False
     pi = cparams()
-    loop(pi,duration=1e3,case="fullCK")  
+    duration=1e2
+    loop(pi,duration=duration,case="fullCK")  
 
   
 
+# <codecell>
 
 import sys
 #
