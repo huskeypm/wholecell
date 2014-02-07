@@ -279,6 +279,8 @@ Vol_SR = 0.035*Vol_Cell
 Vol_SL = 0.02*Vol_Cell
 Vol_jct = 0.0539*0.01*Vol_Cell
 Vol_myo = 0.65*Vol_Cell
+monitor(Vol_SR)  
+monitor(Vol_myo) 
 
 component("Reversal potentials")
 E_Na_jct = Rgas*T/F*log(Nao/Na_jct)
@@ -436,6 +438,7 @@ J_Na_jct_SL = (Na_jct - Na_SL)*1.8313e-14
 J_Na_SL_myo = (Na_SL - Nai)*1.6386e-12
 J_Ca_jct_SL = (Ca_jct - Ca_SL)*8.2413e-13
 J_Ca_SL_myo = (Ca_SL - Cai)*3.7243e-12
+monitor(J_Ca_SL_myo)
 
 component("Cytosolic ca buffer")
 dCa_TroponinC = kon_TroponinC*Cai*(Bmax_TroponinC - Ca_TroponinC) - koff_TroponinC*Ca_TroponinC
@@ -446,6 +449,7 @@ dCa_Myosin = kon_Myosin_Ca*Cai*(Bmax_Myosin_Ca - (Ca_Myosin + Mg_Myosin)) - koff
 dMg_Myosin = kon_Myosin_Mg*Mgi*(Bmax_Myosin_Mg - (Ca_Myosin + Mg_Myosin)) - koff_Myosin_Mg*Mg_Myosin
 dCa_SRB = kon_SRB*Cai*(Bmax_SRB - Ca_SRB) - koff_SRB*Ca_SRB
 dCa_cytosol_tot_bound = dCa_TroponinC + dCa_TroponinC_Ca_Mg + dMg_TroponinC_Ca_Mg + dCa_Calmodulin + dCa_Myosin + dMg_Myosin + dCa_SRB
+monitor(dCa_TroponinC)
 
 component("Ikr")
 G_IKr = 0.03*sqrt(Ko/5.4)

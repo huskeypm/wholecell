@@ -1,3 +1,12 @@
+##
+## Generic template for pde models using gotran ode models 
+##
+## Need to edit all 'TEMPLATE' areas 
+##
+## Standard units: 
+## [uM], [ms], [um]
+## 
+
 
 import sys
 sys.path.append("/home/huskeypm/localTemp/wholecell")
@@ -5,34 +14,32 @@ import runner
 import sympy
 from dolfin import * 
 
-# for cmd line
+# for cmd line operation 
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
 
-# <codecell>
 
+# set var, namespaces
 param_indices = runner.model.param_indices
 state_indices = runner.model.state_indices
-
 namespace = np.__dict__.copy()
 TF = 50; dT = 5  
 TF = 2; dT = 0.05 
 ms_to_s = 1e-3
 s_to_ms = 1e3 
 mM_to_uM = 1e3 
-Cai_idx=0
-CaTnC_idx=1
-Caipde_idx = state_indices("Cai")
-CaTnCpde_idx = state_indices("Ca_TroponinC")
+
+## TEMPLATE
+# define states
+stateNames=("Cai","Ca_TroponinC") 
+nStates = len(stateNames) 
+Cai_pde_idx=0
+CaTnC_pde_idx=1
+
 debug=False
 
 # <codecell>
-
-##
-## Standard units: 
-## [uM], [ms], [um]
-## 
 
 
 ##
@@ -48,9 +55,13 @@ class empty:pass
 # tF [ms] for compatibility
 class ODEModel():
   def __init__(self,t0=0,tF=10,vCK=0,ckMode="mitoonly"):
-    # just position in array - independent of gotran 
-    self.Caicyt_idx = Cai_idx
-    self.CaTnCcyt_idx = CaTnC_idx
+    self.Cai_ode_idx =  state_indices( stateNames[0] ) 
+    self.CaTnC_ode_idx =  state_indices( stateNames[1] ) 
+    self.kon_tnc_idx = param_indices("kon_TroponinC")  
+    self.koff_tnc_idx = param_indices("koff_TroponinC") 
+    self.bmax_tnc_idx = param_indices("Bmax_TroponinC")
+    self.Cai_pde_idx =  0
+    self.CaTnC_pde_idx = 1 
  
     self.dtn=0.01; # [s] for finding steady state
     self.incr = 11;# for propagating 
@@ -83,7 +94,7 @@ class ODEModel():
     #print finalStateSS
 
     # return relevant subset 
-    statesSS_subset = statesSS[ :,[self.Caicyt_idx, self.CaTnCcyt_idx ]]
+    statesSS_subset = statesSS[ :,[self.Cai_ode_idx, self.CaTnC_ode_idx ]]
     return(tstepsSS,statesSS_subset)
 
 
@@ -100,7 +111,7 @@ class ODEModel():
     #incr =  np.int(np.round((tf-t0)/np.float(self.dtn)))+1
     tsteps = np.linspace(t0, tf, incr)
     initvalsi = np.ndarray.flatten(self.statesPrev)
-    print "ODE Init", initvalsi[ [self.Caicyt_idx, self.CaTnCcyt_idx] ]
+    print "ODE Init", initvalsi[ [self.Cai_ode_idx, self.CaTnC_ode_idx] ]
     print "t0 %f tf %f " % (t0,tf)
 
     #if(mode=="stateFlux"):
@@ -125,22 +136,24 @@ class ODEModel():
       statesF    = np.ndarray.flatten(statesi[-1::,])
       
       # store and rescale uM/s as uM/ms
-      self.dcdt_Cai = fluxes.dcdt_Cai * (1/s_to_ms) 
-      self.dcdt_CaTnC = fluxes.dcdt_CaTnC * (1/s_to_ms) 
-      dStatedt = np.array([self.dcdt_Cai,self.dcdt_CaTnC]) 
+      # s.b. generalized more 
+      self.dcdt = np.ndarray.flatten(fluxes.dcdt) * (1/s_to_ms) 
 
-      ## TEMPLATE 
-      self.jVolCaiase = 0; # np.array([fluxes.jVolCaiaseCai,fluxes.jVolCaiaseCaTnC]) * (1/s_to_ms)
-      self.jVolCK = 0; # np.array([fluxes.jVolCKCai,fluxes.jVolCKCaTnC]) * (1/s_to_ms)
-      self.jBoundary = 0; # np.array([fluxes.jBoundCai,fluxes.jBoundCaTnC]) * (1/s_to_ms)
+      ## BEGIN TEMPLATE 
+      # define volumetric fluxes (occur within PDE region) 
+      self.jVol= fluxes.jVol * (1/s_to_ms)
+
+      # define all boundary fluxes (occur on PDE boundary)  
+      self.jBoundary = fluxes.jBoundary * (1/s_to_ms)
+      ## END TEMPLATE 
 
       self.statesPrev = statesF
 
      
     # return relevant subset 
-    statesF_subset = statesF[[self.Caicyt_idx, self.CaTnCcyt_idx ]]
-    dStatedt_subset = dStatedt[[self.Caicyt_idx, self.CaTnCcyt_idx ]]
-    statesTraj_subset = statesi[:,[self.Caicyt_idx, self.CaTnCcyt_idx ]]
+    statesF_subset = statesF[[self.Cai_ode_idx, self.CaTnC_ode_idx ]]
+    dStatedt_subset = self.dcdt[[self.Cai_ode_idx, self.CaTnC_ode_idx ]] 
+    statesTraj_subset = statesi[:,[self.Cai_ode_idx, self.CaTnC_ode_idx ]]
     tsteps_ms = tsteps*s_to_ms
 
 
@@ -150,14 +163,14 @@ class ODEModel():
   # store values into steady state 
   def updateStates(self,cCai,cCaTnC):
     old = np.copy(self.statesPrev)
-    self.statesPrev[self.Caicyt_idx] = cCai
-    self.statesPrev[self.CaTnCcyt_idx] = cCaTnC
+    self.statesPrev[self.Cai_ode_idx] = cCai
+    self.statesPrev[self.CaTnC_ode_idx] = cCaTnC
 
-    print "ODE/PDE diff: [%f,%f]" % (self.statesPrev[self.Caicyt_idx]-old[self.Caicyt_idx],
-                                     self.statesPrev[self.CaTnCcyt_idx]-old[self.CaTnCcyt_idx])
+    print "ODE/PDE diff: [%f,%f]" % (self.statesPrev[self.Cai_ode_idx]-old[self.Cai_ode_idx],
+                                     self.statesPrev[self.CaTnC_ode_idx]-old[self.CaTnC_ode_idx])
 
   def getStates(self):
-    return (self.statesPrev[self.Caicyt_idx],self.statesPrev[self.CaTnCcyt_idx] )
+    return (self.statesPrev[self.Cai_ode_idx],self.statesPrev[self.CaTnC_ode_idx] )
 
 # <codecell>
 
@@ -165,6 +178,8 @@ class ODEModel():
 ## PLOTTING
 ##
 
+
+## TEMPLATE adjust to your liking 
 def PlotSlice(problem,results,filename,mode="ATP",anisotropic=False):
   1 
   # copy from atpSarcomereVanBeek if needed 
@@ -182,8 +197,8 @@ def GlobalConc(problem,results):
     print "T %f Conc(%d) %f " % (t,i,results.uAvg[i])
   results.c.append(results.uAvg)
 
-  c1 = results.uAvg[Cai_idx]#get last appended value 
-  cb1 = results.uAvg[CaTnC_idx]
+  c1 = results.uAvg[Cai_pde_idx]#get last appended value 
+  cb1 = results.uAvg[CaTnC_pde_idx]
 
   return (c1,cb1)
 
@@ -209,6 +224,8 @@ def Report(problem,results,anisotropic=False):
 
 immarker=3
 
+## contains parameters for simulation 
+## TEMPLATE 
 class cparams:
   plot=True
   pvd = False
@@ -274,12 +291,11 @@ class MyEqn(NonlinearProblem):
         assemble(self.a, tensor=A, reset_sparsity=self.reset_sparsity)
         self.reset_sparsity = False
 
+# TODO DEFINE ME as SSL 
 ##class Extracellular(SubDomain):
-#class IMSpace(SubDomain):
-#  def inside(self,x,on_boundary):
-#    return x[0] < DOLFIN_EPS  and on_boundary # or x[0] > 1.0 - DOLFIN_EPS
-#    #return on_boundary
-class IMSpace(SubDomain): 
+
+## This represents location of dyadic cleft 
+class SSL(SubDomain): 
   def inside(self,x,on_boundary):
     result = x[1]>(self.params.yMax-DOLFIN_EPS) and on_boundary
     #print x,result 
@@ -306,16 +322,16 @@ def runPDE(\
   asserts=False): 
 
   ## params 
+  # ODE steps for equilibration, i think 
   t0ode = 0
   tFode= 5e3 # [ms]
-  t0pde=tFode
   if(debug):
-    duration=500
+    tFode= 1 # [ms]
+
+  # pde steps for run
+  t0pde=tFode
   tFpde=t0pde + duration
   dt = 10. # [ms]
-
-# <codecell>
-
 
   ##
   ## ODE
@@ -330,11 +346,8 @@ def runPDE(\
   (dummy,dummy,tstepsExact,statesTrajExact)= odeModel.propagateStates(\
     t0pde,tFpde,incr=1e4)
   odeModel.statesPrev = statesPrev
-  #c0i = odeModel.statesPrev[self.Caicyt_idx]
-  #c1i = odeModel.statesPrev[self.CaTnCcyt_idx]
+  # get initial concentrations from ODE model 
   c0i,cb0i = odeModel.getStates()
-  #print c0i,cb0i
-  #print odeModel.statesPrev
   
   ##
   ## PDE 
@@ -395,8 +408,7 @@ def runPDE(\
   #print eval(jsyn_expr_str,namespace)
   # replacement 
   jboundaryExpr = Expression("j",j=0)
-  jvolCaiaseExpr = Expression("j",j=0)
-  jvolCKExpr = Expression("j",j=0)
+  jvolExpr = Expression("j",j=0)
 
   ## Decide on diff const 
   Dii = params.Disotropic
@@ -408,33 +420,52 @@ def runPDE(\
   Dij_CaTnC = Constant(params.DCaTnC) * Dij
 
 
-  ## ODE weak form 
+  ## PDE weak form 
+  # diffusion term  
   RHS1 = -inner(Dij_Cai*grad(c),grad(q))*dx
   RHS2 = -inner(Dij_CaTnC*grad(cb),grad(v))*dx
 
-  # adjust source term depending on how Caiase is distributed
+  # buffers (TODO double check, since I don't think this is correct) 
+  # based on coupledReactionDiffusion.py in my scripts mercurial repo 
+  # Reaction: b + c --kp--> cb,  
+  #           b + c <-km--- cb
+  # TODO add real parameters 
+  kp = odeModel.params[odeModel.kon_tnc_idx]
+  km = odeModel.params[odeModel.koff_tnc_idx]
+  bT = odeModel.params[odeModel.bmax_tnc_idx]
+  R = np.array([
+    [-kp,km],     # s
+    [kp,-km]      # p
+  ])
+  RHS1 += (R[0,0]*(bT-cb)*c*q + R[0,1]*cb*q)*dx
+  RHS2 += (R[1,0]*(bT-cb)*c*v + R[1,1]*cb*v)*dx
+
+  # volumetric flux
   # This is a work-around (see below)
   # Caiase 
   if(params.Caiasedistromode=="uniform"):
-    RHS1 +=  jvolCaiaseExpr*q*dx
-    RHS2 += -jvolCaiaseExpr*v*dx
+    RHS1 +=  jvolExpr*q*dx
+    # no vol flux on tnC
+    #RHS2 += -jvolCaiaseExpr*v*dx
   else:
     raise RuntimeError("ouch") 
+  
     
   # CK 
   if(params.ckdistromode=="uniform"):
-    RHS1 +=  jvolCKExpr*q*dx
-    RHS2 += -jvolCKExpr*v*dx
+    RHS1 +=  jvolExpr*q*dx
+    RHS2 += -jvolExpr*v*dx
   else:
     raise RuntimeError("ouch") 
     
     
   ## boundary
   subdomains = MeshFunction("uint",mesh,2)
-  boundary = IMSpace()
+  boundary = SSL()
   boundary.params = params 
   boundary.mark(subdomains,immarker)
   ds = Measure("ds")[subdomains]
+
 
   # vol/sa ratio to rescale surf. fluxes
   vol = assemble(Constant(1.)*dx,mesh=mesh)
@@ -442,7 +473,7 @@ def runPDE(\
   vol_sa_ratio = vol/sa
   #print "vol_sa_ratio  [um]",  vol_sa_ratio
 
-  # define flux terms 
+  # boundary flux terms 
   print "WARNING: not working w eval func"
   jL1 =  jboundaryExpr
   jL2 =  -jboundaryExpr # this is not generally correct, since CaTnC/Cai fluxes may varyn
@@ -480,7 +511,6 @@ def runPDE(\
   # See CaiSarc...py
   #results.x_midsarc_aband = np.array([0.50,0.50,0.5])
   results.ts = []
-  results.CaTnCGradients = []
   results.c = []
   problem.mesh=mesh
   problem.u = u
@@ -496,8 +526,7 @@ def runPDE(\
 
   ## Time stepping
   jboundarys=[]
-  jvolCaiases=[]
-  jvolCKs=[]
+  jvols=[]
   vals=[[],[]]
   cs=[]
   cbs=[]
@@ -519,14 +548,22 @@ def runPDE(\
     ## update PDE 
     # define flux 
     if(mode=="totalFlux"): 
-      CaiFlux = stateFlux[Cai_idx] 
+      CaiFlux = stateFlux[Cai_pde_idx] 
       jboundaryExpr.j =Jboundary(CaiFlux,vol_sa_ratio=vol_sa_ratio)
 
+    # separate fluxes is useful when volumetric fluxes are heterogeneously distributed
     elif(mode=="separateFlux"): 
       # apply boundary fluxes to surface term 
-      jboundaryExpr.j =Jboundary(odeModel.jBoundary[Cai_idx],vol_sa_ratio=vol_sa_ratio)
-      jvolCaiaseExpr.j =odeModel.jVolCaiase[Cai_idx]
-      jvolCKExpr.j =odeModel.jVolCK[Cai_idx]
+      # TODO need to generalize 
+      jboundaryExpr.j =Jboundary(odeModel.jBoundary[odeModel.Cai_ode_idx],vol_sa_ratio=vol_sa_ratio)
+      jvolExpr.j =odeModel.jVol[odeModel.Cai_ode_idx]
+
+      print jboundaryExpr.j 
+      print jvolExpr.j 
+      #print "disabling fluxes" 
+      #jboundaryExpr.j = 0
+      #jvolExpr.j = 0
+ 
 
       # tests to make sure implemented correctly 
       #print "WARNING: hack " 
@@ -547,10 +584,12 @@ def runPDE(\
     # get integrated fluxes 
     totjs = assemble(jboundaryExpr*ds(immarker),mesh=mesh)
     jboundary = totjs/sa * 1/vol_sa_ratio
-    totjs = assemble(jvolCaiaseExpr*dx,mesh=mesh)
-    jvolCaiase = totjs/vol
-    totjs = assemble(jvolCKExpr*dx,mesh=mesh)
-    jvolCK = totjs/vol
+    print "WARNING: I probably need to constrain jvolExpr s.t. the assembled value is equal to the ODE value"
+    totjs = assemble(jvolExpr*dx,mesh=mesh)
+    jvol = totjs/vol
+    print "aassmebles"
+    print jboundary
+    print jvol
 
 
     # solve system
@@ -564,6 +603,7 @@ def runPDE(\
     ## Collect results 
     results.t = tf
     (c1,cb1)=GlobalConc(problem,results)
+    print "new conc ", c1
     #print "REMOVE THIS SECTION???"
     #pdeVals = []
     #for i,ele in enumerate(split(u)):
@@ -578,12 +618,9 @@ def runPDE(\
     #cb1 = pdeVals[CaTnC_idx]
     #ts.append(t)
     jboundarys.append(jboundary)
-    jvolCaiases.append(jvolCaiase)
-    jvolCKs.append(jvolCK)
+    jvols.append(jvol)
     results.jdiffs= jboundarys
-    results.jCaiases = jvolCaiases
-    results.jCKs = jvolCKs         
-    cFs.append(statesF[Cai_idx]) # just want 'Cai' from odeModel
+    cFs.append(statesF[Cai_pde_idx]) # just want 'Cai' from odeModel
     #cs.append(c1)
     #cbs.append(cb1)
 
@@ -603,14 +640,14 @@ def runPDE(\
 #  print "WARNING: merge into plotting"
   # convert lists into arrays
   cFs = np.asarray(cFs)
-  cs = np.asarray(results.c)[:,Cai_idx]
-  cbs = np.asarray(results.c)[:,CaTnC_idx]
+  cs = np.asarray(results.c)[:,Cai_pde_idx]
+  cbs = np.asarray(results.c)[:,CaTnC_pde_idx]
 #
 #  ## Plot 
   fig=plt.figure()
   ax1 = fig.add_subplot(111)
   ax1.set_title("[Cai]/[CaTnC] vs time") 
-  ax1.plot(tstepsExact,statesTrajExact[:,Cai_idx],label="[Cai] Exact")
+  ax1.plot(tstepsExact,statesTrajExact[:,Cai_pde_idx],label="[Cai] Exact")
   ax1.plot(ts,cs,'k.',label="[Cai] (PDE) ")
   ax1.plot(ts,cFs,label="[Cai]F (forward ODE solutions)")
   ax1.set_ylabel("[Cai] [uM]") 
@@ -631,11 +668,11 @@ def runPDE(\
 #  plt.legend(loc=0)
 #  plt.gcf().savefig(mode+"js.png")
 
-  ext=statesTrajExact[-1,Cai_idx]
+  ext=statesTrajExact[-1,Cai_pde_idx]
   est = c1  # c1 is updated each frame, so this is the most recent
   m = "mode %s: Exact %f != Est %f "%(mode,ext,est)
   if(asserts):
-    ext=statesTrajExact[-1,Cai_idx]
+    ext=statesTrajExact[-1,Cai_pde_idx]
     #est=cs[-1]
     est = c1  # c1 is updated each frame, so this is the most recent
     m = "mode %s: Exact %f != Est %f "%(mode,ext,est)
@@ -660,23 +697,11 @@ def plotting(params,resultsiso,resultsaniso):
   1
   # see CaiSarc...py
 
-def testODE():
-  t0 = 0.
-  tFp = 10e3 # [ms] 
-  incr = 100*tFp
-  CaTnC_idx = 1
-
-  # vCK = 1
-  odeModel = ODEModel(vCK=1.0)
-  odeModel.setup()
-  (dummy,dummy,tstepsExact,statesTrajExact)= odeModel.propagateStates(t0,tFp,incr=incr) 
-  plt.plot(tstepsExact,statesTrajExact[:,CaTnC_idx],label="vCK = 1")       
-
-  # vCK = 1
+def TestODE():
   odeModel = ODEModel(vCK=0.02)
   odeModel.setup()
   (dummy,dummy,tstepsExact,statesTrajExact)= odeModel.propagateStates(t0,tFp,incr=incr) 
-  plt.plot(tstepsExact,statesTrajExact[:,CaTnC_idx],label="vCK = 0")       
+  plt.plot(tstepsExact,statesTrajExact[:,CaTnC_pde_idx],label="vCK = 0")       
   plt.legend(loc=0)
   plt.xlim([9.2e3,10.0e3]) 
 
@@ -702,7 +727,7 @@ def testODE2():
   for i,tf in enumerate(ts): 
     t0 = tf - dt 
     (statesF,stateFlux,dummy,dummy) = odeModel.propagateStates(t0,tf,dt)
-    jSum = odeModel.jBoundary + odeModel.jVolCaiase + odeModel.jVolCK
+    jSum = odeModel.jBoundary + odeModel.jVol
     jConcs.append(stateFlux[Cai_idx])
     jSums.append(jSum[Cai_idx])
 
@@ -713,13 +738,13 @@ def testODE2():
   plt.gcf().savefig("testODE2.png") 
 
 def loop(p,duration=1e3,asserts=True,case="noCK"):
+  print debug
   if(debug):
-    duration=10
+    duration=1e2
     
-
-  p.tag = case+"iso"
-  #problemi,riso = runPDE(params=p,mode="separateFlux",anisotropic=False,asserts=asserts,duration=duration)
-  problemi,riso = runPDE(params=p,mode="totalFlux",anisotropic=False,asserts=asserts,duration=duration)
+  p.tag = case
+  problemi,riso = runPDE(params=p,mode="separateFlux",anisotropic=False,\
+                         asserts=asserts,duration=duration)
  
 
 
@@ -727,8 +752,7 @@ def loop(p,duration=1e3,asserts=True,case="noCK"):
 def Test1(do="all"):
     cparams.plot = False
     pi = cparams()
-    duration=1e2
-    loop(pi,duration=duration,case="fullCK")  
+    loop(pi,case="fullCK")  
 
   
 
@@ -765,6 +789,8 @@ Notes:
   for i,arg in enumerate(sys.argv):
     if(arg=="-debug"):
       debug = True
+      Test1()
+    if(arg=="-test1"):
       Test1()
     if(arg=="-validation"):
       raise RuntimeError("not yet supported") 
