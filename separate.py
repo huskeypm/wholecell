@@ -1,3 +1,16 @@
+## TEMPLATE 
+#$ grep monitor shannon_2004.ode | perl -ane '$n++; chomp $_; ($nm)=($_=~/\((.*)\)/);printf("${nm}_idx=%d # $_\n",$n-1)'
+Vol_SR_idx=0 # monitor(Vol_SR)  
+Vol_myo_idx=1 # monitor(Vol_myo) 
+fCa_SL_idx=2 # monitor(fCa_SL) 
+fCa_jct_idx=3 # monitor(fCa_jct) 
+i_NaCa_idx=4 # monitor(i_NaCa)   
+j_rel_SR_idx=5 # monitor(j_rel_SR)
+j_pump_SR_idx=6 # monitor(j_pump_SR)
+J_Ca_SL_myo_idx=7 # monitor(J_Ca_SL_myo)
+dCa_TroponinC_idx=8 # monitor(dCa_TroponinC)
+i_Stim_idx=9 # monitor(i_Stim)   
+totMonitored = 10
 
 # This function computes the effective substrate flux 
 # over a given time interval. 
@@ -26,20 +39,8 @@ def separateFluxes(model,s,pi,tsteps,warn=False):
   # namely, need to determine which fluxes are going into the PDE domain 
   fluxes = empty()
 
-  ## TEMPLATE 
-  #$ grep monitor shannon_2004.ode | perl -ane '$n++; chomp $_; ($nm)=($_=~/\((.*)\)/);printf("${nm}_idx=%d # $_\n",$n-1)'
-  Vol_SR_idx=0 # monitor(Vol_SR)  
-  Vol_myo_idx=1 # monitor(Vol_myo) 
-  fCa_SL_idx=2 # monitor(fCa_SL) 
-  fCa_jct_idx=3 # monitor(fCa_jct) 
-  i_NaCa_idx=4 # monitor(i_NaCa)   
-  j_rel_SR_idx=5 # monitor(j_rel_SR)
-  j_pump_SR_idx=6 # monitor(j_pump_SR)
-  J_Ca_SL_myo_idx=7 # monitor(J_Ca_SL_myo)
-  dCa_TroponinC_idx=8 # monitor(dCa_TroponinC)
-  i_Stim_idx=9 # monitor(i_Stim)   
   
-  jSums= np.zeros(10) # total num of monitored fluxes 
+  jSums= np.zeros(totMonitored) # total num of monitored fluxes 
 
  
   ## DONT TOUCH 
@@ -89,7 +90,8 @@ def separateFluxes(model,s,pi,tsteps,warn=False):
   # this is quirkly but I think we need to substract SR component, but 
   # add in TnC component (so that we are left with just the contribution 
   # from the SL (see SB expression for dCai) 
-  fluxes.jVol[Cai_ode_idx] = -jAvg[j_pump_SR_idx]*Vol_SR/Vol_myo
+  fluxes.jSR = -jAvg[j_pump_SR_idx]*Vol_SR/Vol_myo
+  fluxes.jVol[Cai_ode_idx] = fluxes.jSR
   fluxes.jVol[Cai_ode_idx] += 0 # TODO add TnC component here
 
   #print Vol_myo

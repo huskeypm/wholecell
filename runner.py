@@ -18,20 +18,7 @@ V_max_pIdx = 45 # NCX
 mM_to_uM = 1e3
 
 ## Monitors 
-#huskeypm@huskeypm-ubuntu12:~/sources/wholecell$ grep monitor shannon_2004.ode 
-#monitor(fCa_SL) 
-#monitor(fCa_jct) 
-#monitor(i_NaCa)   
-#monitor(j_rel_SR)
-#monitor(j_pump_SR)
-#monitor(i_Stim)
-fCa_SL  =0
-fCa_jct =1
-i_NaCa  =2 
-j_rel_SR=3
-j_pump_SR=4
-i_Stim = 5
-totMonitors = 6
+# WARNING: defined in  separate.py
 
 import shannon_2004 as model
 from scipy.integrate import odeint
@@ -42,9 +29,9 @@ import numpy as np
 def monitorstepper(model,states,pi,tsteps):
   dtt= tsteps[1]-tsteps[0]
   tstepsm1 = tsteps[1::] 
-  jall = np.zeros((np.shape(tstepsm1)[0],totMonitors)) 
+  jall = np.zeros((np.shape(tstepsm1)[0],totMonitored)) 
 
-  jSums = np.zeros(totMonitors)
+  jSums = np.zeros(totMonitored)
   for i,t in enumerate(tstepsm1):
     # get current state
     si = states[i,:]
@@ -127,28 +114,28 @@ def plotting(p,states,ts,js,case="default"):
   (ts,js)=monitorstepper(model,states,np.copy(p),tsteps)
   plt.figure(figsize=(10,10))
   plt.subplot(2,2,1)
-  plt.plot(ts,js[:,fCa_SL],label="fCa_SL")
-  plt.plot(ts,js[:,fCa_jct],label="fCa_jct")
+  plt.plot(ts,js[:,fCa_SL_idx],label="fCa_SL_idx")
+  plt.plot(ts,js[:,fCa_jct_idx],label="fCa_jct_idx")
   plt.legend(loc=0)
   
   plt.subplot(2,2,2)
-  plt.plot(ts,js[:,i_NaCa],label="i_NaCa")
+  plt.plot(ts,js[:,i_NaCa_idx],label="i_NaCa_idx")
   plt.legend(loc=0)
   
   
   plt.subplot(2,2,3)
-  plt.plot(ts,js[:,j_rel_SR],label="j_rel_SR")
+  plt.plot(ts,js[:,j_rel_SR_idx],label="j_rel_SR_idx")
   plt.legend(loc=0)
   
   
   plt.subplot(2,2,4)
-  plt.plot(ts,js[:,j_pump_SR],label="j_pump_SR")
+  plt.plot(ts,js[:,j_pump_SR_idx],label="j_pump_SR_idx")
   plt.legend(loc=0)
 
   plt.gcf().savefig(case+"_fluxes.png",dpi=300)
 
   # returning only 
-  return js[:,j_rel_SR]
+  return js[:,j_rel_SR_idx]
 
 # <codecell>
 

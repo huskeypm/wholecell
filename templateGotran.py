@@ -54,7 +54,7 @@ class empty:pass
 # t0 [ms] for compatibility
 # tF [ms] for compatibility
 class ODEModel():
-  def __init__(self,t0=0,tF=10,vCK=0,ckMode="mitoonly"):
+  def __init__(self,t0=0,tF=2,vCK=0,ckMode="mitoonly"):
     self.Cai_ode_idx =  state_indices( stateNames[0] ) 
     self.CaTnC_ode_idx =  state_indices( stateNames[1] ) 
     self.kon_tnc_idx = param_indices("kon_TroponinC")  
@@ -142,6 +142,7 @@ class ODEModel():
       ## BEGIN TEMPLATE 
       # define volumetric fluxes (occur within PDE region) 
       self.jVol= fluxes.jVol * (1/s_to_ms)
+      self.jSR = fluxes.jSR
 
       # define all boundary fluxes (occur on PDE boundary)  
       self.jBoundary = fluxes.jBoundary * (1/s_to_ms)
@@ -528,6 +529,7 @@ def runPDE(\
   jboundarys=[]
   jvols=[]
   vals=[[],[]]
+  jSRs = []; 
   cs=[]
   cbs=[]
   cFs=[]
@@ -557,6 +559,7 @@ def runPDE(\
       # TODO need to generalize 
       jboundaryExpr.j =Jboundary(odeModel.jBoundary[odeModel.Cai_ode_idx],vol_sa_ratio=vol_sa_ratio)
       jvolExpr.j =odeModel.jVol[odeModel.Cai_ode_idx]
+      jSRs.append(odeModel.jSR)
 
       print jboundaryExpr.j 
       print jvolExpr.j 
@@ -639,24 +642,27 @@ def runPDE(\
 
 #  print "WARNING: merge into plotting"
   # convert lists into arrays
-  cFs = np.asarray(cFs)
-  cs = np.asarray(results.c)[:,Cai_pde_idx]
-  cbs = np.asarray(results.c)[:,CaTnC_pde_idx]
+  results.cFs = np.asarray(cFs)
+  results.cs = np.asarray(results.c)[:,Cai_pde_idx]
+  results.cbs = np.asarray(results.c)[:,CaTnC_pde_idx]
+  results.jSRs = np.asarray(jSRs)
+  
 #
 #  ## Plot 
-  fig=plt.figure()
-  ax1 = fig.add_subplot(111)
-  ax1.set_title("[Cai]/[CaTnC] vs time") 
-  ax1.plot(tstepsExact,statesTrajExact[:,Cai_pde_idx],label="[Cai] Exact")
-  ax1.plot(ts,cs,'k.',label="[Cai] (PDE) ")
-  ax1.plot(ts,cFs,label="[Cai]F (forward ODE solutions)")
-  ax1.set_ylabel("[Cai] [uM]") 
-  ax1.set_xlabel("t [ms]") 
-  ax1.legend(loc=0)
-  ax2 = ax1.twinx()
-  ax2.set_ylabel("[CaTnC] [uM]") 
-  ax2.plot(ts,cbs,'r-.',label="cb (PDE) ")
-  plt.gcf().savefig(mode+"conc.png")
+  if(0): 
+    fig=plt.figure()
+    ax1 = fig.add_subplot(111)
+    ax1.set_title("[Cai]/[CaTnC] vs time") 
+    ax1.plot(tstepsExact,statesTrajExact[:,Cai_pde_idx],label="[Cai] Exact")
+    ax1.plot(ts,results.cs,'k.',label="[Cai] (PDE) ")
+    ax1.plot(ts,results.cFs,label="[Cai]F (forward ODE solutions)")
+    ax1.set_ylabel("[Cai] [uM]") 
+    ax1.set_xlabel("t [ms]") 
+    ax1.legend(loc=0)
+    ax2 = ax1.twinx()
+    ax2.set_ylabel("[CaTnC] [uM]") 
+    ax2.plot(ts,results.cbs,'r-.',label="cb (PDE) ")
+    plt.gcf().savefig(mode+"conc.png")
 #
 #
 #  plt.figure()
@@ -743,16 +749,28 @@ def loop(p,duration=1e3,asserts=True,case="noCK"):
     duration=1e2
     
   p.tag = case
-  problemi,riso = runPDE(params=p,mode="separateFlux",anisotropic=False,\
+  problemi,resultsi= runPDE(params=p,mode="separateFlux",anisotropic=False,\
                          asserts=asserts,duration=duration)
- 
 
+
+  # pickle 
+  import cPickle as pickle
+  resultsi.pickleName = case+".pkl"
+  data1 = {'results':resultsi}
+  data1 = {'cs':resultsi.cs,'cbs':resultsi.cbs,'jSRs':resultsi.jSRs}
+  output = open(resultsi.pickleName,    'wb')
+  pickle.dump(data1, output)
+  output.close()
+ 
+  
+  return problemi, resultsi
 
 
 def Test1(do="all"):
     cparams.plot = False
     pi = cparams()
-    loop(pi,case="fullCK")  
+    problemi, resultsi = loop(pi,case="fullCK")  
+    
 
   
 
