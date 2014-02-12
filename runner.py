@@ -1,17 +1,27 @@
 
 from separate import * # This imports separate fluxes
 
+import shannon_2004 as model
+
 ## STATE VAR
 #Cai=37, V=38
-Cai_idx=37; 
-Ca_SR_idx = 25
-V_idx=38
+#Cai_idx=37; 
+#Ca_SR_idx = 25
+#V_idx=38
+Cai_idx =  model.state_indices( "Cai" )
+Ca_SR_idx =  model.state_indices( "Ca_SR" )
+V_idx =  model.state_indices( "V" )
+
 
 ## PARAMS
 # stim_period=(121
-stim_period_pIdx=121
-V_max_Jpump_pIdx = 71 # SERCA
-V_max_pIdx = 45 # NCX
+#stim_period_pIdx=121
+#V_max_Jpump_pIdx = 71 # SERCA
+#V_max_pIdx = 45 # NCX
+stim_period_pIdx =  model.param_indices( "stim_period" )
+V_max_Jpump_pIdx =  model.param_indices( "V_max_Jpump" )
+V_max_pIdx =  model.param_indices( "V_max" )
+
 
 
 ## Misc
@@ -20,7 +30,6 @@ mM_to_uM = 1e3
 ## Monitors 
 # WARNING: defined in  separate.py
 
-import shannon_2004 as model
 from scipy.integrate import odeint
 import matplotlib.pyplot as plt
 import numpy as np
