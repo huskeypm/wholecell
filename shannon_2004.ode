@@ -528,3 +528,7 @@ dCa_jct_dt = -i_Ca_jct_tot*Cm/(Vol_jct*two*F) - J_Ca_jct_SL/Vol_jct + j_rel_SR*V
 dCa_SL_dt = -i_Ca_SL_tot*Cm/(Vol_SL*two*F) + (J_Ca_jct_SL - J_Ca_SL_myo)/Vol_SL - one*dCa_SL_tot_bound
 dCai_dt = -j_pump_SR*Vol_SR/Vol_myo + J_Ca_SL_myo/Vol_myo - one*dCa_cytosol_tot_bound
 dV_dt = -(i_Na + i_Nab + i_NaK + i_Kr + i_Ks + i_tos + i_tof + i_K1 + i_NaCa + i_Cl_Ca + i_Clb + i_CaL + i_Cab + i_Cap + i_Kp + i_Stim)
+
+
+## added at end so order isn't messed up 
+monitor(dCa_cytosol_tot_bound)

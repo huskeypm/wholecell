@@ -8,6 +8,10 @@
 ## -- if units are changed, make sure changes are reflected EVERYWHERE in code 
 ## 
 
+## TODO buffering by TnC in cytosol is not correct in this model!!!
+print'WARNING: buffering by TnC in cytosol is not correct in this model!!!'
+## TODO separate buffering in vol from SR flux 
+
 ## TODO remove mention of CKmode verywhere 
 
 
@@ -122,8 +126,8 @@ class ODEModel():
     #incr =  np.int(np.round((tf-t0)/np.float(self.dtn)))+1
     tsteps = np.linspace(t0, tf, incr)
     initvalsi = np.ndarray.flatten(self.statesPrev)
-    print "ODE Init", initvalsi[ [self.Cai_ode_idx, self.CaTnC_ode_idx] ]
-    print "t0 %f tf %f " % (t0,tf)
+    print "ODE Init [mM]", initvalsi[ [self.Cai_ode_idx, self.CaTnC_ode_idx] ]
+    print "t0 %f tf %f [ms]" % (t0,tf)
 
     #if(mode=="stateFlux"):
     #if(1):
@@ -207,6 +211,7 @@ def GlobalConc(problem,results):
     vol = assemble(Constant(1.)*dx,mesh=mesh)
     results.uAvg[i]=tot/vol
     print "T %f [ms] Conc(%d) %f [mM]" % (t,i,results.uAvg[i])
+    print "T %f [ms] Conc(%d) %f [uM]" % (t,i,results.uAvg[i]*mM_to_uM)
   results.c.append(results.uAvg)
 
   c1 = results.uAvg[Cai_pde_idx]#get last appended value 
@@ -335,11 +340,14 @@ def runPDE(\
   tFode= 5e3 # [ms]
   if(debugLevel>0):
     tFode= 1 # [ms]
+    
 
   # pde steps for run
   t0pde=tFode
   tFpde=t0pde + duration
   dt = 10. # [ms]
+  if(debugLevel>0):
+    dt = 1.  # [ms]
 
   ##
   ## ODE
@@ -418,8 +426,12 @@ def runPDE(\
   #namespace["t"] = t
   #print eval(jsyn_expr_str,namespace)
   # replacement 
-  jboundaryExpr = Expression("j",j=0)
-  jvolExpr = Expression("j",j=0)
+  jboundaryExpr = empty()
+  jvolExpr = empty()
+  jboundaryExpr.Cai = Expression("j",j=0)
+  jboundaryExpr.CaTnC = Expression("j",j=0)
+  jvolExpr.Cai = Expression("j",j=0)
+  jvolExpr.CaTnC = Expression("j",j=0)
 
   ## Decide on diff const 
   Dii = params.Disotropic
@@ -459,20 +471,12 @@ def runPDE(\
   # Caiase 
   ## TODO rename as SERCAdistro
   if(params.Caiasedistromode=="uniform"):
-    RHS1 +=  jvolExpr*q*dx
+    RHS1 +=  jvolExpr.Cai*q*dx
     # no vol flux on tnC
-    #RHS2 += -jvolCaiaseExpr*v*dx
+    RHS2 += -jvolExpr.CaTnC*v*dx
   else:
     raise RuntimeError("ouch") 
   
-    
-  # CK 
-  #if(params.ckdistromode=="uniform"):
-  #  RHS1 +=  jvolExpr*q*dx
-  #  RHS2 += -jvolExpr*v*dx
-  #else:
-  #  raise RuntimeError("ouch") 
-    
     
   ## boundary
   subdomains = MeshFunction("uint",mesh,2)
@@ -486,14 +490,14 @@ def runPDE(\
   vol = assemble(Constant(1.)*dx,mesh=mesh)
   sa  = assemble(Constant(1.)*ds(sslMarker),mesh=mesh)
   vol_sa_ratio = vol/sa
-  #print "vol_sa_ratio  [um]",  vol_sa_ratio
+  print "vol_sa_ratio  [um]",  vol_sa_ratio
 
   # boundary flux terms 
   print "WARNING: not working w eval func"
-  jL1 =  jboundaryExpr
-  #jL2 =  -jboundaryExpr # this is not generally correct, since CaTnC/Cai fluxes may varyn
+  jL1 =  jboundaryExpr.Cai
+  jL2 =  jboundaryExpr.CaTnC
   RHS1  += jL1*q*ds(sslMarker)
-  #RHS2  += jL2*v*ds(sslMarker)
+  RHS2  += jL2*v*ds(sslMarker)
 
 
   # Add in time dependence 
@@ -562,8 +566,10 @@ def runPDE(\
     #tf = t0+dt
     t0 = tf - dt
     (statesF,stateFlux,dummy,dummy) = odeModel.propagateStates(t0,tf,dt)
-    print "ODE states: ", statesF
-    print "ODE statesFlux: ", stateFlux
+    print "ODE statesF: [mM] ", statesF
+    print "ODE statesF: [uM] ", statesF[Cai_pde_idx] * mM_to_uM 
+    print "ODE states Flux [mM/ms]: ", stateFlux
+    print "ODE states Flux [uM/ms]: ", stateFlux * mM_to_uM
     ## TODO remove me? 
     stateFluxes.append(stateFlux)
 
@@ -572,28 +578,29 @@ def runPDE(\
     # define flux 
     if(mode=="totalFlux"): 
       CaiFlux = stateFlux[Cai_pde_idx] 
-      jboundaryExpr.j =Jboundary(CaiFlux,vol_sa_ratio=vol_sa_ratio)
+      jboundaryExpr.Cai.j =Jboundary(CaiFlux,vol_sa_ratio=vol_sa_ratio)
       #jboundaryExpr.j *= dt # I think this is already reflected in PDE weak form 
 
     # separate fluxes is useful when volumetric fluxes are heterogeneously distributed
     elif(mode=="separateFlux"): 
       # apply fluxes 
       # TODO need to generalize 
-      jboundaryExpr.j =Jboundary(odeModel.jBoundary[odeModel.Cai_ode_idx],vol_sa_ratio=vol_sa_ratio)
-      jvolExpr.j =odeModel.jVol[odeModel.Cai_ode_idx]
+      jboundaryExpr.Cai.j =Jboundary(odeModel.jBoundary[odeModel.Cai_ode_idx],vol_sa_ratio=vol_sa_ratio)
+      jvolExpr.Cai.j =odeModel.jVol[odeModel.Cai_ode_idx]
+      #print jboundaryExpr.Cai.j / vol_sa_ratio 
+      #print jvolExpr.Cai.j 
       if(debugLevel==100):
-        #jboundaryExpr.j = 0.1; jvolExpr.j = 0.0000 # 1
-        jboundaryExpr.j = 0.0; jvolExpr.j = 0.1
+        jboundaryExpr.Cai.j =Jboundary(0.1,vol_sa_ratio=vol_sa_ratio)
+        jvolExpr.Cai.j =0.
+        #jboundaryExpr.j = 0.0; jvolExpr.j = 0.1
       #jboundaryExpr.j *= dt # I think this is already reflected in PDE weak form 
       #jvolExpr.j *= dt # I think this is already reflected in PDE weak form 
+
+      print "sdfdsf %f [uM/ms] " % ((jboundaryExpr.Cai.j / vol_sa_ratio + jvolExpr.Cai.j)*mM_to_uM)
+      print "sdfdsf %e [M/ms] " % ((jboundaryExpr.Cai.j / vol_sa_ratio + jvolExpr.Cai.j)) 
+      print "WARNING: jSR and dCa are lumped tother into jVold"
       jSRs.append(odeModel.jSR)
 
-      print "Jbound [mM/ms]", jboundaryExpr.j 
-      print "Jvol ", jvolExpr.j 
-      #print "disabling fluxes" 
-      #jboundaryExpr.j = 0
-      #jvolExpr.j = 0
- 
 
       # tests to make sure implemented correctly 
       #print "WARNING: hack " 
@@ -612,14 +619,15 @@ def runPDE(\
       
 
     # get integrated fluxes 
-    totjs = assemble(jboundaryExpr*ds(sslMarker),mesh=mesh)
+    totjs = assemble(jboundaryExpr.Cai*ds(sslMarker),mesh=mesh)
     jboundary = totjs/sa * 1/vol_sa_ratio
     print "WARNING: I probably need to constrain jvolExpr s.t. the assembled value is equal to the ODE value"
-    totjs = assemble(jvolExpr*dx,mesh=mesh)
+    totjs = assemble(jvolExpr.Cai*dx,mesh=mesh)
     jvol = totjs/vol
-    print "aassmebles TODO check units/scale"
     print "jboundary [mM/ms]", jboundary
+    print "jboundary [uM/ms]", jboundary*mM_to_uM
     print "jvol [mM/ms] ", jvol
+    print "jvol [uM/ms] ", jvol *mM_to_uM*mM_to_uM
 
 
     # solve system
@@ -724,27 +732,31 @@ def plotting(params,resultsiso,resultsaniso):
   1
   # see CaiSarc...py
 
+# Simple run to plot what Concntrations s.b. 
 def TestODE():
-  odeModel = ODEModel(vCK=0.02)
+  t0 = 0.
+  tFp = 1e3 # [ms] 
+  incr = 1e3
+  odeModel = ODEModel()                
   odeModel.setup()
   (dummy,dummy,tstepsExact,statesTrajExact)= odeModel.propagateStates(t0,tFp,incr=incr) 
-  plt.plot(tstepsExact,statesTrajExact[:,CaTnC_pde_idx],label="vCK = 0")       
+  plt.plot(tstepsExact,statesTrajExact[:,odeModel.Cai_pde_idx],label="Cai")              
   plt.legend(loc=0)
-  plt.xlim([9.2e3,10.0e3]) 
+  #plt.xlim([9.2e3,10.0e3]) 
 
 
   print "WARNING: not a unit test"
   plt.gcf().savefig("testode.png") 
 
 
-def testODE2():
+# This needs to be tightly integrated with 'separate.py' to make sure bookkeeping is 
+# correct 
+def TestODE2():
   t0 = 0.
-  tFp = 10e3 # [ms] 
-  dt=10
-  Cai_idx = 0
+  tFp = 1e3 # [ms] 
+  dt=50
 
-  # vCK = 1
-  odeModel = ODEModel(vCK=1.0)
+  odeModel = ODEModel()
   odeModel.setup()
   
   ts = np.linspace(t0+dt,tFp,(tFp-t0)/dt)
@@ -755,8 +767,13 @@ def testODE2():
     t0 = tf - dt 
     (statesF,stateFlux,dummy,dummy) = odeModel.propagateStates(t0,tf,dt)
     jSum = odeModel.jBoundary + odeModel.jVol
-    jConcs.append(stateFlux[Cai_idx])
-    jSums.append(jSum[Cai_idx])
+    print odeModel.jBoundary[odeModel.Cai_ode_idx]
+    print odeModel.jVol[odeModel.Cai_ode_idx]
+    jConcs.append(stateFlux[odeModel.Cai_pde_idx])
+    jSums.append(jSum[odeModel.Cai_ode_idx])
+
+
+  print "Not necessary sure these should agree, since jConc reflects change in TnC"
 
   plt.plot(jConcs,label="jConc") 
   plt.plot(jSums,label="j individual") 
@@ -764,12 +781,12 @@ def testODE2():
   print "WARNING: not a unit test"
   plt.gcf().savefig("testODE2.png") 
 
-def loop(p,duration=1e3,asserts=True,case="noCK"):
+def loop(p,duration=1e3,asserts=True,case="noCK",mode="separateFlux"):
   if(debugLevel>0):
-    duration=1e2
+    duration=1e3
     
   p.tag = case
-  problemi,resultsi= runPDE(params=p,mode="separateFlux",anisotropic=False,\
+  problemi,resultsi= runPDE(params=p,mode=mode,anisotropic=False,\
                          asserts=asserts,duration=duration)
 
 
@@ -789,7 +806,8 @@ def loop(p,duration=1e3,asserts=True,case="noCK"):
 def Test1(do="all"):
     cparams.plot = False
     pi = cparams()
-    problemi, resultsi = loop(pi,case="fullCK")  
+    #problemi, resultsi = loop(pi,case="fullCK",mode="totalFlux")  
+    problemi, resultsi = loop(pi,case="fullCK",mode="separateFlux") 
     
 
   
@@ -826,10 +844,13 @@ Notes:
 
   for i,arg in enumerate(sys.argv):
     if(arg=="-debug"):
-      debugLevel=100
+      #debugLevel=100
+      debugLevel=10
       Test1()
     if(arg=="-test1"):
       Test1()
     if(arg=="-validation"):
-      raise RuntimeError("not yet supported") 
+      #TestODE()
+      TestODE2()
+      
 
