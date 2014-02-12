@@ -4,8 +4,10 @@
 ## Need to edit all 'TEMPLATE' areas 
 ##
 ## Standard units: 
-## [uM], [ms], [um]
+## [mM], [ms], [um]
 ## 
+
+## TODO remove mention of CKmode verywhere 
 
 
 import sys
@@ -62,18 +64,23 @@ class ODEModel():
     self.bmax_tnc_idx = param_indices("Bmax_TroponinC")
     self.Cai_pde_idx =  0
     self.CaTnC_pde_idx = 1 
+
+    # if PDE/ODE are at different time units 
+    self.time_PDE_to_ODE = 1.    # or .... =  ms_to_s
+    self.time_ODE_to_PDE = 1/self.time_PDE_to_ODE
  
-    self.dtn=0.01; # [s] for finding steady state
+    ## TODO verify time units 
+    self.dtn=1.00; # [ode time units] for finding steady state
     self.incr = 11;# for propagating 
-    self.t0 = t0 * ms_to_s 
-    self.tss = tF * ms_to_s 
+    self.t0 = t0 * self.time_PDE_to_ODE
+    self.tss = tF * self.time_PDE_to_ODE
 
     #if(debug):
-    #  self.t0=0; self.tss=0.1;  # [s] 
+    #  self.t0=0; self.tss=10.0;  # [ode time units] 
 
   # sets up ODE model and runs for 10 sec (for steady state) 
   def setup(self):
-    ## NOTE: standard time units are [s] here 
+    ## NOTE: standard time units are [ode time units] here 
 
     # initialize 
     initvals=model.init_values()
@@ -83,6 +90,8 @@ class ODEModel():
     tstepsSS = np.linspace(self.t0, self.tss, (self.tss-self.t0)/self.dtn+1)
   
     ## get steady state first 
+    ## TODO CHECK THIS STEADY STATE W PLOITS 
+    print "WARHING: CHECK ME" 
     statesSS= odeint(model.rhs,\
       initvals,tstepsSS,(params,))
     finalStateSS = statesSS[-1::,]
@@ -102,8 +111,9 @@ class ODEModel():
   # (statesPrev) 
   # dTpde: time step in PDE loop
   def propagateStates(self,t0_ms,tf_ms,dTpde_ms=1.,incr=-1):
-    t0 = t0_ms * ms_to_s
-    tf = tf_ms * ms_to_s
+    t0 = t0_ms * self.time_PDE_to_ODE
+    tf = tf_ms * self.time_PDE_to_ODE
+
     
     if(incr<0):
       incr =self.incr
@@ -137,15 +147,15 @@ class ODEModel():
       
       # store and rescale uM/s as uM/ms
       # s.b. generalized more 
-      self.dcdt = np.ndarray.flatten(fluxes.dcdt) * (1/s_to_ms) 
+      self.dcdt = np.ndarray.flatten(fluxes.dcdt) * (1/self.time_ODE_to_PDE)
 
       ## BEGIN TEMPLATE 
       # define volumetric fluxes (occur within PDE region) 
-      self.jVol= fluxes.jVol * (1/s_to_ms)
+      self.jVol= fluxes.jVol * (1/self.time_ODE_to_PDE)
       self.jSR = fluxes.jSR
 
       # define all boundary fluxes (occur on PDE boundary)  
-      self.jBoundary = fluxes.jBoundary * (1/s_to_ms)
+      self.jBoundary = fluxes.jBoundary * (1/self.time_ODE_to_PDE)
       ## END TEMPLATE 
 
       self.statesPrev = statesF
@@ -155,7 +165,7 @@ class ODEModel():
     statesF_subset = statesF[[self.Cai_ode_idx, self.CaTnC_ode_idx ]]
     dStatedt_subset = self.dcdt[[self.Cai_ode_idx, self.CaTnC_ode_idx ]] 
     statesTraj_subset = statesi[:,[self.Cai_ode_idx, self.CaTnC_ode_idx ]]
-    tsteps_ms = tsteps*s_to_ms
+    tsteps_ms = tsteps*self.time_ODE_to_PDE
 
 
 
@@ -223,7 +233,7 @@ def Report(problem,results,anisotropic=False):
 ## PDE stuff
 ##
 
-immarker=3
+sslMarker=3
 
 ## contains parameters for simulation 
 ## TEMPLATE 
@@ -292,9 +302,6 @@ class MyEqn(NonlinearProblem):
         assemble(self.a, tensor=A, reset_sparsity=self.reset_sparsity)
         self.reset_sparsity = False
 
-# TODO DEFINE ME as SSL 
-##class Extracellular(SubDomain):
-
 ## This represents location of dyadic cleft 
 class SSL(SubDomain): 
   def inside(self,x,on_boundary):
@@ -349,6 +356,9 @@ def runPDE(\
   odeModel.statesPrev = statesPrev
   # get initial concentrations from ODE model 
   c0i,cb0i = odeModel.getStates()
+
+  if(debug):
+    c0i = 1; cb0i = 1;
   
   ##
   ## PDE 
@@ -418,32 +428,37 @@ def runPDE(\
   Dij = Constant([Dii[2],Dii[0],Dii[1]])
   Dij = diag(Dij)
   Dij_Cai= Constant(params.DCai) * Dij
-  Dij_CaTnC = Constant(params.DCaTnC) * Dij
+  Dij_CaTnC = Constant(0) 
+  ## PKH replacing with scalar
 
 
   ## PDE weak form 
   # diffusion term  
   RHS1 = -inner(Dij_Cai*grad(c),grad(q))*dx
-  RHS2 = -inner(Dij_CaTnC*grad(cb),grad(v))*dx
+  # NOT FOR TNC RHS2 = -inner(Dij_CaTnC*grad(cb),grad(v))*dx
+  RHS2 = Constant(0)*dx
 
   # buffers (TODO double check, since I don't think this is correct) 
   # based on coupledReactionDiffusion.py in my scripts mercurial repo 
   # Reaction: b + c --kp--> cb,  
   #           b + c <-km--- cb
   # TODO add real parameters 
-  kp = odeModel.params[odeModel.kon_tnc_idx]
-  km = odeModel.params[odeModel.koff_tnc_idx]
-  bT = odeModel.params[odeModel.bmax_tnc_idx]
-  R = np.array([
-    [-kp,km],     # s
-    [kp,-km]      # p
-  ])
-  RHS1 += (R[0,0]*(bT-cb)*c*q + R[0,1]*cb*q)*dx
-  RHS2 += (R[1,0]*(bT-cb)*c*v + R[1,1]*cb*v)*dx
+  reaction = False
+  if reaction: 
+    kp = odeModel.params[odeModel.kon_tnc_idx]
+    km = odeModel.params[odeModel.koff_tnc_idx]
+    bT = odeModel.params[odeModel.bmax_tnc_idx]
+    R = np.array([
+      [-kp,km],     # s
+      [kp,-km]      # p
+    ])
+    RHS1 += (R[0,0]*(bT-cb)*c*q + R[0,1]*cb*q)*dx
+    RHS2 += (R[1,0]*(bT-cb)*c*v + R[1,1]*cb*v)*dx
 
   # volumetric flux
   # This is a work-around (see below)
   # Caiase 
+  ## TODO rename as SERCAdistro
   if(params.Caiasedistromode=="uniform"):
     RHS1 +=  jvolExpr*q*dx
     # no vol flux on tnC
@@ -453,33 +468,33 @@ def runPDE(\
   
     
   # CK 
-  if(params.ckdistromode=="uniform"):
-    RHS1 +=  jvolExpr*q*dx
-    RHS2 += -jvolExpr*v*dx
-  else:
-    raise RuntimeError("ouch") 
+  #if(params.ckdistromode=="uniform"):
+  #  RHS1 +=  jvolExpr*q*dx
+  #  RHS2 += -jvolExpr*v*dx
+  #else:
+  #  raise RuntimeError("ouch") 
     
     
   ## boundary
   subdomains = MeshFunction("uint",mesh,2)
   boundary = SSL()
   boundary.params = params 
-  boundary.mark(subdomains,immarker)
+  boundary.mark(subdomains,sslMarker)
   ds = Measure("ds")[subdomains]
 
 
   # vol/sa ratio to rescale surf. fluxes
   vol = assemble(Constant(1.)*dx,mesh=mesh)
-  sa  = assemble(Constant(1.)*ds(immarker),mesh=mesh)
+  sa  = assemble(Constant(1.)*ds(sslMarker),mesh=mesh)
   vol_sa_ratio = vol/sa
   #print "vol_sa_ratio  [um]",  vol_sa_ratio
 
   # boundary flux terms 
   print "WARNING: not working w eval func"
   jL1 =  jboundaryExpr
-  jL2 =  -jboundaryExpr # this is not generally correct, since CaTnC/Cai fluxes may varyn
-  RHS1  += jL1*q*ds(immarker)
-  RHS2  += jL2*v*ds(immarker)
+  #jL2 =  -jboundaryExpr # this is not generally correct, since CaTnC/Cai fluxes may varyn
+  RHS1  += jL1*q*ds(sslMarker)
+  #RHS2  += jL2*v*ds(sslMarker)
 
 
   # Add in time dependence 
@@ -526,6 +541,7 @@ def runPDE(\
   c0F = c0i
 
   ## Time stepping
+  stateFluxes = [] # TODO remove
   jboundarys=[]
   jvols=[]
   vals=[[],[]]
@@ -545,6 +561,8 @@ def runPDE(\
     (statesF,stateFlux,dummy,dummy) = odeModel.propagateStates(t0,tf,dt)
     print "ODE states: ", statesF
     print "ODE statesFlux: ", stateFlux
+    ## TODO remove me? 
+    stateFluxes.append(stateFlux)
 
   
     ## update PDE 
@@ -552,17 +570,22 @@ def runPDE(\
     if(mode=="totalFlux"): 
       CaiFlux = stateFlux[Cai_pde_idx] 
       jboundaryExpr.j =Jboundary(CaiFlux,vol_sa_ratio=vol_sa_ratio)
+      jboundaryExpr.j *= dt # TODO verify
 
     # separate fluxes is useful when volumetric fluxes are heterogeneously distributed
     elif(mode=="separateFlux"): 
-      # apply boundary fluxes to surface term 
+      # apply fluxes 
       # TODO need to generalize 
       jboundaryExpr.j =Jboundary(odeModel.jBoundary[odeModel.Cai_ode_idx],vol_sa_ratio=vol_sa_ratio)
       jvolExpr.j =odeModel.jVol[odeModel.Cai_ode_idx]
+      if debug:
+        jboundaryExpr.j = 1; jvolExpr.j = 1
+      jboundaryExpr.j *= dt # TODO verify
+      jvolExpr.j *= dt # TODO verify
       jSRs.append(odeModel.jSR)
 
-      print jboundaryExpr.j 
-      print jvolExpr.j 
+      print "Jbound ", jboundaryExpr.j 
+      print "Jvol ", jvolExpr.j 
       #print "disabling fluxes" 
       #jboundaryExpr.j = 0
       #jvolExpr.j = 0
@@ -585,14 +608,15 @@ def runPDE(\
       
 
     # get integrated fluxes 
-    totjs = assemble(jboundaryExpr*ds(immarker),mesh=mesh)
+    totjs = assemble(jboundaryExpr*ds(sslMarker),mesh=mesh)
     jboundary = totjs/sa * 1/vol_sa_ratio
     print "WARNING: I probably need to constrain jvolExpr s.t. the assembled value is equal to the ODE value"
     totjs = assemble(jvolExpr*dx,mesh=mesh)
     jvol = totjs/vol
-    print "aassmebles"
-    print jboundary
-    print jvol
+    print "aassmebles TODO check units/scale"
+    print "jboundary ", jboundary
+    print "jvol ", jvol
+    quit()
 
 
     # solve system
