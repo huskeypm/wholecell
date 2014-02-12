@@ -5,6 +5,7 @@
 ##
 ## Standard units: 
 ## [mM], [ms], [um]
+## -- if units are changed, make sure changes are reflected EVERYWHERE in code 
 ## 
 
 ## TODO remove mention of CKmode verywhere 
@@ -39,7 +40,7 @@ nStates = len(stateNames)
 Cai_pde_idx=0
 CaTnC_pde_idx=1
 
-debug=False
+debugLevel=0
 
 # <codecell>
 
@@ -205,7 +206,7 @@ def GlobalConc(problem,results):
     tot = assemble(ele*dx,mesh=mesh)
     vol = assemble(Constant(1.)*dx,mesh=mesh)
     results.uAvg[i]=tot/vol
-    print "T %f Conc(%d) %f " % (t,i,results.uAvg[i])
+    print "T %f [ms] Conc(%d) %f [mM]" % (t,i,results.uAvg[i])
   results.c.append(results.uAvg)
 
   c1 = results.uAvg[Cai_pde_idx]#get last appended value 
@@ -332,7 +333,7 @@ def runPDE(\
   # ODE steps for equilibration
   t0ode = 0
   tFode= 5e3 # [ms]
-  if(debug):
+  if(debugLevel>0):
     tFode= 1 # [ms]
 
   # pde steps for run
@@ -356,7 +357,7 @@ def runPDE(\
   # get initial concentrations from ODE model 
   c0i,cb0i = odeModel.getStates()
 
-  if(debug):
+  if(debugLevel==100):
     c0i = 1; cb0i = 1; # [mM] 
   
   ##
@@ -427,15 +428,14 @@ def runPDE(\
   Dij = Constant([Dii[2],Dii[0],Dii[1]])
   Dij = diag(Dij)
   Dij_Cai= Constant(params.DCai) * Dij
-  Dij_CaTnC = Constant(0) 
-  ## PKH replacing with scalar
+  Dij_CaTnC = Constant(params.DCaTnC)*Dij # 0.0
 
 
   ## PDE weak form 
   # diffusion term  
   RHS1 = -inner(Dij_Cai*grad(c),grad(q))*dx
-  # NOT FOR TNC RHS2 = -inner(Dij_CaTnC*grad(cb),grad(v))*dx
-  RHS2 = Constant(0)*dx
+  # TNC has Dij=0. 
+  RHS2 = -inner(Dij_CaTnC*grad(cb),grad(v))*dx
 
   # buffers (TODO double check, since I don't think this is correct) 
   # based on coupledReactionDiffusion.py in my scripts mercurial repo 
@@ -520,6 +520,7 @@ def runPDE(\
   # Step in time
   t = 0.0
   results = empty()
+  results.t=t  
 #  problem = empty()
 
   # Initializations for results 
@@ -549,6 +550,9 @@ def runPDE(\
   cbs=[]
   cFs=[]
   ts = np.linspace(t0pde+dt,tFpde,(tFpde-t0pde)/dt)
+  
+  print "REMOVE ME" # TODO  
+  (c1,cb1)=GlobalConc(problem,results)
   #print t0, tFp
   #print ts
   for i,tf in enumerate(ts):
@@ -569,7 +573,7 @@ def runPDE(\
     if(mode=="totalFlux"): 
       CaiFlux = stateFlux[Cai_pde_idx] 
       jboundaryExpr.j =Jboundary(CaiFlux,vol_sa_ratio=vol_sa_ratio)
-      jboundaryExpr.j *= dt # TODO verify
+      #jboundaryExpr.j *= dt # I think this is already reflected in PDE weak form 
 
     # separate fluxes is useful when volumetric fluxes are heterogeneously distributed
     elif(mode=="separateFlux"): 
@@ -577,11 +581,11 @@ def runPDE(\
       # TODO need to generalize 
       jboundaryExpr.j =Jboundary(odeModel.jBoundary[odeModel.Cai_ode_idx],vol_sa_ratio=vol_sa_ratio)
       jvolExpr.j =odeModel.jVol[odeModel.Cai_ode_idx]
-      if debug:
-        jboundaryExpr.j = 0.1; jvolExpr.j = 0.00001
-        #jboundaryExpr.j = 0.0; jvolExpr.j = 0.1
-      #jboundaryExpr.j *= dt # TODO verify
-      #jvolExpr.j *= dt # TODO verify
+      if(debugLevel==100):
+        #jboundaryExpr.j = 0.1; jvolExpr.j = 0.0000 # 1
+        jboundaryExpr.j = 0.0; jvolExpr.j = 0.1
+      #jboundaryExpr.j *= dt # I think this is already reflected in PDE weak form 
+      #jvolExpr.j *= dt # I think this is already reflected in PDE weak form 
       jSRs.append(odeModel.jSR)
 
       print "Jbound [mM/ms]", jboundaryExpr.j 
@@ -614,8 +618,8 @@ def runPDE(\
     totjs = assemble(jvolExpr*dx,mesh=mesh)
     jvol = totjs/vol
     print "aassmebles TODO check units/scale"
-    print "jboundary ", jboundary
-    print "jvol ", jvol
+    print "jboundary [mM/ms]", jboundary
+    print "jvol [mM/ms] ", jvol
 
 
     # solve system
@@ -629,14 +633,6 @@ def runPDE(\
     ## Collect results 
     results.t = tf
     (c1,cb1)=GlobalConc(problem,results)
-    #print "REMOVE THIS SECTION???"
-    #pdeVals = []
-    #for i,ele in enumerate(split(u)):
-    #  tot = assemble(ele*dx,mesh=mesh)
-    #  conc = tot/vol
-    #  print "Conc(t=%3.2f,%d) %f " % (tf,i,conc)
-    #  pdeVals.append(conc)
-    #  vals[i].append(conc)
 
     #print "rename c1,cb1"
     #c1 = pdeVals[Cai_idx]#get last appended value 
@@ -656,7 +652,10 @@ def runPDE(\
     ## store values in ODE  
     #ts.append(tf)
     t0 = tf
-    odeModel.updateStates(c1,cb1)
+    if(debugLevel==100):
+      1
+    else:
+      odeModel.updateStates(c1,cb1)
 
 
   ## END LOOP 
@@ -766,8 +765,7 @@ def testODE2():
   plt.gcf().savefig("testODE2.png") 
 
 def loop(p,duration=1e3,asserts=True,case="noCK"):
-  print debug
-  if(debug):
+  if(debugLevel>0):
     duration=1e2
     
   p.tag = case
@@ -828,7 +826,7 @@ Notes:
 
   for i,arg in enumerate(sys.argv):
     if(arg=="-debug"):
-      debug = True
+      debugLevel=100
       Test1()
     if(arg=="-test1"):
       Test1()
