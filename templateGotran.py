@@ -255,13 +255,10 @@ class cparams:
   Danisotropic = np.array([0.57, 0.58, 0.82])
 
   # Cai 
-  DCai=0.145 # [um^2/ms]
-  #usevanbeek tCai   = 4.88e3 # [uM] Michailova
+  DCai=0.290 # [um^2/ms]
 
   # CaTnC 
-  DCaTnC=0.145 # [um^2/ms]
-  #c0CaTnC=0.067e3 # [uM]
-  #usevanbeek tCaTnC = 0.113e3 # [uM] Michailova
+  DCaTnC=0.000 # [um^2/ms]
 
   # for half-sacomere mesh 
   xMax= 1.   # longitudinal (along sarco)
@@ -329,8 +326,10 @@ def runPDE(\
   duration=1e3,		# duration [ms] 
   asserts=False): 
 
-  ## params 
-  # ODE steps for equilibration, i think 
+  ##
+  ## Time params 
+  ## 
+  # ODE steps for equilibration
   t0ode = 0
   tFode= 5e3 # [ms]
   if(debug):
@@ -358,7 +357,7 @@ def runPDE(\
   c0i,cb0i = odeModel.getStates()
 
   if(debug):
-    c0i = 1; cb0i = 1;
+    c0i = 1; cb0i = 1; # [mM] 
   
   ##
   ## PDE 
@@ -579,12 +578,13 @@ def runPDE(\
       jboundaryExpr.j =Jboundary(odeModel.jBoundary[odeModel.Cai_ode_idx],vol_sa_ratio=vol_sa_ratio)
       jvolExpr.j =odeModel.jVol[odeModel.Cai_ode_idx]
       if debug:
-        jboundaryExpr.j = 1; jvolExpr.j = 1
-      jboundaryExpr.j *= dt # TODO verify
-      jvolExpr.j *= dt # TODO verify
+        jboundaryExpr.j = 0.1; jvolExpr.j = 0.00001
+        #jboundaryExpr.j = 0.0; jvolExpr.j = 0.1
+      #jboundaryExpr.j *= dt # TODO verify
+      #jvolExpr.j *= dt # TODO verify
       jSRs.append(odeModel.jSR)
 
-      print "Jbound ", jboundaryExpr.j 
+      print "Jbound [mM/ms]", jboundaryExpr.j 
       print "Jvol ", jvolExpr.j 
       #print "disabling fluxes" 
       #jboundaryExpr.j = 0
@@ -616,7 +616,6 @@ def runPDE(\
     print "aassmebles TODO check units/scale"
     print "jboundary ", jboundary
     print "jvol ", jvol
-    quit()
 
 
     # solve system
@@ -630,7 +629,6 @@ def runPDE(\
     ## Collect results 
     results.t = tf
     (c1,cb1)=GlobalConc(problem,results)
-    print "new conc ", c1
     #print "REMOVE THIS SECTION???"
     #pdeVals = []
     #for i,ele in enumerate(split(u)):
