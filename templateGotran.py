@@ -40,6 +40,7 @@ TF = 2; dT = 0.05
 ms_to_s = 1e-3
 s_to_ms = 1e3 
 mM_to_uM = 1e3 
+M_to_mM=1e3
 
 ## TEMPLATE
 # define states
@@ -1023,44 +1024,59 @@ def Biophys(caseNum):
   #%%capture captured
   cparams.plot = False
   duration = 1e3
-  #M_to_mM=1e3
   Kmf_guess = 5.e-7*M_to_mM
 
   
   # see 140213_ceholski.tex
   Kmfs = np.array([0.85,1.91,2.48,1.00]) * Kmf_guess
   names = ["R9C","WT","R9Q","NoPLB"]
+  geometry = "huge.xml.gz"
   
+  caseNum = int(caseNum)
   print "Running case %d " % caseNum
   if(caseNum==1): 
     # case 1 
-    p1 = gt.cparams()
-    p1.odeParams[gt.param_indices("Kmf")] = Kmfs[0]                                                                
-    problem1, results1 = gt.loop(p1,case=names[0],duration=duration);
+    p1 = cparams()
+    p1.odeParams[param_indices("Kmf")] = Kmfs[0]                                                                
+    case = names[0]
+    problem1, results1 = loop(p1,case=case,duration=duration,mode="separateFlux",\
+      geometry="huge.xml.gz")
+    dolinescan(case,results1)
+    
                                
   elif(caseNum==2): 
     # case 2 
-    p2 = gt.cparams()
-    p2.odeParams[gt.param_indices("Kmf")] = Kmfs[1]                                                                 
-    problem2, results2 = gt.loop(p2,case=names[1],duration=duration);
+    p2 = cparams()
+    p2.odeParams[param_indices("Kmf")] = Kmfs[1]                                                                 
+    case = names[1]
+    problem2, results2 = loop(p2,case=case,duration=duration,mode="separateFlux",\
+      geometry="huge.xml.gz")
+    dolinescan(case,results2)
                                
   elif(caseNum==3): 
     # case 3 
-    p3 = gt.cparams()
-    p3.odeParams[gt.param_indices("Kmf")] = Kmfs[2]                                                                
-    problem3, results3 = gt.loop(p3,case=names[2],duration=duration);
+    p3 = cparams()
+    p3.odeParams[param_indices("Kmf")] = Kmfs[2]                                                                
+    case = names[2]
+    problem3, results3 = loop(p3,case=case,duration=duration,mode="separateFlux",\
+      geometry="huge.xml.gz")
+    dolinescan(case,results3)
                                
   elif(caseNum==4): 
-    p4 = gt.cparams()
-    p4.odeParams[gt.param_indices("Kmf")] = Kmfs[3]                                                                
-    problem4, results4 = gt.loop(p3,case=names[3],duration=duration);
+    p4 = cparams()
+    p4.odeParams[param_indices("Kmf")] = Kmfs[3]                                                                
+    case = names[3]
+    problem4, results4 = loop(p4,case=case,duration=duration,mode="separateFlux",\
+      geometry="huge.xml.gz")
+    dolinescan(case,results4)
+
   else: 
-   raise RuntimeError(caseNum + " unknown")
+   raise RuntimeError(str(caseNum) + " unknown")
                                
                                
 
 
-def dolinescan(case,resultsi)
+def dolinescan(case,resultsi): 
     # do linescans
     # Crappy way of doing this 
     #fr = len(resultsi.interpd)
@@ -1143,7 +1159,7 @@ Notes:
       #debugLevel=100
       debugLevel=10
       Test1()
-    if(arg="-biophys"): 
+    if(arg=="-biophys"): 
       Biophys(sys.argv[i+1])
 
     if(arg=="-test2"):
