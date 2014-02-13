@@ -10,9 +10,12 @@
 
 ## TODO buffering by TnC in cytosol is not correct in this model!!!
 print'WARNING: buffering by TnC in cytosol is not correct in this model!!!'
+# I think I should return Ca + CaTnC into cyto 
 ## TODO separate buffering in vol from SR flux 
 
-## TODO remove mention of CKmode verywhere 
+## TODO can't update Ca concentrations, for some reason, without breaking ODE  
+## TODO use real geomrtry 
+## TODO modify Kmf to agree w guess
 
 
 import sys
@@ -28,6 +31,9 @@ from scipy.integrate import odeint
 
 
 # set var, namespaces
+import shannon_2004 as model
+# TODO Check
+model = runner.model 
 param_indices = runner.model.param_indices
 state_indices = runner.model.state_indices
 namespace = np.__dict__.copy()
@@ -53,23 +59,33 @@ debugLevel=0
 ## ODE model 
 ##
 
-import shannon_2004 as model
 from scipy.integrate import odeint
 class empty:pass
 
 ## contains all ODE model stuff 
 # t0 [ms] for compatibility
 # tF [ms] for compatibility
+# Assumes shannon model for now (I do have hacked one around) 
 class ODEModel():
-  def __init__(self,t0=0,tF=2,vCK=0,ckMode="mitoonly"):
+  # NOTE: except for stimPeriod, pass all other params through 'params' 
+  def __init__(self,t0=0,tF=2,stimPeriod=300,params=None):
     self.Cai_ode_idx =  state_indices( stateNames[0] ) 
     self.CaTnC_ode_idx =  state_indices( stateNames[1] ) 
+
+    # Only keep this one 
+    self.stim_period_idx = param_indices("stim_period")
+    self.stimPeriod = stimPeriod # [ms] 
+    self.params = params 
+
+    ## TODO remove
     self.kon_tnc_idx = param_indices("kon_TroponinC")  
     self.koff_tnc_idx = param_indices("koff_TroponinC") 
     self.bmax_tnc_idx = param_indices("Bmax_TroponinC")
+
+
     self.Cai_pde_idx =  0
     self.CaTnC_pde_idx = 1 
-
+    
     # if PDE/ODE are at different time units 
     self.time_PDE_to_ODE = 1.    # or .... =  ms_to_s
     self.time_ODE_to_PDE = 1/self.time_PDE_to_ODE
@@ -89,16 +105,26 @@ class ODEModel():
 
     # initialize 
     initvals=model.init_values()
-    params=model.default_parameters()
-    self.params = params 
+    if(self.params==None):
+      self.params=model.default_parameters()
+      #self.params = params 
+
+    #print self.params[param_indices("Kmf")]
+    #quit()
+
+    # params 
+    self.params[self.stim_period_idx] = self.stimPeriod 
+
+    print "Equilibrating for %f [ms]" % (self.tss - self.t0)
 
     tstepsSS = np.linspace(self.t0, self.tss, (self.tss-self.t0)/self.dtn+1)
+    #print tstepsSS
   
     ## get steady state first 
     ## TODO CHECK THIS STEADY STATE W PLOITS 
     print "WARHING: CHECK ME" 
     statesSS= odeint(model.rhs,\
-      initvals,tstepsSS,(params,))
+      initvals,tstepsSS,(self.params,))
     finalStateSS = statesSS[-1::,]
 
     # init w prev
@@ -109,6 +135,10 @@ class ODEModel():
 
     # return relevant subset 
     statesSS_subset = statesSS[ :,[self.Cai_ode_idx, self.CaTnC_ode_idx ]]
+
+    plt.plot(tstepsSS,statesSS_subset[:,0])
+    plt.gcf().savefig("equil.png") 
+
     return(tstepsSS,statesSS_subset)
 
 
@@ -212,6 +242,9 @@ def GlobalConc(problem,results):
     results.uAvg[i]=tot/vol
     print "T %f [ms] Conc(%d) %f [mM]" % (t,i,results.uAvg[i])
     print "T %f [ms] Conc(%d) %f [uM]" % (t,i,results.uAvg[i]*mM_to_uM)
+
+    assert(results.uAvg[i]>0), "Conc is negative!!"
+
   results.c.append(results.uAvg)
 
   c1 = results.uAvg[Cai_pde_idx]#get last appended value 
@@ -246,10 +279,14 @@ sslMarker=3
 class cparams:
   plot=True
   pvd = False
+ 
+  # copy over ODE models parameters
+  odeParams = model.default_parameters() 
   
   meshdebug = True  
   tag = ""
   # 
+  ## TODO rename 
   Caiasedistromode="uniform"
   ckdistromode="uniform"
   #Caiasedistromode="nonuniform"
@@ -267,10 +304,10 @@ class cparams:
   DCaTnC=0.000 # [um^2/ms]
 
   # for half-sacomere mesh 
-  xMax= 1.   # longitudinal (along sarco)
-  yMax = 1.2 # circumferential 
+  xMax= 2.   # longitudinal (along sarco)
+  yMax = 2.0 # circumferential 
   #zMax = 100.  # transverse (along TT) 
-  zMax = 7.5    # estiamte assuming cyldrical bundles are 1.2 um in radius
+  zMax = 2.0    # estiamte assuming cyldrical bundles are 1.2 um in radius
                  # and h=2 um
                  # Vcyl = pi*r*r*h = xMax*yMax*zMax
 
@@ -337,23 +374,23 @@ def runPDE(\
   ## 
   # ODE steps for equilibration
   t0ode = 0
-  tFode= 5e3 # [ms]
+  tFode= 3e3 # [ms] # for 300 ms stim 
   if(debugLevel>0):
-    tFode= 1 # [ms]
-    
-
+    tFode= 1e3 # [ms]
+  
   # pde steps for run
   t0pde=tFode
   tFpde=t0pde + duration
   dt = 10. # [ms]
-  if(debugLevel>0):
+  if(debugLevel==100):
     dt = 1.  # [ms]
 
   ##
   ## ODE
   ##
-  ## get exact solution 
-  odeModel = ODEModel(t0=t0ode,tF=tFode) # ,ckMode=params.ckMode)
+  ## Initialize model/get steadystate 
+  odeModel = ODEModel(t0=t0ode,tF=tFode)
+  odeModel = ODEModel(t0=t0ode,tF=tFode,params=params.odeParams) 
   odeModel.setup() 
   #print odeModel.getStates()
   # here we propagate model just so that we can compare exact and PDE solutions 
@@ -554,8 +591,8 @@ def runPDE(\
   cbs=[]
   cFs=[]
   ts = np.linspace(t0pde+dt,tFpde,(tFpde-t0pde)/dt)
+  #print "ts", ts
   
-  print "REMOVE ME" # TODO  
   (c1,cb1)=GlobalConc(problem,results)
   #print t0, tFp
   #print ts
@@ -565,6 +602,8 @@ def runPDE(\
     # predict 'forward' solution from ode model '
     #tf = t0+dt
     t0 = tf - dt
+    print "t0 ", t0, "tf ", tf
+
     (statesF,stateFlux,dummy,dummy) = odeModel.propagateStates(t0,tf,dt)
     print "ODE statesF: [mM] ", statesF
     print "ODE statesF: [uM] ", statesF[Cai_pde_idx] * mM_to_uM 
@@ -596,8 +635,8 @@ def runPDE(\
       #jboundaryExpr.j *= dt # I think this is already reflected in PDE weak form 
       #jvolExpr.j *= dt # I think this is already reflected in PDE weak form 
 
-      print "sdfdsf %f [uM/ms] " % ((jboundaryExpr.Cai.j / vol_sa_ratio + jvolExpr.Cai.j)*mM_to_uM)
-      print "sdfdsf %e [M/ms] " % ((jboundaryExpr.Cai.j / vol_sa_ratio + jvolExpr.Cai.j)) 
+      #print "sdfdsf %f [uM/ms] " % ((jboundaryExpr.Cai.j / vol_sa_ratio + jvolExpr.Cai.j)*mM_to_uM)
+      #print "sdfdsf %e [M/ms] " % ((jboundaryExpr.Cai.j / vol_sa_ratio + jvolExpr.Cai.j)) 
       print "WARNING: jSR and dCa are lumped tother into jVold"
       jSRs.append(odeModel.jSR)
 
@@ -628,6 +667,8 @@ def runPDE(\
     print "jboundary [uM/ms]", jboundary*mM_to_uM
     print "jvol [mM/ms] ", jvol
     print "jvol [uM/ms] ", jvol *mM_to_uM*mM_to_uM
+
+    print "##\n## WARNING: we are not updating CaTnC!!!\n##"
 
 
     # solve system
@@ -660,9 +701,12 @@ def runPDE(\
     ## store values in ODE  
     #ts.append(tf)
     t0 = tf
-    if(debugLevel==100):
+    #if(debugLevel> 0):
+    if(1): 
+      print "WARNING: skipping conc updatee"
       1
     else:
+      # TODO I CAN ONLY DO THIS ONCE TnC is appropriately updated
       odeModel.updateStates(c1,cb1)
 
 
@@ -671,6 +715,7 @@ def runPDE(\
 
 #  print "WARNING: merge into plotting"
   # convert lists into arrays
+  results.ts = ts
   results.cFs = np.asarray(cFs)
   results.cs = np.asarray(results.c)[:,Cai_pde_idx]
   results.cbs = np.asarray(results.c)[:,CaTnC_pde_idx]
@@ -754,7 +799,7 @@ def TestODE():
 def TestODE2():
   t0 = 0.
   tFp = 1e3 # [ms] 
-  dt=50
+  dt=25 
 
   odeModel = ODEModel()
   odeModel.setup()
@@ -767,21 +812,25 @@ def TestODE2():
     t0 = tf - dt 
     (statesF,stateFlux,dummy,dummy) = odeModel.propagateStates(t0,tf,dt)
     jSum = odeModel.jBoundary + odeModel.jVol
-    print odeModel.jBoundary[odeModel.Cai_ode_idx]
-    print odeModel.jVol[odeModel.Cai_ode_idx]
+    #print odeModel.jBoundary[odeModel.Cai_ode_idx]
+    #print odeModel.jVol[odeModel.Cai_ode_idx]
     jConcs.append(stateFlux[odeModel.Cai_pde_idx])
     jSums.append(jSum[odeModel.Cai_ode_idx])
+  jConcs = np.asarray(jConcs)
+  jSums  = np.asarray(jSums)
 
 
-  print "Not necessary sure these should agree, since jConc reflects change in TnC"
-
-  plt.plot(jConcs,label="jConc") 
-  plt.plot(jSums,label="j individual") 
-  plt.legend()
-  print "WARNING: not a unit test"
+  plt.plot(jConcs,'b-',label="Flux based on change in concentration") 
+  plt.plot(jSums,'b.',label="Sum of individual fluxes") 
+  plt.legend(loc=0)
   plt.gcf().savefig("testODE2.png") 
 
-def loop(p,duration=1e3,asserts=True,case="noCK",mode="separateFlux"):
+  assert( meanSquaredError(jConcs,jSums) < 1e10), "jConc/jSums don't agree"
+
+def meanSquaredError(a,b):
+  return np.mean((a-b)**2)
+
+def loop(p,duration=1e3,asserts=True,case="default",mode="separateFlux"):
   if(debugLevel>0):
     duration=1e3
     
@@ -794,7 +843,7 @@ def loop(p,duration=1e3,asserts=True,case="noCK",mode="separateFlux"):
   import cPickle as pickle
   resultsi.pickleName = case+".pkl"
   data1 = {'results':resultsi}
-  data1 = {'cs':resultsi.cs,'cbs':resultsi.cbs,'jSRs':resultsi.jSRs}
+  data1 = {'ts':resultsi.ts,'cs':resultsi.cs,'cbs':resultsi.cbs,'jSRs':resultsi.jSRs}
   output = open(resultsi.pickleName,    'wb')
   pickle.dump(data1, output)
   output.close()
@@ -803,12 +852,28 @@ def loop(p,duration=1e3,asserts=True,case="noCK",mode="separateFlux"):
   return problemi, resultsi
 
 
+# Basic test + consistency 
 def Test1(do="all"):
     cparams.plot = False
     pi = cparams()
-    #problemi, resultsi = loop(pi,case="fullCK",mode="totalFlux")  
-    problemi, resultsi = loop(pi,case="fullCK",mode="separateFlux") 
+
+    # Kmf = 0.246e-3 [mM]
+    # stim_period = 300 [ms]  
+    #print pi.odeParams[param_indices("Kmf")]
+
+    #problemi, resultsi = loop(pi,case="test1",mode="totalFlux")  
+    problemi, resultsi = loop(pi,case="test1",mode="separateFlux") 
+
+    # check on first/last [Ca] entry 
+    i=0
+    #print resultsi.cs[i] - 0.000299
+    assert(np.abs(resultsi.cs[i] - 0.000299) < 1e-6), "FAIL: " % resultsi.cs[i]
+    i=-1
+    assert(np.abs(resultsi.cs[i] - 0.000182) < 1e-6), "FAIL: " % resultsi.cs[i]
+    #print resultsi.cs[-1]
+    print '## PASSED Test1' 
     
+    return (problemi, resultsi)
 
   
 
@@ -848,9 +913,10 @@ Notes:
       debugLevel=10
       Test1()
     if(arg=="-test1"):
-      Test1()
+      1
     if(arg=="-validation"):
       #TestODE()
-      TestODE2()
+      #TestODE2()
+      Test1()
       
 

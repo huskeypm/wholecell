@@ -26,7 +26,6 @@ import numpy as np
 class empty:pass 
 
 print "WARNING: ode idx is hardcoded" 
-print "WARNING: This model is almost certinaly wrong (dbl check fluxes)" 
 Cai_ode_idx = 37 
 
 
