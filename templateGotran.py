@@ -14,8 +14,6 @@ print'WARNING: buffering by TnC in cytosol is not correct in this model!!!'
 ## TODO separate buffering in vol from SR flux 
 
 ## TODO can't update Ca concentrations, for some reason, without breaking ODE  
-## TODO use real geomrtry 
-## TODO modify Kmf to agree w guess
 
 
 import sys
@@ -50,7 +48,9 @@ nStates = len(stateNames)
 Cai_pde_idx=0
 CaTnC_pde_idx=1
 
-debugLevel=0
+global debugLevel
+#debugLevel=15
+debugLevel=0 
 
 # <codecell>
 
@@ -122,7 +122,6 @@ class ODEModel():
   
     ## get steady state first 
     ## TODO CHECK THIS STEADY STATE W PLOITS 
-    print "WARHING: CHECK ME" 
     statesSS= odeint(model.rhs,\
       initvals,tstepsSS,(self.params,))
     finalStateSS = statesSS[-1::,]
@@ -226,9 +225,58 @@ class ODEModel():
 
 
 ## TEMPLATE adjust to your liking 
-def PlotSlice(problem,results,filename,mode="ATP",anisotropic=False):
-  1 
-  # copy from atpSarcomereVanBeek if needed 
+from scipy.interpolate import griddata
+def PlotSlice(problem,results):
+  
+  
+  (s,s1) = results.u.split(deepcopy=True)
+  #print np.max(np.asarray(s.vector()))
+  
+  # grid dim 
+  p=problem.params
+  p.xMin = -81; p.xMax = 119;
+  p.yMin = -62; p.yMax = 66;
+  p.zMin = -40; p.zMax = 55;
+  
+  ## Line 
+  res = p.res 
+  (gx,gy,gz) = np.mgrid[\
+      0:0:1j,\
+      p.yMin:p.yMax:(res*1j),\
+      0:0:1j]
+  
+  line = griddata(problem.mesh.coordinates(),s.vector(),(gx,gy,gz))    
+  line[ np.isnan(line) ] = 0.
+  line = np.ndarray.flatten(line) 
+  gy = np.ndarray.flatten(gy) 
+  plt.figure()
+  plt.plot(gy,line)
+  plt.gcf().savefig("lineframe.png")
+  
+  ## 2D slice 
+  (gx,gy,gz) = np.mgrid[\
+      p.xMin:p.xMax:(res*1j),\
+      0:0:1j,\
+      p.zMin:p.zMax:(res*1j)]
+  
+  img = griddata(problem.mesh.coordinates(),s.vector(),(gx,gy,gz))    
+  img[ np.isnan(img) ] = 0.
+      
+  plt.figure()
+  plt.pcolormesh(np.reshape(gx,[res,res]).T,np.reshape(gz,[res,res]).T,np.reshape(img,[res,res]).T,\
+             cmap=plt.cm.RdBu)
+  
+
+  # storing results 
+  #try:
+  #  results==0
+  #  results.interpd = []
+  #except:
+  #  1 
+
+  results.interpd.append(line)                
+  #results.gy = gy
+
 
 def GlobalConc(problem,results):
   # check values
@@ -237,8 +285,13 @@ def GlobalConc(problem,results):
   u = results.u
   t = results.t
   for i,ele in enumerate(split(u)):
-    tot = assemble(ele*dx,mesh=mesh)
-    vol = assemble(Constant(1.)*dx,mesh=mesh)
+    if(problem.geometry=="simple"): 
+      tot = assemble(ele*dx,mesh=mesh)
+      vol = assemble(Constant(1.)*dx,mesh=mesh)
+    else: 
+      tot = assemble(ele*dx(1),mesh=mesh)
+      vol = assemble(Constant(1.)*dx(1),mesh=mesh)
+
     results.uAvg[i]=tot/vol
     print "T %f [ms] Conc(%d) %f [mM]" % (t,i,results.uAvg[i])
     print "T %f [ms] Conc(%d) %f [uM]" % (t,i,results.uAvg[i]*mM_to_uM)
@@ -262,8 +315,9 @@ def Report(problem,results,anisotropic=False):
   
 
   # extract values at certain regions
-  ## copy from atpSarcomereVanBeek if needed 
-  
+  if(problem.geometry!="simple"): 
+    PlotSlice(problem,results) 
+
 
 # <codecell>
 
@@ -287,9 +341,7 @@ class cparams:
   tag = ""
   # 
   ## TODO rename 
-  Caiasedistromode="uniform"
-  ckdistromode="uniform"
-  #Caiasedistromode="nonuniform"
+  distroVolFluxes="uniform"
 
   # Chose value from smallest spacing (maximal contraction) 
   #16.43 &   [0.57  0.58  0.82] & 2.4 & 0.45 \\ 
@@ -304,6 +356,7 @@ class cparams:
   DCaTnC=0.000 # [um^2/ms]
 
   # for half-sacomere mesh 
+  res = 100 # for plots  
   xMax= 2.   # longitudinal (along sarco)
   yMax = 2.0 # circumferential 
   #zMax = 100.  # transverse (along TT) 
@@ -342,18 +395,72 @@ class MyEqn(NonlinearProblem):
         assemble(self.a, tensor=A, reset_sparsity=self.reset_sparsity)
         self.reset_sparsity = False
 
-## This represents location of dyadic cleft 
+## BC appropriate for simple 'cube' geometry    
+# Label one side of box as SSL; rest reflective
 class SSL(SubDomain): 
   def inside(self,x,on_boundary):
     result = x[1]>(self.params.yMax-DOLFIN_EPS) and on_boundary
     #print x,result 
     return result
 
+## BC appropriate for real geometry 
+# Label entire boundary as SSL 
+class SSLReal(SubDomain): 
+  def inside(self,x,on_boundary):
+    return on_boundary
+  
+
 # <codecell>
 
 ##
 ## Functions
 ## 
+
+# prepare simple/real geometries 
+def MeshPrep(problem,geometry="simple"):
+
+  # simple cube geometry 
+  if(geometry=="simple"): 
+    if(params.meshdebug):
+     # mesh = UnitCube(2,2,2)
+      mesh = UnitCube(10,12,10)
+    else:
+      mesh = UnitCube(25,25,10)
+      #mesh = UnitCube(25,25,10)
+    # rescale mesh to size of sarcomere 
+    mesh.coordinates()[:]= np.array([params.xMax,params.yMax,params.zMax])* mesh.coordinates()
+
+    # boundary def 
+    boundary = SSL()                                        
+
+  # real whole myocyte geometry
+  elif (geometry!="simple"): 
+    mesh = Mesh(geometry) 
+
+    # boundary def 
+    boundary = SSLReal()                                        
+    # adjust zMin/zMax for linescans 
+    # determined by looking at paraview file 
+    problem.params.xSlice = -31
+    problem.params.ySlice =  7   
+    problem.params.yMin = -62.
+    problem.params.yMin = 66.
+
+  else:
+    raise RuntimeError(geometry+"unknown") 
+
+
+  ## boundary                    
+  subdomains = MeshFunction("uint",mesh,2)                 
+  boundary.params = problem.params                               
+  boundary.mark(subdomains,sslMarker)                   
+  ds = Measure("ds")[subdomains] 
+
+  # store
+  problem.mesh = mesh 
+  problem.geometry = geometry 
+
+  return (mesh, subdomains, boundary,ds)
 
 
 ## propogates a concentration variable in a PDE according to an ODE model 
@@ -367,7 +474,13 @@ def runPDE(\
   mode="totalFlux", 
   anisotropic=True,
   duration=1e3,		# duration [ms] 
+  geometry="simple",    # use 'simple' cube geometry 
+  outputName="output",
   asserts=False): 
+
+  ## Misc 
+  problem = empty()
+  problem.params = params
 
   ##
   ## Time params 
@@ -377,7 +490,10 @@ def runPDE(\
   tFode= 3e3 # [ms] # for 300 ms stim 
   if(debugLevel>0):
     tFode= 1e3 # [ms]
-  
+  if(debugLevel==15):
+    tFode =1e2
+
+    
   # pde steps for run
   t0pde=tFode
   tFpde=t0pde + duration
@@ -389,20 +505,23 @@ def runPDE(\
   ## ODE
   ##
   ## Initialize model/get steadystate 
-  odeModel = ODEModel(t0=t0ode,tF=tFode)
   odeModel = ODEModel(t0=t0ode,tF=tFode,params=params.odeParams) 
-  odeModel.setup() 
+  if(debugLevel!=15):
+    odeModel.setup() 
   #print odeModel.getStates()
   # here we propagate model just so that we can compare exact and PDE solutions 
   # but we'll need to 'reset' the statesPrev variable
-  statesPrev = np.copy(odeModel.statesPrev)
-  (dummy,dummy,tstepsExact,statesTrajExact)= odeModel.propagateStates(\
-    t0pde,tFpde,incr=1e4)
-  odeModel.statesPrev = statesPrev
+    statesPrev = np.copy(odeModel.statesPrev)
+    (dummy,dummy,tstepsExact,statesTrajExact)= odeModel.propagateStates(\
+      t0pde,tFpde,incr=1e4)
+    odeModel.statesPrev = statesPrev
+  else:
+    odeModel.statesPrev = model.init_values()
+
   # get initial concentrations from ODE model 
   c0i,cb0i = odeModel.getStates()
 
-  if(debugLevel==100):
+  if(debugLevel==100 or debugLevel==15):
     c0i = 1; cb0i = 1; # [mM] 
   
   ##
@@ -410,14 +529,7 @@ def runPDE(\
   ##
 
   ## setup PDE problem 
-  if(params.meshdebug):
-   # mesh = UnitCube(2,2,2)
-    mesh = UnitCube(10,12,10)
-  else:
-    mesh = UnitCube(25,25,10)
-    #mesh = UnitCube(25,25,10)
-  # rescale mesh to size of sarcomere 
-  mesh.coordinates()[:]= np.array([params.xMax,params.yMax,params.zMax])* mesh.coordinates()
+  (mesh, subdomains, boundary,ds)= MeshPrep(problem,geometry)
 
   V = FunctionSpace(mesh,"CG",1)
   ME = V *V
@@ -481,10 +593,15 @@ def runPDE(\
 
 
   ## PDE weak form 
-  # diffusion term  
-  RHS1 = -inner(Dij_Cai*grad(c),grad(q))*dx
-  # TNC has Dij=0. 
-  RHS2 = -inner(Dij_CaTnC*grad(cb),grad(v))*dx
+  ## TODO is there a better way to change dx to dx(1) for all ? 
+  if(geometry=="simple"):
+    # diffusion term  
+    RHS1 = -inner(Dij_Cai*grad(c),grad(q))*dx
+    # TNC has Dij=0. 
+    RHS2 = -inner(Dij_CaTnC*grad(cb),grad(v))*dx
+  else: 
+    RHS1 = -inner(Dij_Cai*grad(c),grad(q))*dx(1) 
+    RHS2 = -inner(Dij_CaTnC*grad(cb),grad(v))*dx(1)
 
   # buffers (TODO double check, since I don't think this is correct) 
   # based on coupledReactionDiffusion.py in my scripts mercurial repo 
@@ -500,31 +617,42 @@ def runPDE(\
       [-kp,km],     # s
       [kp,-km]      # p
     ])
-    RHS1 += (R[0,0]*(bT-cb)*c*q + R[0,1]*cb*q)*dx
-    RHS2 += (R[1,0]*(bT-cb)*c*v + R[1,1]*cb*v)*dx
+    if(geometry=="simple"): 
+      RHS1 += (R[0,0]*(bT-cb)*c*q + R[0,1]*cb*q)*dx
+      RHS2 += (R[1,0]*(bT-cb)*c*v + R[1,1]*cb*v)*dx
+    else: 
+      RHS1 += (R[0,0]*(bT-cb)*c*q + R[0,1]*cb*q)*dx(1) 
+      RHS2 += (R[1,0]*(bT-cb)*c*v + R[1,1]*cb*v)*dx(1) 
 
   # volumetric flux
   # This is a work-around (see below)
   # Caiase 
   ## TODO rename as SERCAdistro
-  if(params.Caiasedistromode=="uniform"):
-    RHS1 +=  jvolExpr.Cai*q*dx
-    # no vol flux on tnC
-    RHS2 += -jvolExpr.CaTnC*v*dx
+  if(params.distroVolFluxes=="uniform"):
+    if(geometry=="simple"): 
+      RHS1 +=  jvolExpr.Cai*q*dx
+      # no vol flux on tnC
+      RHS2 += -jvolExpr.CaTnC*v*dx
+    else: 
+      RHS1 +=  jvolExpr.Cai*q*dx(1) 
+      RHS2 += -jvolExpr.CaTnC*v*dx(1) 
   else:
     raise RuntimeError("ouch") 
   
     
   ## boundary
-  subdomains = MeshFunction("uint",mesh,2)
-  boundary = SSL()
-  boundary.params = params 
-  boundary.mark(subdomains,sslMarker)
-  ds = Measure("ds")[subdomains]
+  #subdomains = MeshFunction("uint",mesh,2)
+  #boundary = SSL()
+  #boundary.params = params 
+  #boundary.mark(subdomains,sslMarker)
+  #ds = Measure("ds")[subdomains]
 
 
   # vol/sa ratio to rescale surf. fluxes
-  vol = assemble(Constant(1.)*dx,mesh=mesh)
+  if(geometry=="simple"):
+    vol = assemble(Constant(1.)*dx,mesh=mesh)
+  else: 
+    vol = assemble(Constant(1.)*dx(1),mesh=mesh)
   sa  = assemble(Constant(1.)*ds(sslMarker),mesh=mesh)
   vol_sa_ratio = vol/sa
   print "vol_sa_ratio  [um]",  vol_sa_ratio
@@ -539,8 +667,12 @@ def runPDE(\
 
   # Add in time dependence 
   # (dc/dt) = RHS  --> c1-c0 - dt * RHS = 0
-  L1 = c*q*dx - c0*q*dx - dt * RHS1
-  L2 = cb*v*dx - cb0*v*dx - dt * RHS2
+  if(geometry=="simple"): 
+    L1 = c*q*dx - c0*q*dx - dt * RHS1
+    L2 = cb*v*dx - cb0*v*dx - dt * RHS2
+  else: 
+    L1 = c*q*dx(1) - c0*q*dx(1) - dt * RHS1
+    L2 = cb*v*dx(1) - cb0*v*dx(1) - dt * RHS2
   L = L1 + L2
 
   # Compute directional derivative about u in the direction of du (Jacobian)
@@ -550,17 +682,18 @@ def runPDE(\
 
   # Create nonlinear problem and Newton solver
   # not really needed, but will keep here to generalize later 
-  problem = MyEqn(a, L)
+  problem.myeq = MyEqn(a, L)
   solver = NewtonSolver("lu")
   solver.parameters["convergence_criterion"] = "incremental"
   solver.parameters["relative_tolerance"] = 1e-6
 
   # Output file
-  file = File("output.pvd", "compressed")
+  file = File(outputName +".pvd", "compressed")
 
   # Step in time
   t = 0.0
   results = empty()
+  results.interpd = []
   results.t=t  
 #  problem = empty()
 
@@ -569,9 +702,7 @@ def runPDE(\
   #results.x_midsarc_aband = np.array([0.50,0.50,0.5])
   results.ts = []
   results.c = []
-  problem.mesh=mesh
   problem.u = u
-  problem.params = params
 
   results.ME = ME
   results.u = u
@@ -594,6 +725,8 @@ def runPDE(\
   #print "ts", ts
   
   (c1,cb1)=GlobalConc(problem,results)
+
+
   #print t0, tFp
   #print ts
   for i,tf in enumerate(ts):
@@ -623,8 +756,8 @@ def runPDE(\
     # separate fluxes is useful when volumetric fluxes are heterogeneously distributed
     elif(mode=="separateFlux"): 
       # apply fluxes 
-      # TODO need to generalize 
       jboundaryExpr.Cai.j =Jboundary(odeModel.jBoundary[odeModel.Cai_ode_idx],vol_sa_ratio=vol_sa_ratio)
+      # NOTE: jVol contains both jSR and buffer flux 
       jvolExpr.Cai.j =odeModel.jVol[odeModel.Cai_ode_idx]
       #print jboundaryExpr.Cai.j / vol_sa_ratio 
       #print jvolExpr.Cai.j 
@@ -637,7 +770,12 @@ def runPDE(\
 
       #print "sdfdsf %f [uM/ms] " % ((jboundaryExpr.Cai.j / vol_sa_ratio + jvolExpr.Cai.j)*mM_to_uM)
       #print "sdfdsf %e [M/ms] " % ((jboundaryExpr.Cai.j / vol_sa_ratio + jvolExpr.Cai.j)) 
-      print "WARNING: jSR and dCa are lumped tother into jVold"
+      
+      # store SR flux 
+      #print "verify that jSR!=jVol and jSR == entry from odeModel"
+      #print odeModel.jSR 
+      #print jvolExpr.Cai.j
+      #quit()
       jSRs.append(odeModel.jSR)
 
 
@@ -661,7 +799,10 @@ def runPDE(\
     totjs = assemble(jboundaryExpr.Cai*ds(sslMarker),mesh=mesh)
     jboundary = totjs/sa * 1/vol_sa_ratio
     print "WARNING: I probably need to constrain jvolExpr s.t. the assembled value is equal to the ODE value"
-    totjs = assemble(jvolExpr.Cai*dx,mesh=mesh)
+    if(geometry=="simple"):
+      totjs = assemble(jvolExpr.Cai*dx,mesh=mesh)
+    else: 
+      totjs = assemble(jvolExpr.Cai*dx(1),mesh=mesh)
     jvol = totjs/vol
     print "jboundary [mM/ms]", jboundary
     print "jboundary [uM/ms]", jboundary*mM_to_uM
@@ -673,7 +814,7 @@ def runPDE(\
 
     # solve system
     u0.vector()[:] = u.vector()
-    solver.solve(problem, u.vector())
+    solver.solve(problem.myeq, u.vector())
     if(params.pvd):
       file << (u,tf)
 
@@ -830,26 +971,69 @@ def TestODE2():
 def meanSquaredError(a,b):
   return np.mean((a-b)**2)
 
-def loop(p,duration=1e3,asserts=True,case="default",mode="separateFlux"):
+def loop(p,duration=1e3,asserts=True,case="default",\
+  mode="separateFlux",geometry="simple"):
+  print "Debuglevel ", debugLevel
   if(debugLevel>0):
     duration=1e3
+  if(debugLevel==15):
+    duration = 1e2
     
   p.tag = case
   problemi,resultsi= runPDE(params=p,mode=mode,anisotropic=False,\
-                         asserts=asserts,duration=duration)
+                         asserts=asserts,duration=duration,outputName=case,\
+                         geometry=geometry)
 
+  #if(debugLevel==15):
+  #if(1):
+  #  return problemi, resultsi
 
   # pickle 
   import cPickle as pickle
   resultsi.pickleName = case+".pkl"
-  data1 = {'results':resultsi}
-  data1 = {'ts':resultsi.ts,'cs':resultsi.cs,'cbs':resultsi.cbs,'jSRs':resultsi.jSRs}
+  #data1 = {'results':resultsi}
+  data1 = {'ts':resultsi.ts,'cs':resultsi.cs,'cbs':resultsi.cbs,'jSRs':resultsi.jSRs,\
+    'interpd':resultsi.interpd} # ,'gy':gy}
   output = open(resultsi.pickleName,    'wb')
   pickle.dump(data1, output)
   output.close()
  
   
   return problemi, resultsi
+
+# Test using 'real' geometry 
+def Test2():
+    cparams.plot = False
+    pi = cparams()
+
+
+    global debugLevel 
+    #debugLevel = 15
+
+
+    #problemi, resultsi = loop(pi,case="test1",mode="totalFlux")  
+    case = "test2"
+    problemi, resultsi = loop(pi,case=case, mode="separateFlux",\
+      geometry="/home/huskeypm/localTemp/130215/huge.xml.gz") 
+
+    # do linescans
+    # Crappy way of doing this 
+    #fr = len(resultsi.interpd)
+    #lineScan =  np.zeros((fr,pi.res))
+    #for i,ar in enumerate(resultsi.interpd): 
+    #  lineScan[i,:] = ar[:] 
+    if(len(resultsi.interpd)<2):
+      return 
+    lineScan = np.asarray(resultsi.interpd)
+
+    #X = np.outer(results.ts, np.ones( np.shape(l)[0]))
+    #Y = np.outer(results.gz, np.ones( np.shape(l)[0]))
+    #plt.pcolormesh(X.T,Y.T,l)
+    plt.figure()
+    plt.pcolormesh(lineScan) 
+    #plt.clim()
+    plt.colorbar()
+    plt.savefig(case+"linescan.png")
 
 
 # Basic test + consistency 
@@ -912,11 +1096,11 @@ Notes:
       #debugLevel=100
       debugLevel=10
       Test1()
-    if(arg=="-test1"):
-      1
+    if(arg=="-test2"):
+      Test2()
     if(arg=="-validation"):
-      #TestODE()
-      #TestODE2()
+      TestODE()
+      TestODE2()
       Test1()
       
 
