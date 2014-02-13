@@ -1014,8 +1014,53 @@ def Test2():
     #problemi, resultsi = loop(pi,case="test1",mode="totalFlux")  
     case = "test2"
     problemi, resultsi = loop(pi,case=case, mode="separateFlux",\
-      geometry="/home/huskeypm/localTemp/130215/huge.xml.gz") 
+      #geometry="/home/huskeypm/localTemp/130215/huge.xml.gz") 
+      geometry="huge.xml.gz") 
 
+    dolinescan(case,resultsi)
+
+def Biophys(caseNum):
+  #%%capture captured
+  cparams.plot = False
+  duration = 1e3
+  #M_to_mM=1e3
+  Kmf_guess = 5.e-7*M_to_mM
+
+  
+  # see 140213_ceholski.tex
+  Kmfs = np.array([0.85,1.91,2.48,1.00]) * Kmf_guess
+  names = ["R9C","WT","R9Q","NoPLB"]
+  
+  print "Running case %d " % caseNum
+  if(caseNum==1): 
+    # case 1 
+    p1 = gt.cparams()
+    p1.odeParams[gt.param_indices("Kmf")] = Kmfs[0]                                                                
+    problem1, results1 = gt.loop(p1,case=names[0],duration=duration);
+                               
+  elif(caseNum==2): 
+    # case 2 
+    p2 = gt.cparams()
+    p2.odeParams[gt.param_indices("Kmf")] = Kmfs[1]                                                                 
+    problem2, results2 = gt.loop(p2,case=names[1],duration=duration);
+                               
+  elif(caseNum==3): 
+    # case 3 
+    p3 = gt.cparams()
+    p3.odeParams[gt.param_indices("Kmf")] = Kmfs[2]                                                                
+    problem3, results3 = gt.loop(p3,case=names[2],duration=duration);
+                               
+  elif(caseNum==4): 
+    p4 = gt.cparams()
+    p4.odeParams[gt.param_indices("Kmf")] = Kmfs[3]                                                                
+    problem4, results4 = gt.loop(p3,case=names[3],duration=duration);
+  else: 
+   raise RuntimeError(caseNum + " unknown")
+                               
+                               
+
+
+def dolinescan(case,resultsi)
     # do linescans
     # Crappy way of doing this 
     #fr = len(resultsi.interpd)
@@ -1034,6 +1079,8 @@ def Test2():
     #plt.clim()
     plt.colorbar()
     plt.savefig(case+"linescan.png")
+
+
 
 
 # Basic test + consistency 
@@ -1096,8 +1143,12 @@ Notes:
       #debugLevel=100
       debugLevel=10
       Test1()
+    if(arg="-biophys"): 
+      Biophys(sys.argv[i+1])
+
     if(arg=="-test2"):
       Test2()
+
     if(arg=="-validation"):
       TestODE()
       TestODE2()
