@@ -243,9 +243,9 @@ def PlotSlice(problem,results):
   ## Line 
   res = p.res 
   (gx,gy,gz) = np.mgrid[\
-      xSlice:xSlice:1j,\
+      p.xSlice:p.xSlice:1j,\
       p.yMin:p.yMax:(res*1j),\
-      zSlice:zSlice:1j]
+      p.zSlice:p.zSlice:1j]
   
   line = griddata(problem.mesh.coordinates(),s.vector(),(gx,gy,gz))    
   line[ np.isnan(line) ] = 0.
@@ -510,13 +510,21 @@ def runPDE(\
 
     
   # pde steps for run
-  t0pde=tFode
-  tFpde=t0pde + duration
   dt = 10. # [ms]
   if(debugLevel==100):
     dt = 1.  # [ms]
   if(debugLevel==1):
     dt = 50.
+  print "HACK"
+  #duration = 3e2
+  #dt= 25
+  t0pde=tFode
+  tFpde=t0pde + duration
+
+  #print "HACK!!!!"
+  #duration=1e2    #
+  #dt = 25
+
 
   ##
   ## ODE
@@ -1094,8 +1102,8 @@ def Biophys(caseNum):
   names = ["R9C","WT","R9Q","NoPLB"]
   geometry = "../huge.xml.gz"
 
-  print "WARNING: doing simple"
-  geometry="simple"
+  #print "WARNING: doing simple"
+  #geometry="simple"
   
   caseNum = int(caseNum)
   print "Running case %d " % caseNum
