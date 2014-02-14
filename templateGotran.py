@@ -335,6 +335,9 @@ class cparams:
   plot=True
   pvd = False
  
+  localFluxWeighting = True  # TODO should be false but doing this for thr mean time
+  localFluxWeighting = False # TODO should be false but doing this for thr mean time
+
   # copy over ODE models parameters
   odeParams = model.default_parameters() 
   
@@ -420,6 +423,7 @@ class SSLReal(SubDomain):
 # prepare simple/real geometries 
 def MeshPrep(problem,geometry="simple"):
 
+  params = problem.params 
   # simple cube geometry 
   if(geometry=="simple"): 
     if(params.meshdebug):
@@ -493,6 +497,10 @@ def runPDE(\
     tFode= 1e3 # [ms]
   if(debugLevel==15):
     tFode =1e2
+  if(debugLevel>0):
+    duration=5e2
+  if(debugLevel==15):
+    duration = 1e2
 
     
   # pde steps for run
@@ -501,6 +509,8 @@ def runPDE(\
   dt = 10. # [ms]
   if(debugLevel==100):
     dt = 1.  # [ms]
+  if(debugLevel==1):
+    dt = 50.
 
   ##
   ## ODE
@@ -583,6 +593,16 @@ def runPDE(\
   jvolExpr.Cai = Expression("j",j=0)
   jvolExpr.CaTnC = Expression("j",j=0)
 
+  # for local Ca-weighted fluxes 
+  jTestExpr = empty()
+  # idea here is that we take a globally-predicted 'j' and weight
+  # it by the ratio of caLoc/caAverage. Note that for the expression
+  # we'll leave caLocal=1, but we'll include caLocal instead in the 
+  # weak form:   jtestExpr*c*q*dx
+  jTestExpr.Cai = Expression("j*caLocal/caAverage",j=0,caLocal=1,caAverage=0)
+  jTestExpr.CaTnC = Expression("0",j=0)
+ # 
+
   ## Decide on diff const 
   Dii = params.Disotropic
 
@@ -630,13 +650,29 @@ def runPDE(\
   # Caiase 
   ## TODO rename as SERCAdistro
   if(params.distroVolFluxes=="uniform"):
+    
     if(geometry=="simple"): 
-      RHS1 +=  jvolExpr.Cai*q*dx
+      dxT = dx
+    else:
+      dxT = dx(1)
+
+    if params.localFluxWeighting:
+      print "WARNING: localFluxWeighting is NOT a physiologically-sound approach..." 
+      # *c  is part of Expression flux= j*c/Cavg
+      srcCai  = jTestExpr.Cai*c
+      srcCaTnC= jTestExpr.CaTnC*cb
+      #print "ERROR: this is wrong"
+      #srcCaTnC= -srcCai              
+      
+    else:
+      srcCai =  jvolExpr.Cai
       # no vol flux on tnC
-      RHS2 += -jvolExpr.CaTnC*v*dx
-    else: 
-      RHS1 +=  jvolExpr.Cai*q*dx(1) 
-      RHS2 += -jvolExpr.CaTnC*v*dx(1) 
+      srcCaTnC = jvolExpr.CaTnC
+
+
+    # now add to weak form 
+    RHS1 += srcCai*q*dxT
+    RHS2 += srcCaTnC*v*dxT
   else:
     raise RuntimeError("ouch") 
   
@@ -778,7 +814,10 @@ def runPDE(\
       #print jvolExpr.Cai.j
       #quit()
       jSRs.append(odeModel.jSR)
+      print "THIS IS WRONG I THINK ", odeModel.jSR
 
+      #print "WRNING: a test"
+      #jvolExpr.CaTnC.j = -jvolExpr.Cai.j
 
       # tests to make sure implemented correctly 
       #print "WARNING: hack " 
@@ -794,17 +833,19 @@ def runPDE(\
       #jboundaryExpr.j =0.
       #jvolCaiaseExpr.j = CaiFlux
       
+    ## update weighted fluxes (only 'applied' if params.localWeightedFluxes=True)
+    print "WARNING: not  great way of doing this"
+    jTestExpr.Cai.j = jvolExpr.Cai.j
+    jTestExpr.Cai.caAverage = c1                 
+    
       
-
     # get integrated fluxes 
-    totjs = assemble(jboundaryExpr.Cai*ds(sslMarker),mesh=mesh)
-    jboundary = totjs/sa * 1/vol_sa_ratio
-    print "WARNING: I probably need to constrain jvolExpr s.t. the assembled value is equal to the ODE value"
-    if(geometry=="simple"):
-      totjs = assemble(jvolExpr.Cai*dx,mesh=mesh)
-    else: 
-      totjs = assemble(jvolExpr.Cai*dx(1),mesh=mesh)
-    jvol = totjs/vol
+    totjbs = assemble(jboundaryExpr.Cai*ds(sslMarker),mesh=mesh)
+    jboundary = totjbs/sa * 1/vol_sa_ratio
+    #print totjbs
+    jvol= assemble(srcCai*dxT,mesh=mesh)
+    #print jvol  
+
     print "jboundary [mM/ms]", jboundary
     print "jboundary [uM/ms]", jboundary*mM_to_uM
     print "jvol [mM/ms] ", jvol
@@ -862,22 +903,26 @@ def runPDE(\
   results.cs = np.asarray(results.c)[:,Cai_pde_idx]
   results.cbs = np.asarray(results.c)[:,CaTnC_pde_idx]
   results.jSRs = np.asarray(jSRs)
+
+  #if(debugLevel>0):       
+  #  return(problem,results) 
   
 #
 #  ## Plot 
-  if(0): 
+  if(1): 
     fig=plt.figure()
     ax1 = fig.add_subplot(111)
     ax1.set_title("[Cai]/[CaTnC] vs time") 
-    ax1.plot(tstepsExact,statesTrajExact[:,Cai_pde_idx],label="[Cai] Exact")
-    ax1.plot(ts,results.cs,'k.',label="[Cai] (PDE) ")
+    #ax1.plot(tstepsExact,statesTrajExact[:,Cai_pde_idx],label="[Cai] Exact")
+    # [1:] since I call GlobalConc once before loop 
+    ax1.plot(ts,results.cs[1:],'k.',label="[Cai] (PDE) ")
     ax1.plot(ts,results.cFs,label="[Cai]F (forward ODE solutions)")
     ax1.set_ylabel("[Cai] [uM]") 
     ax1.set_xlabel("t [ms]") 
     ax1.legend(loc=0)
     ax2 = ax1.twinx()
     ax2.set_ylabel("[CaTnC] [uM]") 
-    ax2.plot(ts,results.cbs,'r-.',label="cb (PDE) ")
+    ax2.plot(ts,results.cbs[1:],'r-.',label="cb (PDE) ")
     plt.gcf().savefig(mode+"conc.png")
 #
 #
@@ -914,11 +959,6 @@ def runPDE(\
 ### Testing plotting etc 
 ###
   
-# plots isotropic/anisotropic results
-def plotting(params,resultsiso,resultsaniso):
-  1
-  # see CaiSarc...py
-
 # Simple run to plot what Concntrations s.b. 
 def TestODE():
   t0 = 0.
@@ -975,10 +1015,6 @@ def meanSquaredError(a,b):
 def loop(p,duration=1e3,asserts=True,case="default",\
   mode="separateFlux",geometry="simple"):
   print "Debuglevel ", debugLevel
-  if(debugLevel>0):
-    duration=1e3
-  if(debugLevel==15):
-    duration = 1e2
     
   p.tag = case
   problemi,resultsi= runPDE(params=p,mode=mode,anisotropic=False,\
@@ -1029,6 +1065,13 @@ def Biophys(caseNum):
   
   # see 140213_ceholski.tex
   Kmfs = np.array([0.85,1.91,2.48,1.00]) * Kmf_guess
+  ## NOTE: we are reducing the kmf scales to represent a mixture of WT/mutant 
+  pureStateKmf = np.array([0.85,1.91,2.48,1.00])
+  pctState = 0.3; pctRef = 1-pctState
+  refState = pureStateKmf[3]
+  mix = (pureStateKmf *pctState) + (refState*pctRef)
+  Kmfs = mix * Kmf_guess 
+  
   names = ["R9C","WT","R9Q","NoPLB"]
   geometry = "../huge.xml.gz"
   
@@ -1111,6 +1154,10 @@ def Test1(do="all"):
     #problemi, resultsi = loop(pi,case="test1",mode="totalFlux")  
     problemi, resultsi = loop(pi,case="test1",mode="separateFlux") 
 
+
+    if(debugLevel>0):
+      return (problemi, resultsi)
+
     # check on first/last [Ca] entry 
     i=0
     #print resultsi.cs[i] - 0.000299
@@ -1161,6 +1208,10 @@ Notes:
       Test1()
     if(arg=="-biophys"): 
       Biophys(sys.argv[i+1])
+
+    if(arg=="-test1"):
+      debugLevel = 1
+      Test1()
 
     if(arg=="-test2"):
       Test2()
