@@ -188,6 +188,7 @@ class ODEModel():
       # define volumetric fluxes (occur within PDE region) 
       self.jVol= fluxes.jVol * (1/self.time_ODE_to_PDE)
       self.jSR = fluxes.jSR
+      self.jSR_novolscale = fluxes.jSR_novolscale
 
       # define all boundary fluxes (occur on PDE boundary)  
       self.jBoundary = fluxes.jBoundary * (1/self.time_ODE_to_PDE)
@@ -242,9 +243,9 @@ def PlotSlice(problem,results):
   ## Line 
   res = p.res 
   (gx,gy,gz) = np.mgrid[\
-      0:0:1j,\
+      xSlice:xSlice:1j,\
       p.yMin:p.yMax:(res*1j),\
-      0:0:1j]
+      zSlice:zSlice:1j]
   
   line = griddata(problem.mesh.coordinates(),s.vector(),(gx,gy,gz))    
   line[ np.isnan(line) ] = 0.
@@ -297,7 +298,10 @@ def GlobalConc(problem,results):
     print "T %f [ms] Conc(%d) %f [mM]" % (t,i,results.uAvg[i])
     print "T %f [ms] Conc(%d) %f [uM]" % (t,i,results.uAvg[i]*mM_to_uM)
 
-    assert(results.uAvg[i]>0), "Conc is negative!!"
+    if(debugLevel>0): 
+      print "ERROR: Conc is negative"
+    else:
+      assert(results.uAvg[i]>0), "Conc is negative!!"
 
   results.c.append(results.uAvg)
 
@@ -335,7 +339,6 @@ class cparams:
   plot=True
   pvd = False
  
-  localFluxWeighting = True  # TODO should be false but doing this for thr mean time
   localFluxWeighting = False # TODO should be false but doing this for thr mean time
 
   # copy over ODE models parameters
@@ -446,8 +449,8 @@ def MeshPrep(problem,geometry="simple"):
     boundary = SSLReal()                                        
     # adjust zMin/zMax for linescans 
     # determined by looking at paraview file 
-    problem.params.xSlice = -31
-    problem.params.ySlice =  7   
+    problem.params.xSlice = -38
+    problem.params.zSlice =  -14 
     problem.params.yMin = -62.
     problem.params.yMin = 66.
 
@@ -501,6 +504,9 @@ def runPDE(\
     duration=5e2
   if(debugLevel==15):
     duration = 1e2
+  if(debugLevel==2):
+    tFode = 1e2
+    duration = 4e2
 
     
   # pde steps for run
@@ -669,10 +675,10 @@ def runPDE(\
       # no vol flux on tnC
       srcCaTnC = jvolExpr.CaTnC
 
-
     # now add to weak form 
     RHS1 += srcCai*q*dxT
     RHS2 += srcCaTnC*v*dxT
+
   else:
     raise RuntimeError("ouch") 
   
@@ -813,8 +819,10 @@ def runPDE(\
       #print odeModel.jSR 
       #print jvolExpr.Cai.j
       #quit()
-      jSRs.append(odeModel.jSR)
-      print "THIS IS WRONG I THINK ", odeModel.jSR
+      jSRs.append(odeModel.jSR_novolscale) # store SERCA flux -before- vol rescale (e.g. j_pump_SR)
+
+      #print "ERROR: testing" 
+      #jboundaryExpr.Cai.j = 0.
 
       #print "WRNING: a test"
       #jvolExpr.CaTnC.j = -jvolExpr.Cai.j
@@ -844,7 +852,10 @@ def runPDE(\
     jboundary = totjbs/sa * 1/vol_sa_ratio
     #print totjbs
     jvol= assemble(srcCai*dxT,mesh=mesh)
-    #print jvol  
+    print "jvol", jvol  
+    print "jTestExpr*c",assemble(jTestExpr.Cai*c*dxT,mesh=mesh)
+    if(debugLevel > 0 and i >=2):
+      quit()
 
     print "jboundary [mM/ms]", jboundary
     print "jboundary [uM/ms]", jboundary*mM_to_uM
@@ -915,15 +926,22 @@ def runPDE(\
     ax1.set_title("[Cai]/[CaTnC] vs time") 
     #ax1.plot(tstepsExact,statesTrajExact[:,Cai_pde_idx],label="[Cai] Exact")
     # [1:] since I call GlobalConc once before loop 
-    ax1.plot(ts,results.cs[1:],'k.',label="[Cai] (PDE) ")
+    cs1 = results.cs[1:]
+    cbs1 = results.cbs[1:]
+    ax1.plot(ts,cs1,'k.',label="[Cai] (PDE) ")
     ax1.plot(ts,results.cFs,label="[Cai]F (forward ODE solutions)")
     ax1.set_ylabel("[Cai] [uM]") 
     ax1.set_xlabel("t [ms]") 
     ax1.legend(loc=0)
-    ax2 = ax1.twinx()
-    ax2.set_ylabel("[CaTnC] [uM]") 
-    ax2.plot(ts,results.cbs[1:],'r-.',label="cb (PDE) ")
-    plt.gcf().savefig(mode+"conc.png")
+    print "WARNING: hiding TnC for now" 
+    #ax2 = ax1.twinx()
+    #ax2.set_ylabel("[CaTnC] [uM]") 
+    #ax2.plot(ts,cbs,'r-.',label="cb (PDE) ")
+    #ax2.legend(loc=4)
+    plt.gcf().savefig(outputName+"conc.png")
+
+    print "%f" %(meanSquaredError(cs1,results.cFs)) 
+    assert( meanSquaredError(cs1,results.cFs) < 1e10), "jConc/jSums don't agree"
 #
 #
 #  plt.figure()
@@ -1048,6 +1066,7 @@ def Test2():
     #debugLevel = 15
 
 
+
     #problemi, resultsi = loop(pi,case="test1",mode="totalFlux")  
     case = "test2"
     problemi, resultsi = loop(pi,case=case, mode="separateFlux",\
@@ -1074,6 +1093,9 @@ def Biophys(caseNum):
   
   names = ["R9C","WT","R9Q","NoPLB"]
   geometry = "../huge.xml.gz"
+
+  print "WARNING: doing simple"
+  geometry="simple"
   
   caseNum = int(caseNum)
   print "Running case %d " % caseNum
@@ -1202,6 +1224,9 @@ Notes:
   fileIn= sys.argv[1]
 
   for i,arg in enumerate(sys.argv):
+    if(arg=="-weighting"):
+      cparams.localFluxWeighting = True
+
     if(arg=="-debug"):
       #debugLevel=100
       debugLevel=10
@@ -1210,7 +1235,7 @@ Notes:
       Biophys(sys.argv[i+1])
 
     if(arg=="-test1"):
-      debugLevel = 1
+      debugLevel = 2
       Test1()
 
     if(arg=="-test2"):
