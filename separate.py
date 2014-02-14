@@ -106,6 +106,7 @@ def separateFluxes(model,s,pi,tsteps,warn=False):
   # this is quirkly but I think we need to substract SR component, but 
   # add in TnC component (so that we are left with just the contribution 
   # from the SL (see SB expression for dCai) 
+  fluxes.jSR_novolscale = jAvg[j_pump_SR_idx]
   fluxes.jSR = -jAvg[j_pump_SR_idx]*Vol_SR/Vol_myo
   #print jAvg[j_pump_SR_idx]
   fluxes.jVol[Cai_ode_idx] = fluxes.jSR
