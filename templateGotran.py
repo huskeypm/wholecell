@@ -1030,7 +1030,7 @@ def Biophys(caseNum):
   # see 140213_ceholski.tex
   Kmfs = np.array([0.85,1.91,2.48,1.00]) * Kmf_guess
   names = ["R9C","WT","R9Q","NoPLB"]
-  geometry = "huge.xml.gz"
+  geometry = "../huge.xml.gz"
   
   caseNum = int(caseNum)
   print "Running case %d " % caseNum
@@ -1040,7 +1040,7 @@ def Biophys(caseNum):
     p1.odeParams[param_indices("Kmf")] = Kmfs[0]                                                                
     case = names[0]
     problem1, results1 = loop(p1,case=case,duration=duration,mode="separateFlux",\
-      geometry="huge.xml.gz")
+      geometry=geometry)           
     dolinescan(case,results1)
     
                                
@@ -1050,7 +1050,7 @@ def Biophys(caseNum):
     p2.odeParams[param_indices("Kmf")] = Kmfs[1]                                                                 
     case = names[1]
     problem2, results2 = loop(p2,case=case,duration=duration,mode="separateFlux",\
-      geometry="huge.xml.gz")
+      geometry=geometry)           
     dolinescan(case,results2)
                                
   elif(caseNum==3): 
@@ -1059,7 +1059,7 @@ def Biophys(caseNum):
     p3.odeParams[param_indices("Kmf")] = Kmfs[2]                                                                
     case = names[2]
     problem3, results3 = loop(p3,case=case,duration=duration,mode="separateFlux",\
-      geometry="huge.xml.gz")
+      geometry=geometry)           
     dolinescan(case,results3)
                                
   elif(caseNum==4): 
@@ -1067,7 +1067,7 @@ def Biophys(caseNum):
     p4.odeParams[param_indices("Kmf")] = Kmfs[3]                                                                
     case = names[3]
     problem4, results4 = loop(p4,case=case,duration=duration,mode="separateFlux",\
-      geometry="huge.xml.gz")
+      geometry=geometry)           
     dolinescan(case,results4)
 
   else: 
