@@ -1,6 +1,7 @@
 How to use:
 
 
+\section{Setup} 
 \item Initialize environmental variables 
 export MYPATH=/home/huskeypm/sources/mypython/
 export LOC=/home/huskeypm/sources/
@@ -15,6 +16,14 @@ export PATH=$PATH:$LOC/gotran/scripts/
 
 \item convert ode model via gotran 
 gotran2py shannon_2004.ode 
+
+\section{Run} 
+\item show that ODE/PDE model agree
+templateGotran.py -validation
+
+\item gen figures for biophys paper 
+templateGotran.py -biophys
+
 
 
 
