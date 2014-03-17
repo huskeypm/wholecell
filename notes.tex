@@ -1,0 +1,40 @@
+\subsection{To do}
+\lbi
+\item Best practices for partitioning buffers?
+\item Are vol/activities quantites from Bers consistent w 3D model 
+\item Homog of SR? (RyR-containing vs. SERCA-only) 
+\lei
+
+\subsection{Notes}
+
+Email w Johan
+
+>If you need some interaction between diffusional Ca and some of the currents you might want to rip out the currents (let say the NCX and the LCC) from the whole cell model and use FEniCS formulations for these as some sort of flux condition, and then integrate the flux as a post process in the PDE and plug these into the ODE and step that.
+
+This sounds like an intriguing direction for a second stage of the project, so I'd definitely like to touch base with you on how to do this correctly/efficiently a bit down the road. 
+
+>Also if you are going to use PDE for the Ca you probably also want to rip out all buffering too from the whole cell, and basically just be left with parts of the electro-physiology.
+
+I agree. At the present I just pulled out the TnC buffering contrib. Would you be open to discussing how I encoded this in my model? I have you access to https://bitbucket.org/huskeypm/wholecell, but perhaps we could Skype about this some other time? 
+ 
+ 
+ > That said it is not clear how you in such a framework would implement SR Ca diffusion and RyR release, maybe some fake generated SR in Blender, or just some  homogenized version, I guess you aim for the latter.
+
+
+I'd be very interested in collecting ideas on this. Of course Bers just assigns volumes to the different compartments and diffusion fluxes. I think the exchange between SR/cyto can be done straightforwardly based on Goel's earlier work (cited in our biophys paper).  Of course without any structural data, specific details of diffusion within the SR is smeared out (hopefully I explained this ok)
+
+Which Ca data would make for a good comparison? I could particularly use your collective physiological insight in this regard
+ 
+ 
+ > The compartments in the whole cell models claim in some sense to carry vital information about the cell geometry which is relevant for the intracellular Ca dynamics, but I am not so convinced about the assumptions related to geometry in shannon-bers type of models. These we could check more carefully using a spatially resolved model. 
+
+So lets talk about the unconvincing assumptions. 
+
+>  what you need is a spatially distributed RyR release sites which (as I understand) you do not have. If you do have that it can be a bit tricky to implement the connection between a homogenized SR and Cytosole. 
+
+One strategy might be to develop two 'unit cell' types, one that reflects SR with viable RyR release and the other which supports only Ca2+ uptake. I think this could be accomplished with a spatially-varying effective diffusion constant and 'reactivities', though I suppose we'd need to carefully think about discontinuities (e.g. different diff constants) between unit cell types. 
+
+>There is a natural function for this in DOLFIN called PointSource, which applies the source at a given point, but only to the right hand side. So if you want to have the size of this source dependent on both Cytosolic and SR Ca the flux will be non linear. Unfortunately is not PointSource well integrated in UFL so it cannot be lineariezed and easily solved in a Newton solve. So if you want to use PointSource you need to apply it maually inside the newton solve your self. The convergence rate will go down but you are at least sure that you solve the correct problem.
+ 
+
+Let's chat to see if there can be some workarounds to avoid the pointsource (e.g. with the different unit cell types i mentioned)
