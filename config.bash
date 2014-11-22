@@ -1,5 +1,5 @@
 export MYHOME=/home/huskeypm/
-export MYHOME=/net/home/huskeypm/
+export MYHOME=/home/AD/pmke226/   
 export LOC=$MYHOME/sources/
 export MYPATH=$LOC/mypython/
 export PYTHONPATH=$PYTHONPATH:$MYPATH
