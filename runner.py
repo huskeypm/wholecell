@@ -1,7 +1,9 @@
 
 from separate import * # This imports separate fluxes
 
-import shannon_2004 as model
+#import shannon_2004 as model
+import shannon_pkh as model
+print model.pkh_iCaL_rescale
 
 ## STATE VAR
 #Cai=37, V=38

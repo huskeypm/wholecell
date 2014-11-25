@@ -1,17 +1,27 @@
 ## TEMPLATE 
 #$ grep monitor shannon_2004.ode | perl -ane '$n++; chomp $_; ($nm)=($_=~/\((.*)\)/);printf("${nm}_idx=%d # $_\n",$n-1)'
-Vol_SR_idx=0 # monitor(Vol_SR)  
-Vol_myo_idx=1 # monitor(Vol_myo) 
-fCa_SL_idx=2 # monitor(fCa_SL) 
-fCa_jct_idx=3 # monitor(fCa_jct) 
-i_NaCa_idx=4 # monitor(i_NaCa)   
-j_rel_SR_idx=5 # monitor(j_rel_SR)
-j_pump_SR_idx=6 # monitor(j_pump_SR)
-J_Ca_SL_myo_idx=7 # monitor(J_Ca_SL_myo)
-dCa_TroponinC_idx=8 # monitor(dCa_TroponinC)
-i_Stim_idx=9 # monitor(i_Stim)   
-dCa_cytosol_tot_bound_idx = 10
-totMonitored = 11
+# shannon PKH:
+#Vol_SR_idx=0 # monitor(Vol_SR)  
+#Vol_myo_idx=1 # monitor(Vol_myo) 
+#fCa_SL_idx=2 # monitor(fCa_SL) 
+#fCa_jct_idx=3 # monitor(fCa_jct) 
+#i_NaCa_idx=4 # monitor(i_NaCa)   
+#j_rel_SR_idx=5 # monitor(j_rel_SR)
+#j_pump_SR_idx=6 # monitor(j_pump_SR)
+#J_Ca_SL_myo_idx=7 # monitor(J_Ca_SL_myo)
+#dCa_TroponinC_idx=8 # monitor(dCa_TroponinC)
+#i_Stim_idx=9 # monitor(i_Stim)   
+#dCa_cytosol_tot_bound_idx = 10
+#totMonitored = 11
+# shannon_PKH
+fCa_SL_idx=0 # monitor(fCa_SL) 
+fCa_jct_idx=1 # monitor(fCa_jct) 
+i_NaCa_idx=2 # monitor(i_NaCa)   
+j_rel_SR_idx=3 # monitor(j_rel_SR)
+j_pump_SR_idx=4 # monitor(j_pump_SR)
+i_Stim_idx=5 # monitor(i_Stim)   
+totMonitored = 6
+
 
 # This function computes the effective substrate flux 
 # over a given time interval. 
