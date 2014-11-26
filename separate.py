@@ -19,8 +19,9 @@ fCa_jct_idx=1 # monitor(fCa_jct)
 i_NaCa_idx=2 # monitor(i_NaCa)   
 j_rel_SR_idx=3 # monitor(j_rel_SR)
 j_pump_SR_idx=4 # monitor(j_pump_SR)
-i_Stim_idx=5 # monitor(i_Stim)   
-totMonitored = 6
+i_CaL_idx=5 # monitor(i_CaL)   
+i_Stim_idx=6 # monitor(i_Stim)   
+totMonitored = 7
 
 
 # This function computes the effective substrate flux 
