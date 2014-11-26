@@ -109,6 +109,7 @@ states("Ical fca gate",
 ##       V = -8.556885e1)
 parameters("PKH",
   V = -85.,
+  dV = 14.5, # term in d-gate (V+14.5) exponential 
   Na_jct = 8.80329,
   Na_SL = 8.80733,
   Ca_jct = 1.737475e-4,
@@ -386,8 +387,8 @@ parameters("Ical",
 ##i_Clb = G_ClBk*(V - E_Cl)
 
 component("Ical d gate")
-d_infinity = one/(one + exp(-(V + 14.5)/6))
-tau_d = one*d_infinity*(one - exp(-(V + 14.5)/6))/(0.035*(V + 14.5))
+d_infinity = one/(one + exp(-(V + dV  )/6))
+tau_d = one*d_infinity*(one - exp(-(V + dV  )/6))/(0.035*(V + dV  ))
 
 component("Ical f gate")
 f_infinity = one/(one + exp((V + 35.06)/3.6)) + 0.6/(one + exp((50 - V)/20))

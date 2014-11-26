@@ -48,6 +48,7 @@ def runner(dt=1000,dtn=5,\
   V = -78,
   #         V_max_Jpump = 0.0053114, # SERCA, [mM/ms]
   #         V_max = 9, # NCX, [uA/uF]
+  ps = None,
   paramName=None,
   paramVal=0.,
            mxsteps=500):
@@ -55,13 +56,14 @@ def runner(dt=1000,dtn=5,\
   s = model.s; t =model.t; p = model.p
   
   # Important variables, states
-  #p[stim_period_pIdx]=stim_period
-  #p[V_max_Jpump_pIdx]= V_max_Jpump 
   param_indices = model.param_indices    
 
-  p[param_indices("V")] = V
+  if ps!=None:
+    p = ps
   if paramName!=None:
     p[param_indices(paramName)] = paramVal
+  p[param_indices("V")] = V
+
 
   
   # Basic run and grab outcomes
