@@ -1,36 +1,13 @@
 ## STATE VAR
-#Cai=37, V=38
-Cai_idx=37; 
-Ca_SR_idx = 25
-V_idx=38
-
-## PARAMS
-# stim_period=(121
-stim_period_pIdx=121
-V_max_Jpump_pIdx = 71 # SERCA
-V_max_pIdx = 45 # NCX
-
-
 ## Misc
 mM_to_uM = 1e3
 
 ## Monitors 
 #huskeypm@huskeypm-ubuntu12:~/sources/wholecell$ grep monitor shannon_2004.ode 
-#monitor(fCa_SL) 
-#monitor(fCa_jct) 
-#monitor(i_NaCa)   
-#monitor(j_rel_SR)
-#monitor(j_pump_SR)
-#monitor(i_Stim)
-fCa_SL  =0
-fCa_jct =1
-i_NaCa  =2 
-j_rel_SR=3
-j_pump_SR=4
-i_Stim = 5
-totMonitors = 6
+i_CaL = 0  
+totMonitors = 1
 
-import shannon_2004 as model
+import shannon_LCC as model
 from scipy.integrate import odeint
 import matplotlib.pyplot as plt
 import numpy as np
@@ -49,6 +26,8 @@ def monitorstepper(model,states,pi,tsteps):
     jis = model.monitor(si, t, pi) 
     #print np.shape(jis)
     jall[i,] = jis
+    #print np.shape(jall)
+    #print np.shape(jis)  
     
     # sum fluxes 
     jSums += jis*dtt   
@@ -66,7 +45,7 @@ def init():
 
 # run simulation 
 def runner(dt=1000,dtn=5,\
-           stim_period=1000,\
+  V = -78,
   #         V_max_Jpump = 0.0053114, # SERCA, [mM/ms]
   #         V_max = 9, # NCX, [uA/uF]
            mxsteps=500):
@@ -74,9 +53,10 @@ def runner(dt=1000,dtn=5,\
   s = model.s; t =model.t; p = model.p
   
   # Important variables, states
-  p[stim_period_pIdx]=stim_period
+  #p[stim_period_pIdx]=stim_period
   #p[V_max_Jpump_pIdx]= V_max_Jpump 
-  #p[V_max_pIdx] = V_max
+  param_indices = model.param_indices    
+  p[param_indices("V")] = V
 
 
   
@@ -100,52 +80,26 @@ def plotting(p,states,ts,js,case="default"):
   ## Ca transients 
   plt.figure()
   plt.subplot(2,1,1)
-  plt.plot(tsteps,mM_to_uM*states[:,state_indices("Cai")],label=Cai_idx)
-  plt.title("Cytosolic Ca")
-  plt.ylabel("Ca [uM]")
-  plt.xlabel("t [ms]") 
-  
-  plt.subplot(2,1,2)
-  plt.plot(tsteps,mM_to_uM*states[:,state_indices("Ca_SR")],label=Ca_SR_idx)
-  plt.title("SR Ca")
-  plt.ylabel("Ca [uM]")
+  label="d"
+  plt.plot(tsteps,mM_to_uM*states[:,state_indices(label)],label=label)       
+  label="f"
+  plt.plot(tsteps,mM_to_uM*states[:,state_indices(label)],label=label)       
+  plt.legend(loc=0)
   plt.xlabel("t [ms]") 
   
   plt.subplots_adjust(hspace=0.5) 
-  plt.gcf().savefig(case+"_calcium.png",dpi=300)
-  
-  ## voltage 
-  plt.figure()
-  plt.plot(tsteps,states[:,state_indices("V")],label=V_idx)
-  plt.ylabel("V [mV]")
-  plt.xlabel("t [ms]") 
-  plt.gcf().savefig(case+"_potential.png",dpi=300)
+  #plt.gcf().savefig(case+"_calcium.png",dpi=300)
   
   ## fluxes
   (ts,js)=monitorstepper(model,states,np.copy(p),tsteps)
 
-  if 0:
+  if 1:
     plt.figure(figsize=(10,10))
     plt.subplot(2,2,1)
-    plt.plot(ts,js[:,fCa_SL],label="fCa_SL")
-    plt.plot(ts,js[:,fCa_jct],label="fCa_jct")
+    plt.plot(ts,js[:,i_CaL],label="I_CaL")  
     plt.legend(loc=0)
   
-    plt.subplot(2,2,2)
-    plt.plot(ts,js[:,i_NaCa],label="i_NaCa")
-    plt.legend(loc=0)
-  
-  
-    plt.subplot(2,2,3)
-    plt.plot(ts,js[:,j_rel_SR],label="j_rel_SR")
-    plt.legend(loc=0)
-  
-  
-    plt.subplot(2,2,4)
-    plt.plot(ts,js[:,j_pump_SR],label="j_pump_SR")
-    plt.legend(loc=0)
-
-  plt.gcf().savefig(case+"_fluxes.png",dpi=300)
+  #plt.gcf().savefig(case+"_fluxes.png",dpi=300)
 
 # <codecell>
 
