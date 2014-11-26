@@ -109,6 +109,8 @@ states("Ical fca gate",
 ##       V = -8.556885e1)
 parameters("PKH",
   V = -85.,
+  Na_jct = 8.80329,
+  Na_SL = 8.80733,
   Ca_jct = 1.737475e-4,
   Ca_SL = 1.031812e-4)
 
@@ -463,12 +465,14 @@ component("Ical")
 Q_CaL = Q10_CaL**((T - 310)/ten)
 temp = 0.45*d*f*Q_CaL*V*F**two/(Rgas*T)
 i_CaL_Ca_jct = temp*fCa_jct*Fx_ICaL_jct*PCa*four*(gamma_Cai*Ca_jct*exp(two*V*F/(Rgas*T)) - gamma_Cao*Cao)/(exp(two*V*F/(Rgas*T)) - one)
-#i_CaL_Na_jct = temp*fCa_jct*Fx_ICaL_jct*PNa*(gamma_Nai*Na_jct*exp(V*F/(Rgas*T)) - gamma_Nao*Nao)/(exp(V*F/(Rgas*T)) - one)
+i_CaL_Na_jct = temp*fCa_jct*Fx_ICaL_jct*PNa*(gamma_Nai*Na_jct*exp(V*F/(Rgas*T)) - gamma_Nao*Nao)/(exp(V*F/(Rgas*T)) - one)
 i_CaL_Ca_SL = temp*fCa_SL*Fx_ICaL_SL*PCa*four*(gamma_Cai*Ca_SL*exp(two*V*F/(Rgas*T)) - gamma_Cao*Cao)/(exp(two*V*F/(Rgas*T)) - one)
-#i_CaL_Na_SL = temp*fCa_SL*Fx_ICaL_SL*PNa*(gamma_Nai*Na_SL*exp(V*F/(Rgas*T)) - gamma_Nao*Nao)/(exp(V*F/(Rgas*T)) - one)
-#i_CaL_K = temp*(fCa_SL*Fx_ICaL_SL + fCa_jct*Fx_ICaL_jct)*PK*(gamma_Ki*Ki*exp(V*F/(Rgas*T)) - gamma_Ko*Ko)/(exp(V*F/(Rgas*T)) - one)
-#i_CaL = i_CaL_Ca_SL + i_CaL_Ca_jct + i_CaL_Na_SL + i_CaL_Na_jct + i_CaL_K
-i_CaL = i_CaL_Ca_SL + i_CaL_Ca_jct 
+i_CaL_Na_SL = temp*fCa_SL*Fx_ICaL_SL*PNa*(gamma_Nai*Na_SL*exp(V*F/(Rgas*T)) - gamma_Nao*Nao)/(exp(V*F/(Rgas*T)) - one)
+i_CaL_K = temp*(fCa_SL*Fx_ICaL_SL + fCa_jct*Fx_ICaL_jct)*PK*(gamma_Ki*Ki*exp(V*F/(Rgas*T)) - gamma_Ko*Ko)/(exp(V*F/(Rgas*T)) - one)
+# All 
+i_CaL = i_CaL_Ca_SL + i_CaL_Ca_jct + i_CaL_Na_SL + i_CaL_Na_jct + i_CaL_K
+# Cal dep only 
+#i_CaL = i_CaL_Ca_SL + i_CaL_Ca_jct 
 monitor(i_CaL)    
 
 ##component("Na buffer")

@@ -5,7 +5,7 @@ export MYPATH=$LOC/mypython/
 export PYTHONPATH=$PYTHONPATH:$MYPATH/lib/python2.7/site-packages/
 python -c "import modelparameters"
 python -c "import gotran"
-python $LOC/gotran/scripts/gotran2py shannon_LCC.ode 
+#python $LOC/gotran/scripts/gotran2py shannon_LCC.ode 
 # test
-python tester.py
+#python tester.py
 
