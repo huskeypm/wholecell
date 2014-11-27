@@ -111,7 +111,9 @@ def runner(dt=1000,dtn=1.,\
   # Basic run and grab outcomes
   tsteps = np.linspace(t, t+dt, (dt)/dtn+1)
   
-  states = odeint(model.rhs,s,tsteps,(p,),mxstep=mxsteps)
+  #states = odeint(model.rhs,s,tsteps,(p,),mxstep=mxsteps)
+  print "USING SUPPER!" 
+  states = odeint(model.rhs,s,tsteps,(p,),mxstep=10000,hmax=.03,rtol=1e-12, atol=1e-12)
   
   # get monitored variables
   (ts,js)=monitorstepper(model,states,np.copy(p),tsteps)
