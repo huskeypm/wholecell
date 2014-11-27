@@ -155,8 +155,7 @@ def plotting(p,states,ts,js,case="default"):
   #
   plt.figure(figsize=(10,5))
   plt.subplot(1,2,1)
-  plt.plot(ts,js[:,fCa_SL_idx],label="fCa_SL_idx")
-  plt.plot(ts,js[:,fCa_jct_idx],label="fCa_jct_idx")
+  plt.plot(ts,js[:,i_CaL_idx],label="i_CaL")               
   plt.legend(loc=0)
   
   plt.subplot(1,2,2)
@@ -175,13 +174,15 @@ def plotting(p,states,ts,js,case="default"):
 
   # w
   plt.figure(figsize=(10,5))
-  plt.subplot(1,2,1)
-  plt.plot(ts,js[:,i_CaL_idx],label="i_CaL")               
-  plt.legend(loc=0)
+  if 1:
+    plt.subplot(1,2,1)
+    plt.plot(ts,js[:,fCa_SL_idx],label="fCa_SL_idx")
+    plt.plot(ts,js[:,fCa_jct_idx],label="fCa_jct_idx")
+    plt.legend(loc=0)
   
-  plt.subplot(1,2,2)
-  plt.plot(ts,js[:,i_Stim_idx],label="i_Stim_idx")
-  plt.legend(loc=0)
+    plt.subplot(1,2,2)
+    plt.plot(ts,js[:,i_Stim_idx],label="i_Stim_idx")
+    plt.legend(loc=0)
 
   #plt.gcf().savefig(case+"_fluxes.png",dpi=300)
 
