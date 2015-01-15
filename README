@@ -33,4 +33,8 @@ MORE:
 python tester.py
 
 
+To generate xml:
+source ~/bin/dolfin.bash
+gmsh sarcomere -clscale 0.9 sarcomere.geo -3
+dolfin-convert sarcomere.msh sarcomere.xml
 
