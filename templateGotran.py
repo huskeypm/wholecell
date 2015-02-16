@@ -480,7 +480,7 @@ def MeshPrep(problem,geometry="simple"):
 def runPDE(\
   params,
   mode="totalFlux", 
-  anisotropic=True,
+  anisotropic=False,    # has no effect right now, but snag from sarcomere/ATP
   duration=1e3,		# duration [ms] 
   geometry="simple",    # use 'simple' cube geometry 
   outputName="output",
@@ -530,6 +530,7 @@ def runPDE(\
   ## ODE
   ##
   ## Initialize model/get steadystate 
+  print "WARNING: this should belong to a single proc" 
   odeModel = ODEModel(t0=t0ode,tF=tFode,params=params.odeParams) 
   if(debugLevel!=15):
     odeModel.setup() 
@@ -572,6 +573,7 @@ def runPDE(\
   c0,cb0 = split(u0)
 
   # mappings
+  print "WARNING: likely will fail w MPI" 
   indcCai, indcCaTnC= set(), set()
   dm_cCai, dm_cCaTnC = ME.sub(0).dofmap(), ME.sub(1).dofmap()
   for cell in cells(mesh):
@@ -700,6 +702,7 @@ def runPDE(\
 
 
   # vol/sa ratio to rescale surf. fluxes
+  print "WARNING: belongs to first proc" 
   if(geometry=="simple"):
     vol = assemble(Constant(1.)*dx,mesh=mesh)
   else: 
@@ -788,6 +791,7 @@ def runPDE(\
     t0 = tf - dt
     print "t0 ", t0, "tf ", tf
 
+    print "WARNING: belongs to first proc" 
     (statesF,stateFlux,dummy,dummy) = odeModel.propagateStates(t0,tf,dt)
     print "ODE statesF: [mM] ", statesF
     print "ODE statesF: [uM] ", statesF[Cai_pde_idx] * mM_to_uM 

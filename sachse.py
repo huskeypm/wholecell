@@ -12,7 +12,7 @@ idxBuff = 1
 idxFluo = 2
 nComp = 1 # compartments
 nSpec = 3
-nDOF=nComp*nSpec
+nDOF= nComp*nSpec
 
 ## Units
 nm_to_um = 1.e-3
@@ -37,7 +37,7 @@ class OuterSarcolemma(SubDomain):
     return on_boundary and edge
 
 class Params():
-  paraview = False 
+  paraview = True  
   verbose=False 
 
   # time steps 
@@ -48,12 +48,16 @@ class Params():
 
   # diffusion params 
   #DAb   = Dbulk# [um^2/ms] Diff const within PDE (domain 1) 
+  DCa = 1.0  # [um^2/ms]
+  DBuff = 1.0 # unverified
+  DFluo = 1.0 
+  Ds = [DCa,DBuff,DFluo]
 
   # init concs 
   cCainit =1.0  # [uM]
   cBuffinit =1.0  # [uM]
   cFluoinit =1.0  # [uM]
-
+  cInits = [cCainit,cBuffinit,cFluoinit]
 
 class InitialConditions(Expression):
 
@@ -63,9 +67,12 @@ class InitialConditions(Expression):
     # corner 
     #oif (np.linalg.norm(x -np.zeros(3) ) < 0.5):
     if 1:
-      values[0] = self.params.cCainit
-      values[1] = self.params.cBuffinit
-      values[2] = self.params.cFluoinit
+      for i,j in enumerate(self.params.cInits):
+            #print i 
+            values[i] = j
+#      values[0] = self.params.cCainit
+#      values[1] = self.params.cBuffinit
+#      values[2] = self.params.cFluoinit
   def value_shape(self):
     return (nDOF,)
 
@@ -105,9 +112,12 @@ class MyEquation(NonlinearProblem):
         for bc in self.bcs:
           bc.apply(A)
 
+
+
+# In[18]:
+
 # TODO verify units 
-def tsolve(fileName="sarcomere.xml",\
-           outName="output.pvd",
+def tsolve(fileName="sarcomere.xml",           outName="output.pvd",
 	   debug=True):
 
   params = Params()
@@ -115,27 +125,39 @@ def tsolve(fileName="sarcomere.xml",\
     params.T = 10
 
   # Create mesh 
-  mesh = Mesh(fileName)   # not working with xml files I"ve been generatinf 
-  mesh = UnitCubeMesh(16,16,16)  
+  if debug: 
+    mesh = UnitCubeMesh(16,16,16)  
+    #mesh = UnitCubeMesh(3,3,3)
+  else: 
+    mesh = Mesh(fileName)   # not working with xml files I"ve been generatinf 
   dim =mesh.ufl_cell().geometric_dimension()
 
   # function spaces
   V = FunctionSpace(mesh, "Lagrange", 1)
-  ME = MixedFunctionSpace([V,V,V]) # Ca, Buffered Ca, Fluo Ca
+  Vs = []
+  for i in range(nDOF):
+        #print i 
+        Vs.append(V)
+  ME = MixedFunctionSpace(Vs) # Ca, Buffered Ca, Fluo Ca
 
   # Define trial and test functions
   du    = TrialFunction(ME)
   vCa,vBuff,vFluo  = TestFunctions(ME)
+  vs = [vCa,vBuff,vFluo]
 
   # Define functions
   u_n   = Function(ME)  # current solution
   u_0  = Function(ME)  # solution from previous converged step
 
   # split mixed functions
+  print "WARNING: not sure how to generalize"       
   cCa_n,cBuff_n, cFluo_n = split(u_n)
+  cns = [cCa_n,cBuff_n, cFluo_n]
   cCa_0,cBuff_0, cFluo_0 = split(u_0)
+  c0s = [cCa_0,cBuff_0, cFluo_0]
 
   ## mark boundaries 
+  # problem specific          
   subdomains = MeshFunction("size_t",mesh,dim-1)
   boundary = LeftTT()
   boundary.mmin = np.min(mesh.coordinates(),axis=0)
@@ -166,7 +188,6 @@ def tsolve(fileName="sarcomere.xml",\
   
   ## weak form 
   # params 
-  D = Constant(Diff) 
 
   # three D diff const 
   #Dii  = Constant((problem.d_eff[0],problem.d_eff[1],problem.d_eff[2]))
@@ -180,10 +201,19 @@ def tsolve(fileName="sarcomere.xml",\
   r3 = Constant(1.)   
   k3 = Constant(0.5)
 
-
+  ## RHS 
   # diffusion 
-  DCa = params.DCa
-  RHS = -inner(DCa*grad(u), grad(q))*dx
+  Ds  = params.Ds     
+  #for i in range(nDOF):
+  i =0 
+  RHSi0 = -inner(Ds[i]*grad(cns[i]), grad(vs[i]))*dx
+  i =1 
+  RHSi1 = -inner(Ds[i]*grad(cns[i]), grad(vs[i]))*dx
+  i =2 
+  RHSi2 = -inner(Ds[i]*grad(cns[i]), grad(vs[i]))*dx
+
+  RHSis = [RHSi0,RHSi1,RHSi2]
+  RHS = RHSi0 + RHSi1  + RHSi2 
   # reaction 
   #RHS+= -r0*u*q*dx
   # RyR release at R TT  
@@ -196,60 +226,51 @@ def tsolve(fileName="sarcomere.xml",\
   #if dim==3:
   #  RHS+= -r2*u*q*ds(slMarker,domain=mesh) 
   
+    
+  ## LHS    
   dt = params.dt
-
-  # might ultimately need to do operator splitting if we communicate with an ODE   model. 
-  # however, perhaps it can all be communicated through an expression 
-  ## TODO make into expression 
-  #JRyr = delta0 * Iryr / (2*F*delta*V)
-  ## TODO make into Form 
-  #Jbuff = alphabuff * u * (Btot - BC) - betabuff*BC   # probably describe this as a  state
-  #Jfluo = alphafluo * u * (Ftot - FC) - betafluo*FC   # probably describe this as a   state
-  ## TODO Add NCX/SERCA 
-  ## 1. through Shannon Model (just importing functions that I need) 
-  ## 2. modified with my Markov model 
- 
-
-  #form += Dc*inner(grad(u),grad(v))*dx
-  #form += JRyR*v*dx   # along boundary? (refer to enzyme kinetics ex)
-  #form += -1*Jbuff*v*dx
-  #form += -1*Jfluo*v*dx
-  #form += DF*inner(grad(uF),grad(vF))*dx
-  #form += Jfluo*vF*dx
-
-
-
-  L = u_n*q*dx - u_0*q*dx - dt * RHS
-
+  #LHS = (cCa_n-cCa_0)*vCa/dt * dx - RHSCa
+  i = 0 
+  LHSi0 = (cns[i]-c0s[i])*vs[i]/dt * dx - RHSis[i]
+  i = 1 
+  LHSi1 = (cns[i]-c0s[i])*vs[i]/dt * dx - RHSis[i]
+  i = 2 
+  LHSi2 = (cns[i]-c0s[i])*vs[i]/dt * dx - RHSis[i]
+  L = LHSi0 + LHSi1 + LHSi2
+    
   # Compute directional derivative about u in the direction of du (Jacobian)
+  # (for Newton iterations) 
   a = derivative(L, u_n, du)
   
-  ## define solver,params 
-  problem = MyEquation(a,L,bcs)
-  solver = NewtonSolver()                
-  solver.parameters["linear_solver"] = "gmres"
+  
+  # Create nonlinear problem and Newton solver
+  problem = MyEquation(a, L,bcs)
+  solver = NewtonSolver()
+  solver.parameters["linear_solver"] = "lu"
   solver.parameters["convergence_criterion"] = "incremental"
   solver.parameters["relative_tolerance"] = 1e-6
-  file = File(outName, "compressed")
   
-  ## Variables for storing answers (after projection) 
-  # need to declare outside of loop 
-  up = Function(V)
-  u0p = Function(V)
-  
+  # Output file
+  if params.paraview:     
+    file = File("output.pvd", "compressed")
+    
   t = 0.
   concs=[]
   ts = []
   us = []
+  if 1: 
+      i=0
+      plot(u_n.sub(i),rescale=True)
+      interactive()	
   while (t < params.T):
       # advance 
       t0=t
       t += dt
-      u0.vector()[:] = u.vector()
-      solver.solve(problem,u.vector())
+      u_0.vector()[:] = u_n.vector()
+      solver.solve(problem,u_n.vector())
 
-      # remap to u from u' = e^+ * u (see above) 
-      file << (u,t) 
+      # store 
+      file << (u_n,t) 
 
       
       # store
@@ -261,58 +282,11 @@ def tsolve(fileName="sarcomere.xml",\
       #conc = uds/area
       #ts.append(t0)
       #concs.append(conc)
-      plot(u,rescale=True)
-      #interactive()	
-
-  ts = np.asarray(ts)
-  concs = np.asarray(concs)
-
-  results = empty()
-  results.us = us 
-  results.ts = ts
-  results.concs = concs 
-  results.mesh = mesh 
-
-  
-  return (results)
-
-  
-  
-
-def valid(fileName="sarcomere.xml"):
-  (results) = tsolve(Diff=1.0,fileName=fileName)
-
-import sys
-
-if __name__ == "__main__":
-  import sys
-  scriptName= sys.argv[0]
-  msg="""
-Purpose: 
- 
-Usage:
-"""
-  msg+="  %s -valid" % (scriptName)
-  msg+="""
-  
- 
-Notes:
-
-"""
-  remap = "none"
-
-  if len(sys.argv) < 2:
-      raise RuntimeError(msg)
-
-  fileIn= sys.argv[1]
-  if(len(sys.argv)==3):
-    print "arg"
-
-  for i,arg in enumerate(sys.argv):   
-    if(arg=="-valid"):
-      valid()
-    if(arg=="-valid2D"):
-      valid(fileName="sarcomere2D.xml")
 
 
 
+
+
+# In[19]:
+
+tsolve()
