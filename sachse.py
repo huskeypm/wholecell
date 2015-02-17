@@ -13,22 +13,41 @@ idxFluo = 2
 nComp = 1 # compartments
 nSpec = 3
 nDOF= nComp*nSpec
+eps = 0.05
 
 ## Units
 nm_to_um = 1.e-3
+ttRad = 0.25 # [um]
 
 
 class LeftTT(SubDomain):
   def inside(self,x,on_boundary):
-    edge = (np.abs(x[0]- self.mmin[0]) < DOLFIN_EPS) 
+    #edge = (np.abs(x[0]- self.mmin[0]) < DOLFIN_EPS) 
+    # Define TT loc 
+    yMid = 0.5*(self.mmax[1]+self.mmin[1])
+    centroid = np.array([self.mmin[0],yMid])
+
+    # check if point is nearby 
+    d = np.linalg.norm(centroid-x[0:2])
+    isTT = (d < (ttRad+eps))
+
+    #print x,centroid,d,isTT
     #print x[0], edge, on_boundary
-    return on_boundary and edge
+    return on_boundary and isTT
 
 class RightTT(SubDomain):
   def inside(self,x,on_boundary):
-    edge = (np.abs(x[0]- self.mmax[0]) < DOLFIN_EPS) 
+    #edge = (np.abs(x[0]- self.mmax[0]) < DOLFIN_EPS) 
+    yMid = 0.5*(self.mmax[1]+self.mmin[1])
+    centroid = np.array([self.mmax[0],yMid])
+
+    # check if point is nearby 
+    d = np.linalg.norm(centroid-x[0:2])
+    isTT = (d < (ttRad+eps))
+
+    #print x,centroid,d,isTT
     #print x[0], edge, on_boundary
-    return on_boundary and edge
+    return on_boundary and isTT
 
 class OuterSarcolemma(SubDomain):
   def inside(self,x,on_boundary):
@@ -42,7 +61,8 @@ class Params():
 
   # time steps 
   T = 500
-  T = 3  
+  T = 1  
+
   dt = 1.0   # [ms] 
 
 
@@ -140,7 +160,7 @@ def UpdateBeardVals(nC,bM,mgatpi_uM,fadpi_uM ,fmgi_uM ):
   #print "fatpn %f (before equil) " % cfatpn
 
 
-def PrintSlice(mesh,u):  
+def PrintSlice(mesh,u,dims=3):    
 #    mesh = results.mesh
     #dims = np.max(mesh.coordinates(),axis=0) - np.min(mesh.coordinates(),axis=0)
     mmin = np.min(mesh.coordinates(),axis=0)
@@ -153,9 +173,21 @@ def PrintSlice(mesh,u):
     #(gx,gy,gz) = np.mgrid[0:dims[0]:(res*1j),
     #                      dims[1]/2.:dims[1]/2.:1j,
     #                      0:dims[2]:(res*1j)]
-    (gx,gy) = np.mgrid[mmin[0]:mmax[0]:(res*1j),
-                       mmin[0]:mmax[1]:(res*1j)]
-    img0 = griddata(mesh.coordinates(),up.vector(),(gx,gy))
+    if dims==3:
+      (gx,gy,gz) = np.mgrid[mmin[0]:mmax[0]:(res*1j),
+                            mmin[1]:mmax[1]:(res*1j),  
+                                  0:0:1j]
+      img0 = griddata(mesh.coordinates(),up.vector(),(gx,gy,gz))
+      print np.shape(img0)
+      img0 = np.reshape(img0[:,:,0],[res,res])
+    else: 
+      raise RuntimeError("Not supported") 
+
+    # test
+    if 0: 
+      plt.pcolormesh(img0)
+      plt.colorbar()
+      plt.gcf().savefig("test.png")
     return img0
 
 
@@ -183,9 +215,9 @@ class MyEquation(NonlinearProblem):
 def tsolve(fileName="sarcomere.xml",\
            outName="output.pvd",\
            mode="sachse",\
+           params = Params(),\
 	   debug=False): 
-
-  params = Params()
+ 
   if debug:
     params.T = 10
 
@@ -224,11 +256,14 @@ def tsolve(fileName="sarcomere.xml",\
   ## mark boundaries 
   # problem specific          
   subdomains = MeshFunction("size_t",mesh,dim-1)
+  subdomains.set_all(0)
   boundary = LeftTT()
   boundary.mmin = np.min(mesh.coordinates(),axis=0)
+  boundary.mmax = np.max(mesh.coordinates(),axis=0)
   lMarker = 2
   boundary.mark(subdomains,lMarker)
   boundary = RightTT()
+  boundary.mmin = np.min(mesh.coordinates(),axis=0)
   boundary.mmax = np.max(mesh.coordinates(),axis=0)
   rMarker = 3
   boundary.mark(subdomains,rMarker)
@@ -245,7 +280,19 @@ def tsolve(fileName="sarcomere.xml",\
   u_0.interpolate(init_cond)
 
   bcs=[]
-  #bcs.append(bc)
+  if 1: 
+    bc = DirichletBC(ME.sub(0),Constant(1.),subdomains,lMarker)
+    bcs.append(bc)
+    # doesn't seem to work with ME.sub
+    #import view 
+    #bc = DirichletBC(V,Constant(1.),subdomains,lMarker)
+    #bcs.append(bc)
+    ##view.PrintBoundary(mesh,bcs)
+    #marked1 = Function(V)
+    #bc.apply(marked1.vector())
+    #File("marked.pvd") << marked1
+    #quit()
+    #view.PrintSubdomains(mesh,subdomains)
    
   # define integrator 
   ds = Measure("ds")[subdomains]
@@ -297,6 +344,8 @@ def tsolve(fileName="sarcomere.xml",\
     F = 1.
     V = 1.
     jRyR = delta0 * iryr / (2*F*delta*V)
+    #jRyR = delta0 / (2*F*delta*V)
+    #print "jRyR ", jRyR
     # Add left/right TTs
     RHSis[idxCa] += jRyR*vCa*ds(lMarker,domain=mesh)
     RHSis[idxCa] += jRyR*vCa*ds(rMarker,domain=mesh)
@@ -319,6 +368,8 @@ def tsolve(fileName="sarcomere.xml",\
     jCa = Expression("r",r=0)
     jCa.r = 0.1
     RHSis[idxCa] += -jCa*vCa*dx
+  else:
+    raise RuntimeError("Need to give a mode option") 
 
   
   
@@ -401,6 +452,8 @@ def tsolve(fileName="sarcomere.xml",\
         #assembles[i] = assemble(cns[i]*dx(domain=mesh))
         assembles[i] = assemble(u_n[i]*dx(domain=mesh))
       concis  = assembles/vol  
+      if MPI.rank(mpi_comm_world())==0:
+        print "Conc Ca", concis[idxCa]
  
       ts.append(t0)
       concs.append(concis)
@@ -418,16 +471,21 @@ def tsolve(fileName="sarcomere.xml",\
 
 
   #
-  concs = np.asarray(concs)
-  return concs       
+  results = empty()
+  results.mesh = mesh 
+  results.concs = np.asarray(concs)
+  #if MPI.rank(mpi_comm_world())==0:
+  if 0: # Doesn't work inside ipython notebook 
+    results.caSlice = PrintSlice(mesh,u_n[i])
+  return results     
 
 
 # In[19]:
 def whosalive():
-  print "I'm alive"
+  print "I'm alive!"
 
-def doit(debug=True,mode=""):  
-  tsolve(debug=debug,mode=mode)
+def doit(debug=True,mode="",params=Params()):  
+  tsolve(debug=debug,mode=mode,params=params)
 #!/usr/bin/env python
 import sys
 ##################################
@@ -484,6 +542,11 @@ if __name__ == "__main__":
       quit()
     elif(arg=="-test1"):
       doit(debug=False,mode="ode")    
+      quit()
+    elif(arg=="-test2"):
+      params = Params()
+      params.T = 20
+      doit(debug=False,params=params,mode="sachse") 
       quit()
   
 
