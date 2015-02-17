@@ -49,7 +49,7 @@ class Params():
   # diffusion params 
   #DAb   = Dbulk# [um^2/ms] Diff const within PDE (domain 1) 
   DCa = 1.0  # [um^2/ms]
-  DBuff = 1.0 # unverified
+  DBuff = Constant(0.) # unverified
   DFluo = 1.0 
   Ds = [DCa,DBuff,DFluo]
 
@@ -58,6 +58,16 @@ class Params():
   cBuffinit =1.0  # [uM]
   cFluoinit =1.0  # [uM]
   cInits = [cCainit,cBuffinit,cFluoinit]
+
+  # buffer (mostly TnC) 
+  alphabuff=1. # kon buff  [1/uMms] 
+  Btot = 1. # [Buff] [uM] 
+  betabuff = 1. # koff buff [1/ms]
+ 
+  # fluo
+  alphafluo=1. # kon fluo  [1/uMms] 
+  Ftot = 1. # [Fluo] [uM] 
+  betafluo = 1. # koff fluo [1/ms]
 
 class InitialConditions(Expression):
 
@@ -127,7 +137,7 @@ def tsolve(fileName="sarcomere.xml",           outName="output.pvd",
   # Create mesh 
   if debug: 
     mesh = UnitCubeMesh(16,16,16)  
-    #mesh = UnitCubeMesh(3,3,3)
+    mesh = UnitCubeMesh(5,5,5)
   else: 
     mesh = Mesh(fileName)   # not working with xml files I"ve been generatinf 
   dim =mesh.ufl_cell().geometric_dimension()
@@ -204,18 +214,41 @@ def tsolve(fileName="sarcomere.xml",           outName="output.pvd",
   ## RHS 
   # diffusion 
   Ds  = params.Ds     
-  #for i in range(nDOF):
-  i =0 
-  RHSi0 = -inner(Ds[i]*grad(cns[i]), grad(vs[i]))*dx
-  i =1 
-  RHSi1 = -inner(Ds[i]*grad(cns[i]), grad(vs[i]))*dx
-  i =2 
-  RHSi2 = -inner(Ds[i]*grad(cns[i]), grad(vs[i]))*dx
+  RHSis=[]
+  for i in range(nDOF):
+    RHSi= -inner(Ds[i]*grad(cns[i]), grad(vs[i]))*dx
+    RHSis.append(RHSi)
 
-  RHSis = [RHSi0,RHSi1,RHSi2]
-  RHS = RHSi0 + RHSi1  + RHSi2 
-  # reaction 
-  #RHS+= -r0*u*q*dx
+  # reactions
+  #- buffer 
+  kp = params.alphabuff 
+  btot = params.Btot 
+  km = params.betabuff   # probably describe this as a state
+  Jbuff = kp*cCa_n*(btot - cBuff_n) - km*cBuff_n   # probably describe this as a state
+  RHSis[idxCa] += -Jbuff*vCa*dx
+  RHSis[idxBuff] += +Jbuff*vBuff*dx
+  
+  #- fluo 
+  kp = params.alphafluo 
+  ftot = params.Ftot 
+  km = params.betafluo   # probably describe this as a state
+  Jfluo = kp*cCa_n*(ftot - cFluo_n) - km*cFluo_n   # probably describe this as a state
+  RHSis[idxCa] += -Jbuff*vCa*dx
+  RHSis[idxFluo] += +Jbuff*vFluo*dx
+  
+  #Jfluo = alphafluo * u * (Ftot - FC) - betafluo*FC   # probably describe this as a state
+
+  # reactions 
+  # RyR
+  delta0 = 1.  # TBD
+  iryr = Expression("exp(-t)",t=0)
+  delta = 1.
+  F = 1.
+  V = 1.
+  jRyR = delta0 * iryr / (2*F*delta*V)
+  # TODO assign boundary 
+  RHSis[idxCa] += jRyR*vCa*ds()
+  
   # RyR release at R TT  
   #RHS+=  r1*q*ds(rMarker,domain=mesh)
   # RyR release at L TT  
@@ -230,13 +263,19 @@ def tsolve(fileName="sarcomere.xml",           outName="output.pvd",
   ## LHS    
   dt = params.dt
   #LHS = (cCa_n-cCa_0)*vCa/dt * dx - RHSCa
-  i = 0 
-  LHSi0 = (cns[i]-c0s[i])*vs[i]/dt * dx - RHSis[i]
-  i = 1 
-  LHSi1 = (cns[i]-c0s[i])*vs[i]/dt * dx - RHSis[i]
-  i = 2 
-  LHSi2 = (cns[i]-c0s[i])*vs[i]/dt * dx - RHSis[i]
-  L = LHSi0 + LHSi1 + LHSi2
+  LHSis=[]
+  L=0
+  for i in range(nDOF):
+    LHSi= (cns[i]-c0s[i])*vs[i]/dt * dx - RHSis[i]     
+    LHSis.append(RHSi)
+    L+= LHSi
+  #i = 0 
+  #LHSi0 = (cns[i]-c0s[i])*vs[i]/dt * dx - RHSis[i]
+  #i = 1 
+  #LHSi1 = (cns[i]-c0s[i])*vs[i]/dt * dx - RHSis[i]
+  #i = 2 
+  #LHSi2 = (cns[i]-c0s[i])*vs[i]/dt * dx - RHSis[i]
+  #L = LHSi0 + LHSi1 + LHSi2
     
   # Compute directional derivative about u in the direction of du (Jacobian)
   # (for Newton iterations) 
@@ -258,14 +297,14 @@ def tsolve(fileName="sarcomere.xml",           outName="output.pvd",
   concs=[]
   ts = []
   us = []
-  if 1: 
+  if 0: 
       i=0
       plot(u_n.sub(i),rescale=True)
       interactive()	
+
   while (t < params.T):
       # advance 
       t0=t
-      t += dt
       u_0.vector()[:] = u_n.vector()
       solver.solve(problem,u_n.vector())
 
@@ -280,13 +319,92 @@ def tsolve(fileName="sarcomere.xml",           outName="output.pvd",
       #uds = assemble(u0p*ds(rMarker,domain=mesh))#,mesh=mesh)
       #area = assemble(Constant(1.)*ds(rMarker,domain=mesh))#,mesh=mesh)
       #conc = uds/area
-      #ts.append(t0)
-      #concs.append(conc)
+
+      vol = assemble(Constant(1.)*dx(domain=mesh))
+      assembles=np.zeros(nDOF)
+      for i in range(nDOF):
+        assembles[i] = assemble(cns[i]*dx(domain=mesh))
+      concis  = assembles/vol  
+ 
+      ts.append(t0)
+      concs.append(concis)
+
+      # update
+      iryr.t = t 
+      t += dt
 
 
-
+  #
+  concs = np.asarray(concs)
+  return concs       
 
 
 # In[19]:
+def whosalive():
+  print "I'm alive"
 
-tsolve()
+def doit():
+  tsolve()
+#!/usr/bin/env python
+import sys
+##################################
+#
+# Revisions
+#       10.08.10 inception
+#
+##################################
+
+
+#
+# Message printed when program run without arguments 
+#
+def helpmsg():
+  scriptName= sys.argv[0]
+  msg="""
+Purpose: 
+ 
+Usage:
+"""
+  msg+="  %s -validation" % (scriptName)
+  msg+="""
+  
+ 
+Notes:
+
+"""
+  return msg
+
+#
+# MAIN routine executed when launching this script from command line 
+#
+if __name__ == "__main__":
+  import sys
+  msg = helpmsg()
+  remap = "none"
+
+  if len(sys.argv) < 2:
+      raise RuntimeError(msg)
+
+  #fileIn= sys.argv[1]
+  #if(len(sys.argv)==3):
+  #  1
+  #  #print "arg"
+
+  # Loops over each argument in the command line 
+  for i,arg in enumerate(sys.argv):
+    # calls 'doit' with the next argument following the argument '-validation'
+    if(arg=="-test"):
+      #arg1=sys.argv[i+1] 
+      doit()     
+      quit()
+  
+
+
+
+
+
+  raise RuntimeError("Arguments not understood")
+
+
+
+
