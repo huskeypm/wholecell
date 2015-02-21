@@ -434,7 +434,7 @@ def rhs(states, t, parameters, values=None):
     Vol_SR = 0.035*Vol_Cell
     Vol_SL = 0.02*Vol_Cell
     Vol_jct1 = 0.000539*Vol_Cell
-    Vol_jct2 = 1
+    Vol_jct2 = 0.000539*Vol_Cell
     Vol_myo = 0.65*Vol_Cell
 
     # Expressions for the Reversal potentials component
@@ -756,8 +756,14 @@ def rhs(states, t, parameters, values=None):
     values[30] = dNa_SL_buf
     values[31] = -dNa_jct1_buf - Cm*(3*i_NaCa_jct1 + 3*i_NaK_jct1 + i_Na_jct1 +\
         i_CaL_Na_jct1 + i_Nab_jct1)/(F*Vol_jct1) - J_Na_jct1_SL/Vol_jct1
+    print        -dNa_jct1_buf , Cm, 3,i_NaCa_jct1 , 3,i_NaK_jct1 , i_Na_jct1 ,\
+        i_CaL_Na_jct1 , i_Nab_jct1,  F,Vol_jct1  , J_Na_jct1_SL,Vol_jct1
+    print "o",values[31]
     values[32] = -J_Na_jct2_SL/Vol_jct2 - dNa_jct2_buf - Cm*(3*i_NaCa_jct2 +\
         i_Nab_jct2 + 3*i_NaK_jct2 + i_CaL_Na_jct2 + i_Na_jct2)/(F*Vol_jct2)
+    print        -dNa_jct2_buf , Cm, 3,i_NaCa_jct2 , 3,i_NaK_jct2 , i_Na_jct2 ,\
+        i_CaL_Na_jct2 , i_Nab_jct2,  F,Vol_jct2  , J_Na_jct2_SL,Vol_jct2
+    print "p", values[32]
     values[33] = -dNa_SL_buf - Cm*(3*i_NaCa_SL + i_Na_SL + i_CaL_Na_SL +\
         i_Nab_SL + 3*i_NaK_SL)/(F*Vol_SL) + (J_Na_jct2_SL - J_Na_SL_myo +\
         J_Na_jct1_SL)/Vol_SL
@@ -796,12 +802,15 @@ def rhs(states, t, parameters, values=None):
     i_Ca_SL_tot = i_Cap_SL + i_CaL_Ca_SL - 2*i_NaCa_SL + i_Cab_SL
     values[42] = -dCalsequestrin - (j_leak_SR1 + j_leak_SR2)*Vol_myo/Vol_SR +\
         j_pump_SR - j_rel_SR1 - j_rel_SR2
+    print values[42]
     values[43] = -J_Ca_jct1_SL/Vol_jct1 - Cm*i_Ca_jct1_tot/(2*F*Vol_jct1) -\
         dCa_jct1_tot_bound + Vol_myo*j_leak_SR1/Vol_jct1 +\
         Vol_SR*j_rel_SR1/Vol_jct1
+    print values[43]
     values[44] = Vol_myo*j_leak_SR2/Vol_jct2 -\
         Cm*i_Ca_jct2_tot/(2*F*Vol_jct2) + Vol_SR*j_rel_SR2/Vol_jct2 -\
         dCa_jct2_tot_bound - J_Ca_jct2_SL/Vol_jct2
+    print values[45]
     values[45] = (J_Ca_jct1_SL - J_Ca_SL_myo + J_Ca_jct2_SL)/Vol_SL -\
         dCa_SL_tot_bound - Cm*i_Ca_SL_tot/(2*F*Vol_SL)
     values[46] = -dCa_cytosol_tot_bound - Vol_SR*j_pump_SR/Vol_myo +\
@@ -813,6 +822,7 @@ def rhs(states, t, parameters, values=None):
         -stim_period*math.floor(t/stim_period) + t >= stim_start else 0)
     values[47] = -i_NaCa - i_Cl_Ca - i_Cab - i_Clb - i_tos - i_CaL - i_tof -\
         i_Stim - i_Na - i_Cap - i_Nab - i_NaK - i_Kr - i_K1 - i_Kp - i_Ks
+    print"lll"
 
     # Return results
     return values

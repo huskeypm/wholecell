@@ -24,11 +24,11 @@ V_idx =  model.state_indices( "V" )
 #V_max_pIdx = 45 # NCX
 
 # old gotran 
-stim_period_pIdx =  model.param_indices( "stim_period" )
-V_max_pIdx =  model.param_indices( "V_max" )
+#stim_period_pIdx =  model.parameter_indices( "stim_period" )
+#V_max_pIdx =  model.parameter_indices( "V_max" )
 
 # new gotran
-#stim_period_pIdx =  model.parameter_indices( "stim_period" )
+stim_period_pIdx =  model.parameter_indices( "stim_period" )
 #V_max_pIdx =  model.parameter_indices( "V_max" )
 
 
@@ -61,8 +61,14 @@ import numpy as np
 def monitorstepper(model,states,pi,tsteps):
   dtt= tsteps[1]-tsteps[0]
   tstepsm1 = tsteps[1::] 
+
+  # get len
+  si = states[0,:]
+  jis = model.monitor(states[0,:], 0, pi) 
+  totMonitors = np.shape(jis)[0]
   jall = np.zeros((np.shape(tstepsm1)[0],totMonitors)) 
 
+  #print np.shape(jis)
   jSums = np.zeros(totMonitors)
   for i,t in enumerate(tstepsm1):
     # get current state
@@ -80,12 +86,12 @@ def monitorstepper(model,states,pi,tsteps):
 
 def init():
   # old gotran 
-  s=model.init_values()
-  p=model.default_parameters()
+  #s=model.init_values()
+  #p=model.default_parameters()
 
   # new gotran 
-  #s=model.init_state_values()
-  #p=model.init_parameter_values()
+  s=model.init_state_values()
+  p=model.init_parameter_values()
   t=0; #dt=1000; dtn=5;
 
   model.s = s; model.t =t; model.p = p
@@ -112,11 +118,12 @@ def runner(dt=1000,dtn=1.,\
   tsteps = np.linspace(t, t+dt, (dt)/dtn+1)
   
   #states = odeint(model.rhs,s,tsteps,(p,),mxstep=mxsteps)
-  print "USING SUPPER!" 
-  states = odeint(model.rhs,s,tsteps,(p,),mxstep=10000,hmax=.03,rtol=1e-12, atol=1e-12)
+  #print "USING SUPPER!" 
+  states = odeint(model.rhs,s,tsteps,(p,),mxstep=mxsteps,hmax=.03,rtol=1e-12, atol=1e-12)
   
   # get monitored variables
-  (ts,js)=monitorstepper(model,states,np.copy(p),tsteps)
+  #(ts,js)=monitorstepper(model,states,np.copy(p),tsteps)
+  ts=tsteps[1:]; js=0
   
   return (p,states,ts,js)
 
@@ -150,9 +157,11 @@ def plotting(p,states,ts,js,case="default"):
   plt.ylabel("V [mV]")
   plt.xlabel("t [ms]") 
   plt.gcf().savefig(case+"_potential.png",dpi=300)
+
+  return 
   
   ## fluxes
-  (ts,js)=monitorstepper(model,states,np.copy(p),tsteps)
+  # BROKEN (ts,js)=monitorstepper(model,states,np.copy(p),tsteps)
 
   #
   plt.figure(figsize=(10,5))

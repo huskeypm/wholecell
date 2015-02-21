@@ -1,0 +1,39 @@
+states("Jrel sr",
+       R = 8.884332e-1,
+       O = 8.156628e-7,
+       I = 1.024274e-7)
+
+parameters("Jrel sr",
+           Max_SR = 15,
+           Min_SR = 1,
+           EC50_SR = 0.45,
+           ks = 25,
+           koCa = 10,
+           kom = 0.06,
+           kiCa = 0.5,
+           kim = 0.005,
+           HSR = 2.5)
+
+parameters("Ca buffer as params",
+       Ca_SR = 5.545201e-1,
+       Ca_jct = 1.737475e-4) 
+
+
+component("Jrel sr")
+kCaSR = Max_SR - (Max_SR - Min_SR)/(one + (EC50_SR/Ca_SR)**HSR)
+koSRCa = koCa/kCaSR
+kiSRCa = kiCa*kCaSR
+RI = one - R - O - I
+j_rel_SR = ks*O*(Ca_SR - Ca_jct)
+#monitor(j_rel_SR)
+
+
+comment("The ODE system: 3 states")
+dR_dt = kim*RI - kiSRCa*Ca_jct*R - (koSRCa*Ca_jct**two*R - kom*O)
+dO_dt = koSRCa*Ca_jct**two*R - kom*O - (kiSRCa*Ca_jct*O - kim*I)
+dI_dt = kiSRCa*Ca_jct*O - kim*I - (kom*I - koSRCa*Ca_jct**two*RI)
+
+
+
+
+

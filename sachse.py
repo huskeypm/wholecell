@@ -7,6 +7,7 @@ import matplotlib.pylab as plt
 from scipy.interpolate import griddata
 class empty:pass 
 
+useMPI = True
 idxCa = 0 # PDE 
 idxBuff = 1
 idxFluo = 2
@@ -55,6 +56,11 @@ class OuterSarcolemma(SubDomain):
     #print x[0], edge, on_boundary
     return on_boundary and edge
 
+# [CaB] = [Btot]/(KD/[Ca]+1)
+def buffered(totB,freeCa,kFwd,kback):
+    KD = kback/kFwd
+    return totB/(KD/freeCa + 1) 
+
 class Params():
   paraview = True  
   verbose=False 
@@ -69,26 +75,33 @@ class Params():
 
   # diffusion params 
   #DAb   = Dbulk# [um^2/ms] Diff const within PDE (domain 1) 
-  DCa = 1.0  # [um^2/ms]
-  DBuff = Constant(0.) # unverified
-  DFluo = 1.0 
+  DCa = 0.39  # [um^2/ms] verified
+  DBuff = Constant(0.) # TnC
+  DFluo = 0.1 # [um^2/ms] verified 
   Ds = [DCa,DBuff,DFluo]
 
-  # init concs 
-  cCainit =1.0  # [uM]
-  cBuffinit =1.0  # [uM]
-  cFluoinit =1.0  # [uM]
-  cInits = [cCainit,cBuffinit,cFluoinit]
 
   # buffer (mostly TnC) 
-  alphabuff=1. # kon buff  [1/uMms] 
-  Btot = 1. # [Buff] [uM] 
-  betabuff = 1. # koff buff [1/ms]
+  alphabuff=0.04 # kon verified [1/uMms] 
+  Btot = 70. # [TnC] [uM] verified 
+  betabuff = 0.04 # koff verfied [1/ms]
  
   # fluo
-  alphafluo=1. # kon fluo  [1/uMms] 
-  Ftot = 1. # [Fluo] [uM] 
-  betafluo = 1. # koff fluo [1/ms]
+  alphafluo=0.23 # kon fluo  [1/uMms] verified 
+  Ftot = 50. # [Fluo] [uM] verified  
+  betafluo = 0.17 # koff fluo [1/ms] verified
+
+  # RyR
+  ryrAmp = 9.5 # [pA/pF] 
+  ryrOffset = 5 # [ms]
+  ryrTau = -50/np.log(1/2.) # half-max amp at 50 ms 
+  ryrKm = 0.2 # uM (made this up)  
+
+  # init concs 
+  cCainit =0.1  # Verified [uM]
+  cBuffinit = buffered(Btot,cCainit,alphabuff,betabuff)  # TnC unverified [uM]
+  cFluoinit = buffered(Ftot,cCainit,alphafluo,betafluo)  # [uM]
+  cInits = [cCainit,cBuffinit,cFluoinit]
 
 class InitialConditions(Expression):
 
@@ -97,8 +110,7 @@ class InitialConditions(Expression):
     #if (x[0] < 0.5 and np.linalg.norm(x[1:2]) < 0.5):
     # corner 
     #oif (np.linalg.norm(x -np.zeros(3) ) < 0.5):
-    if 1:
-      for i,j in enumerate(self.params.cInits):
+    for i,j in enumerate(self.params.cInits):
             #print i 
             values[i] = j
 #      values[0] = self.params.cCainit
@@ -160,7 +172,7 @@ def UpdateBeardVals(nC,bM,mgatpi_uM,fadpi_uM ,fmgi_uM ):
   #print "fatpn %f (before equil) " % cfatpn
 
 
-def PrintSlice(mesh,u,dims=3):    
+def InterpolateData(mesh,u,dims=3,mode="line",doplot=False):    
 #    mesh = results.mesh
     #dims = np.max(mesh.coordinates(),axis=0) - np.min(mesh.coordinates(),axis=0)
     mmin = np.min(mesh.coordinates(),axis=0)
@@ -173,22 +185,39 @@ def PrintSlice(mesh,u,dims=3):
     #(gx,gy,gz) = np.mgrid[0:dims[0]:(res*1j),
     #                      dims[1]/2.:dims[1]/2.:1j,
     #                      0:dims[2]:(res*1j)]
-    if dims==3:
+    #if dims==3:
+    
+    if mode=="slice":
       (gx,gy,gz) = np.mgrid[mmin[0]:mmax[0]:(res*1j),
                             mmin[1]:mmax[1]:(res*1j),  
                                   0:0:1j]
       img0 = griddata(mesh.coordinates(),up.vector(),(gx,gy,gz))
-      print np.shape(img0)
+      #print np.shape(img0)
       img0 = np.reshape(img0[:,:,0],[res,res])
-    else: 
-      raise RuntimeError("Not supported") 
 
-    # test
-    if 0: 
-      plt.pcolormesh(img0)
-      plt.colorbar()
-      plt.gcf().savefig("test.png")
-    return img0
+      if doplot:
+        plt.pcolormesh(img0)
+        plt.colorbar()
+        plt.gcf().savefig("test.png")
+      return img0
+
+    if mode=="line":
+    
+      yMid = 0.5*(mmax[1]+mmin[1])
+      (gx,gy,gz) = np.mgrid[mmin[0]:mmax[0]:(res*1j),
+                            yMid:yMid:1j,  
+                            0:0:1j]
+      line = griddata(mesh.coordinates(),up.vector(),(gx,gy,gz))
+      #print np.shape(line)
+      #img0 = np.reshape(line[:,0,0],[res])
+      line = np.ndarray.flatten(line)
+      #print np.shape(line)
+      if doplot:
+        plt.plot(line)
+        plt.gcf().savefig("test1.png") 
+      return line 
+
+
 
 
 # Nonlinear equation 
@@ -214,7 +243,7 @@ class MyEquation(NonlinearProblem):
 # TODO verify units 
 def tsolve(fileName="sarcomere.xml",\
            outName="output.pvd",\
-           mode="sachse",\
+           mode="sachse", # sachse, ode, bcs \ 
            params = Params(),\
 	   debug=False): 
  
@@ -280,20 +309,6 @@ def tsolve(fileName="sarcomere.xml",\
   u_0.interpolate(init_cond)
 
   bcs=[]
-  if 1: 
-    bc = DirichletBC(ME.sub(0),Constant(1.),subdomains,lMarker)
-    bcs.append(bc)
-    # doesn't seem to work with ME.sub
-    #import view 
-    #bc = DirichletBC(V,Constant(1.),subdomains,lMarker)
-    #bcs.append(bc)
-    ##view.PrintBoundary(mesh,bcs)
-    #marked1 = Function(V)
-    #bc.apply(marked1.vector())
-    #File("marked.pvd") << marked1
-    #quit()
-    #view.PrintSubdomains(mesh,subdomains)
-   
   # define integrator 
   ds = Measure("ds")[subdomains]
 
@@ -316,7 +331,29 @@ def tsolve(fileName="sarcomere.xml",\
     RHSis.append(RHSi)
 
   ## buffreactions
-  if mode=="sachse":
+  # Test flux locations 
+  # PKH verified 150216
+  if mode=="bcs":
+    #bc = DirichletBC(ME.sub(0),Constant(1.),subdomains,lMarker)
+    #bcs.append(bc)
+    #bc = DirichletBC(ME.sub(0),Constant(2.),subdomains,rMarker)
+    #bcs.append(bc)
+    #bc = DirichletBC(ME.sub(0),Constant(1.),subdomains,slMarker)
+    #bcs.append(bc)
+ 
+    # doesn't seem to work with ME.sub
+    #import view 
+    #bc = DirichletBC(V,Constant(1.),subdomains,lMarker)
+    #bcs.append(bc)
+    ##view.PrintBoundary(mesh,bcs)
+    #marked1 = Function(V)
+    #bc.apply(marked1.vector())
+    #File("marked.pvd") << marked1
+    #quit()
+    #view.PrintSubdomains(mesh,subdomains)
+    1 
+   
+  elif mode=="sachse":
     #- buffer 
     kp = params.alphabuff 
     btot = params.Btot 
@@ -338,17 +375,37 @@ def tsolve(fileName="sarcomere.xml",\
     ## boundary reactions 
     # RyR
     # TODO add NCX, etc 
-    delta0 = 1.  # TBD
-    iryr = Expression("exp(-t)",t=0)
-    delta = 1.
-    F = 1.
-    V = 1.
-    jRyR = delta0 * iryr / (2*F*delta*V)
+    iryr = Expression("a*exp(-(t-to)/tau)",a=params.ryrAmp,\
+                                    to=params.ryrOffset,\
+                                    tau=params.ryrTau,\
+                                    t=0)
+    iryrDefect = Expression("a/(1+pow((Km/ca),n))",a=params.ryrAmp,
+                                               Km=params.ryrKm,
+                                               n=5,
+                                               ca = 0.1)
+    # Torres description 
+    #delta0 = 1.  # TBD
+    #delta = 1.
+    #F = 1.
+    #V = 1.
+    #jRyR = delta0 * iryr / (2*F*delta*V)
+   
+    # converted into 3D using fluxes.pdf
+    # TODO: warning: i think this needs to be updated according to the 
+    # SA overwhich jRyr is applied. Check eqn 7 in fluxes.pdf
+    jRyR = 0.1*iryr 
+    jRyRDefect = 0.1*iryrDefect
+
+
     #jRyR = delta0 / (2*F*delta*V)
     #print "jRyR ", jRyR
     # Add left/right TTs
+    ttConfig = "both"
+    #RHSis[idxCa] += jRyR*vCa*ds(lMarker,domain=mesh)
+    #RHSis[idxCa] += jRyR*vCa*ds(rMarker,domain=mesh)
+    ttConfig = "normalL,defectR"
     RHSis[idxCa] += jRyR*vCa*ds(lMarker,domain=mesh)
-    RHSis[idxCa] += jRyR*vCa*ds(rMarker,domain=mesh)
+    RHSis[idxCa] += jRyRDefect*vCa*ds(rMarker,domain=mesh)
 
     # NCX
     r = Constant(0.001)
@@ -428,6 +485,7 @@ def tsolve(fileName="sarcomere.xml",\
       plot(u_n.sub(i),rescale=True)
       interactive()	
 
+  file << (u_n,t) 
   while (t < params.T):
       # advance 
       t0=t
@@ -439,13 +497,13 @@ def tsolve(fileName="sarcomere.xml",\
 
       
       # store
-      #us.append(PrintSlice(mesh,up))
 
       # report on prev iter
       #uds = assemble(u0p*ds(rMarker,domain=mesh))#,mesh=mesh)
       #area = assemble(Constant(1.)*ds(rMarker,domain=mesh))#,mesh=mesh)
       #conc = uds/area
 
+      ## reporting 
       vol = assemble(Constant(1.)*dx(domain=mesh))
       assembles=np.zeros(nDOF)
       for i in range(nDOF):
@@ -457,10 +515,19 @@ def tsolve(fileName="sarcomere.xml",\
  
       ts.append(t0)
       concs.append(concis)
+      # doesn't work w mpi 
+      if useMPI==False:
+        us.append(InterpolateData(mesh,u_n[idxCa]))
 
       # update
       if mode=="sachse":
         iryr.t = t 
+        
+        caTT= assemble(u_n[idxCa]*ds(rMarker,domain=mesh))
+        vol = assemble(Constant(1.)*ds(rMarker,domain=mesh))
+        caTT = caTT/vol 
+        print "TT %f" % caTT
+        iryrDefect.ca = caTT
       if mode=="ode":
         # TODO run ODE model 
         # aggregate state variables
@@ -472,11 +539,13 @@ def tsolve(fileName="sarcomere.xml",\
 
   #
   results = empty()
+  # not pickle-safe
   results.mesh = mesh 
+  results.u_n = u_n  
+  # pickle-safe
   results.concs = np.asarray(concs)
-  #if MPI.rank(mpi_comm_world())==0:
-  if 0: # Doesn't work inside ipython notebook 
-    results.caSlice = PrintSlice(mesh,u_n[i])
+  if useMPI==False:
+    results.us = us
   return results     
 
 
@@ -546,7 +615,7 @@ if __name__ == "__main__":
     elif(arg=="-test2"):
       params = Params()
       params.T = 20
-      doit(debug=False,params=params,mode="sachse") 
+      doit(debug=False,params=params,mode="sachse")
       quit()
   
 

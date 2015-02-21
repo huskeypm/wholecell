@@ -38,3 +38,5 @@ source ~/bin/dolfin.bash
 gmsh sarcomere -clscale 0.9 sarcomere.geo -3
 dolfin-convert sarcomere.msh sarcomere.xml
 
+
+More instructions are included in the individual notebooks 
