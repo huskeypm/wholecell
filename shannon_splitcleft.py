@@ -1,5 +1,6 @@
 # Gotran generated code for the  "shannon_splitcleft" model
 from __future__ import division
+w1 = 0.5
 
 def init_state_values(**values):
     """
@@ -305,67 +306,68 @@ def monitor_indices(*monitored):
     Monitor indices
     """
     monitor_inds = dict([("Vol_Cell", 0), ("Vol_SR", 1), ("Vol_SL", 2),\
-        ("Vol_jct1", 3), ("Vol_jct2", 4), ("Vol_myo", 5), ("openProb", 6),\
-        ("i_Na_jct1", 7), ("i_Na_jct2", 8), ("i_Na_SL", 9), ("i_Na", 10),\
-        ("alpha_h", 11), ("beta_h", 12), ("alpha_j", 13), ("beta_j", 14),\
-        ("alpha_m", 15), ("beta_m", 16), ("i_Nab_jct1", 17), ("i_Nab_jct2",\
-        18), ("i_Nab_SL", 19), ("i_Nab", 20), ("sigma", 21), ("f_NaK", 22),\
-        ("i_NaK_jct1", 23), ("i_NaK_jct2", 24), ("i_NaK_SL", 25), ("i_NaK",\
-        26), ("G_IKr", 27), ("i_Kr", 28), ("Xr_infinity", 29), ("tau_Xr",\
-        30), ("Rr", 31), ("pCa_jct1", 32), ("pCa_jct2", 33), ("pCa_SL", 34),\
-        ("G_Ks_jct1", 35), ("G_Ks_jct2", 36), ("G_Ks_SL", 37), ("E_Ks", 38),\
-        ("i_Ks_jct1", 39), ("i_Ks_jct2", 40), ("i_Ks_SL", 41), ("i_Ks", 42),\
-        ("Xs_infinity", 43), ("tau_Xs", 44), ("i_Kp", 45), ("i_tos", 46),\
-        ("X_tos_infinity", 47), ("tau_X_tos", 48), ("Y_tos_infinity", 49),\
-        ("tau_Y_tos", 50), ("R_tos_infinity", 51), ("tau_R_tos", 52),\
-        ("i_tof", 53), ("X_tof_infinity", 54), ("tau_X_tof", 55),\
-        ("Y_tof_infinity", 56), ("tau_Y_tof", 57), ("i_Cl_Ca", 58), ("i_Clb",\
-        59), ("Q_CaL", 60), ("temp", 61), ("i_CaL_Ca_jct1", 62),\
-        ("i_CaL_Ca_jct2", 63), ("i_CaL_Na_jct1", 64), ("i_CaL_Na_jct2", 65),\
-        ("i_CaL_Ca_SL", 66), ("i_CaL_Na_SL", 67), ("i_CaL_K", 68), ("i_CaL",\
-        69), ("d_infinity", 70), ("tau_d", 71), ("f_infinity", 72), ("tau_f",\
-        73), ("fCa_SL", 74), ("fCa_jct1", 75), ("fCa_jct2", 76),\
-        ("temp_jct1", 77), ("temp_jct2", 78), ("temp_SL", 79), ("Q_NCX", 80),\
-        ("Ka_SL", 81), ("Ka_jct1", 82), ("Ka_jct2", 83), ("i_NaCa_jct1", 84),\
-        ("i_NaCa_jct2", 85), ("i_NaCa_SL", 86), ("i_NaCa", 87), ("Q_SLCaP",\
-        88), ("i_Cap_jct1", 89), ("i_Cap_jct2", 90), ("i_Cap_SL", 91),\
-        ("i_Cap", 92), ("i_Cab_jct1", 93), ("i_Cab_jct2", 94), ("i_Cab_SL",\
-        95), ("i_Cab", 96), ("kCaSR", 97), ("koSRCa", 98), ("kiSRCa", 99),\
-        ("RI1", 100), ("RI2", 101), ("j_rel_SR1", 102), ("j_rel_SR2", 103),\
-        ("j_leak_SR1", 104), ("j_leak_SR2", 105), ("Q_SRCaP", 106),\
-        ("j_pump_SR", 107), ("dCalsequestrin", 108), ("dCa_SLB_SL", 109),\
-        ("dCa_SLB_jct1", 110), ("dCa_SLB_jct2", 111), ("dCa_SLHigh_SL", 112),\
-        ("dCa_SLHigh_jct1", 113), ("dCa_SLHigh_jct2", 114),\
-        ("dCa_jct1_tot_bound", 115), ("dCa_jct2_tot_bound", 116),\
-        ("dCa_SL_tot_bound", 117), ("i_Ca_jct1_tot", 118), ("i_Ca_jct2_tot",\
-        119), ("i_Ca_SL_tot", 120), ("dCa_TroponinC", 121),\
-        ("dCa_TroponinC_Ca_Mg", 122), ("dMg_TroponinC_Ca_Mg", 123),\
-        ("dCa_Calmodulin", 124), ("dCa_Myosin", 125), ("dMg_Myosin", 126),\
-        ("dCa_SRB", 127), ("dCa_cytosol_tot_bound", 128), ("dNa_jct1_buf",\
-        129), ("dNa_jct2_buf", 130), ("dNa_SL_buf", 131), ("i_Stim", 132),\
-        ("E_Na_jct1", 133), ("E_Na_jct2", 134), ("E_Na_SL", 135),\
-        ("E_Ca_jct1", 136), ("E_Ca_jct2", 137), ("E_Ca_SL", 138), ("E_K",\
-        139), ("E_Cl", 140), ("G_K1", 141), ("i_K1", 142), ("alpha_K1", 143),\
-        ("beta_K1", 144), ("K1_infinity", 145), ("J_Na_jct1_SL", 146),\
-        ("J_Na_jct2_SL", 147), ("J_Na_SL_myo", 148), ("J_Ca_jct1_SL", 149),\
-        ("J_Ca_jct2_SL", 150), ("J_Ca_SL_myo", 151), ("dh_dt", 152),\
-        ("dj_dt", 153), ("dm_dt", 154), ("dXr_dt", 155), ("dXs_dt", 156),\
-        ("dX_tos_dt", 157), ("dY_tos_dt", 158), ("dR_tos_dt", 159),\
-        ("dX_tof_dt", 160), ("dY_tof_dt", 161), ("dd_dt", 162), ("df_dt",\
-        163), ("dfCaB_SL_dt", 164), ("dfCaB_jct1_dt", 165), ("dfCaB_jct2_dt",\
-        166), ("dR1_dt", 167), ("dR2_dt", 168), ("dO1_dt", 169), ("dO2_dt",\
-        170), ("dI1_dt", 171), ("dI2_dt", 172), ("dCa_TroponinC_dt", 173),\
-        ("dCa_TroponinC_Ca_Mg_dt", 174), ("dMg_TroponinC_Ca_Mg_dt", 175),\
-        ("dCa_Calmodulin_dt", 176), ("dCa_Myosin_dt", 177), ("dMg_Myosin_dt",\
-        178), ("dCa_SRB_dt", 179), ("dNa_jct1_buf_dt", 180),\
-        ("dNa_jct2_buf_dt", 181), ("dNa_SL_buf_dt", 182), ("dNa_jct1_dt",\
-        183), ("dNa_jct2_dt", 184), ("dNa_SL_dt", 185), ("dNai_dt", 186),\
-        ("dCa_Calsequestrin_dt", 187), ("dCa_SLB_SL_dt", 188),\
-        ("dCa_SLB_jct1_dt", 189), ("dCa_SLB_jct2_dt", 190),\
-        ("dCa_SLHigh_SL_dt", 191), ("dCa_SLHigh_jct1_dt", 192),\
-        ("dCa_SLHigh_jct2_dt", 193), ("dCa_SR_dt", 194), ("dCa_jct1_dt",\
-        195), ("dCa_jct2_dt", 196), ("dCa_SL_dt", 197), ("dCai_dt", 198),\
-        ("dV_dt", 199)])
+        ("w1", 3), ("Vol_jct1", 4), ("Vol_jct2", 5), ("Vol_myo", 6),\
+        ("openProb", 7), ("i_Na_jct1", 8), ("i_Na_jct2", 9), ("i_Na_SL", 10),\
+        ("i_Na", 11), ("alpha_h", 12), ("beta_h", 13), ("alpha_j", 14),\
+        ("beta_j", 15), ("alpha_m", 16), ("beta_m", 17), ("i_Nab_jct1", 18),\
+        ("i_Nab_jct2", 19), ("i_Nab_SL", 20), ("i_Nab", 21), ("sigma", 22),\
+        ("f_NaK", 23), ("i_NaK_jct1", 24), ("i_NaK_jct2", 25), ("i_NaK_SL",\
+        26), ("i_NaK", 27), ("G_IKr", 28), ("i_Kr", 29), ("Xr_infinity", 30),\
+        ("tau_Xr", 31), ("Rr", 32), ("pCa_jct1", 33), ("pCa_jct2", 34),\
+        ("pCa_SL", 35), ("G_Ks_jct1", 36), ("G_Ks_jct2", 37), ("G_Ks_SL",\
+        38), ("E_Ks", 39), ("i_Ks_jct1", 40), ("i_Ks_jct2", 41), ("i_Ks_SL",\
+        42), ("i_Ks", 43), ("Xs_infinity", 44), ("tau_Xs", 45), ("i_Kp", 46),\
+        ("i_tos", 47), ("X_tos_infinity", 48), ("tau_X_tos", 49),\
+        ("Y_tos_infinity", 50), ("tau_Y_tos", 51), ("R_tos_infinity", 52),\
+        ("tau_R_tos", 53), ("i_tof", 54), ("X_tof_infinity", 55),\
+        ("tau_X_tof", 56), ("Y_tof_infinity", 57), ("tau_Y_tof", 58),\
+        ("i_Cl_Ca", 59), ("i_Clb", 60), ("Q_CaL", 61), ("temp", 62),\
+        ("i_CaL_Ca_jct1", 63), ("i_CaL_Ca_jct2", 64), ("i_CaL_Na_jct1", 65),\
+        ("i_CaL_Na_jct2", 66), ("i_CaL_Ca_SL", 67), ("i_CaL_Na_SL", 68),\
+        ("i_CaL_K", 69), ("i_CaL", 70), ("d_infinity", 71), ("tau_d", 72),\
+        ("f_infinity", 73), ("tau_f", 74), ("fCa_SL", 75), ("fCa_jct1", 76),\
+        ("fCa_jct2", 77), ("temp_jct1", 78), ("temp_jct2", 79), ("temp_SL",\
+        80), ("Q_NCX", 81), ("Ka_SL", 82), ("Ka_jct1", 83), ("Ka_jct2", 84),\
+        ("i_NaCa_jct1", 85), ("i_NaCa_jct2", 86), ("i_NaCa_SL", 87),\
+        ("i_NaCa", 88), ("Q_SLCaP", 89), ("i_Cap_jct1", 90), ("i_Cap_jct2",\
+        91), ("i_Cap_SL", 92), ("i_Cap", 93), ("i_Cab_jct1", 94),\
+        ("i_Cab_jct2", 95), ("i_Cab_SL", 96), ("i_Cab", 97), ("kCaSR", 98),\
+        ("koSRCa", 99), ("kiSRCa", 100), ("RI1", 101), ("RI2", 102),\
+        ("j_rel_SR1", 103), ("j_rel_SR2", 104), ("j_leak_SR1", 105),\
+        ("j_leak_SR2", 106), ("Q_SRCaP", 107), ("j_pump_SR", 108),\
+        ("dCalsequestrin", 109), ("dCa_SLB_SL", 110), ("dCa_SLB_jct1", 111),\
+        ("dCa_SLB_jct2", 112), ("dCa_SLHigh_SL", 113), ("dCa_SLHigh_jct1",\
+        114), ("dCa_SLHigh_jct2", 115), ("dCa_jct1_tot_bound", 116),\
+        ("dCa_jct2_tot_bound", 117), ("dCa_SL_tot_bound", 118),\
+        ("i_Ca_jct1_tot", 119), ("i_Ca_jct2_tot", 120), ("i_Ca_SL_tot", 121),\
+        ("dCa_TroponinC", 122), ("dCa_TroponinC_Ca_Mg", 123),\
+        ("dMg_TroponinC_Ca_Mg", 124), ("dCa_Calmodulin", 125), ("dCa_Myosin",\
+        126), ("dMg_Myosin", 127), ("dCa_SRB", 128),\
+        ("dCa_cytosol_tot_bound", 129), ("dNa_jct1_buf", 130),\
+        ("dNa_jct2_buf", 131), ("dNa_SL_buf", 132), ("i_Stim", 133),\
+        ("E_Na_jct1", 134), ("E_Na_jct2", 135), ("E_Na_SL", 136),\
+        ("E_Ca_jct1", 137), ("E_Ca_jct2", 138), ("E_Ca_SL", 139), ("E_K",\
+        140), ("E_Cl", 141), ("G_K1", 142), ("i_K1", 143), ("alpha_K1", 144),\
+        ("beta_K1", 145), ("K1_infinity", 146), ("J_Na_jct1_SL", 147),\
+        ("J_Na_jct2_SL", 148), ("J_Na_SL_myo", 149), ("J_Ca_jct1_SL", 150),\
+        ("J_Ca_jct2_SL", 151), ("J_Ca_SL_myo", 152), ("dh_dt", 153),\
+        ("dj_dt", 154), ("dm_dt", 155), ("dXr_dt", 156), ("dXs_dt", 157),\
+        ("dX_tos_dt", 158), ("dY_tos_dt", 159), ("dR_tos_dt", 160),\
+        ("dX_tof_dt", 161), ("dY_tof_dt", 162), ("dd_dt", 163), ("df_dt",\
+        164), ("dfCaB_SL_dt", 165), ("dfCaB_jct1_dt", 166), ("dfCaB_jct2_dt",\
+        167), ("dR1_dt", 168), ("dR2_dt", 169), ("dO1_dt", 170), ("dO2_dt",\
+        171), ("dI1_dt", 172), ("dI2_dt", 173), ("dCa_TroponinC_dt", 174),\
+        ("dCa_TroponinC_Ca_Mg_dt", 175), ("dMg_TroponinC_Ca_Mg_dt", 176),\
+        ("dCa_Calmodulin_dt", 177), ("dCa_Myosin_dt", 178), ("dMg_Myosin_dt",\
+        179), ("dCa_SRB_dt", 180), ("dNa_jct1_buf_dt", 181),\
+        ("dNa_jct2_buf_dt", 182), ("dNa_SL_buf_dt", 183), ("dNa_jct1_dt",\
+        184), ("dNa_jct2_dt", 185), ("dNa_SL_dt", 186), ("dNai_dt", 187),\
+        ("dCa_Calsequestrin_dt", 188), ("dCa_SLB_SL_dt", 189),\
+        ("dCa_SLB_jct1_dt", 190), ("dCa_SLB_jct2_dt", 191),\
+        ("dCa_SLHigh_SL_dt", 192), ("dCa_SLHigh_jct1_dt", 193),\
+        ("dCa_SLHigh_jct2_dt", 194), ("dCa_SR_dt", 195), ("dCa_jct1_dt",\
+        196), ("dCa_jct2_dt", 197), ("dCa_SL_dt", 198), ("dCai_dt", 199),\
+        ("dV_dt", 200)])
 
     indices = []
     for monitor in monitored:
@@ -421,7 +423,7 @@ def rhs(states, t, parameters, values=None):
         Bmax_SLHigh_jct2, koff_Calsequestrin, koff_SLB, koff_SLHigh,\
         kon_Calsequestrin, kon_SL, stim_amplitude, stim_duration,\
         stim_period, stim_start = parameters
-    Cao, Cli, Clo,Cm, F, Ki,Ko, Mgi, Nao,Rgas, T,cell_length, cell_radius,Fx_Na_SL, Fx_Na_jct1,Fx_Na_jct2, G_INa,Fx_NaBk_SL, Fx_NaBk_jct1,Fx_NaBk_jct2, G_NaBk,Fx_NaK_SL, Fx_NaK_jct1,Fx_NaK_jct2, H_NaK,I_NaK_max, Km_Ko, Km_Nai,Fx_Ks_SL, Fx_Ks_jct1,Fx_Ks_jct2, pKNa,g_Kp, G_tos, G_tof,Fx_Cl_SL, Fx_Cl_jct1,Fx_Cl_jct2, G_Cl,Kd_ClCa, G_ClBk, Fx_ICaL_SL,Fx_ICaL_jct1, Fx_ICaL_jct2,PCa, PK,PNa, Q10_CaL, gamma_Cai,gamma_Cao, gamma_Ki,gamma_Ko, gamma_Nai,gamma_Nao, Fx_NCX_SL,Fx_NCX_jct1, Fx_NCX_jct2,HNa, K_mCai, K_mCao,K_mNai, K_mNao,Kd_act, Q10_NCX,V_max_INaCa, eta, ksat,Fx_SLCaP_SL, Fx_SLCaP_jct1,Fx_SLCaP_jct2, H_ICap,Km, Q10_SLCaP,V_maxAF, Fx_CaBk_SL,Fx_CaBk_jct1, Fx_CaBk_jct2,G_CaBk, EC50_SR, HSR,Max_SR, Min_SR,kiCa, kim, koCa,kom, ks1, ks2,KSRleak1, KSRleak2,H, Kmf, Kmr,Q10_SRCaP, V_max,Bmax_Calsequestrin, Bmax_SLB_SL,Bmax_SLB_jct1, Bmax_SLB_jct2,Bmax_SLHigh_SL, Bmax_SLHigh_jct1,Bmax_SLHigh_jct2,koff_Calsequestrin, koff_SLB,koff_SLHigh, kon_Calsequestrin,kon_SL, Bmax_Calmodulin,Bmax_Myosin_Ca, Bmax_Myosin_Mg,Bmax_SRB, Bmax_TroponinC,Bmax_TroponinC_Ca_Mg_Ca,Bmax_TroponinC_Ca_Mg_Mg, koff_Calmodulin,koff_Myosin_Ca,koff_Myosin_Mg, koff_SRB,koff_TroponinC, koff_TroponinC_Ca_Mg_Ca,koff_TroponinC_Ca_Mg_Mg,kon_Calmodulin, kon_Myosin_Ca,kon_Myosin_Mg, kon_SRB,kon_TroponinC,kon_TroponinC_Ca_Mg_Ca,kon_TroponinC_Ca_Mg_Mg, Bmax_SL,Bmax_jct1, Bmax_jct2,koff, kon,stim_amplitude, stim_duration,stim_period, stim_start = parameters
+    Cao, Cli, Clo, Cm, F, Ki, Ko, Mgi, Nao, Rgas, T, cell_length, cell_radius, Fx_Na_SL, Fx_Na_jct1, Fx_Na_jct2, G_INa, Fx_NaBk_SL, Fx_NaBk_jct1, Fx_NaBk_jct2, G_NaBk, Fx_NaK_SL, Fx_NaK_jct1, Fx_NaK_jct2, H_NaK, I_NaK_max, Km_Ko, Km_Nai, Fx_Ks_SL, Fx_Ks_jct1, Fx_Ks_jct2, pKNa, g_Kp, G_tos, G_tof, Fx_Cl_SL, Fx_Cl_jct1, Fx_Cl_jct2, G_Cl, Kd_ClCa, G_ClBk, Fx_ICaL_SL, Fx_ICaL_jct1, Fx_ICaL_jct2, PCa, PK, PNa, Q10_CaL, gamma_Cai, gamma_Cao, gamma_Ki, gamma_Ko, gamma_Nai, gamma_Nao, Fx_NCX_SL, Fx_NCX_jct1, Fx_NCX_jct2, HNa, K_mCai, K_mCao, K_mNai, K_mNao, Kd_act, Q10_NCX, V_max_INaCa, eta, ksat, Fx_SLCaP_SL, Fx_SLCaP_jct1, Fx_SLCaP_jct2, H_ICap, Km, Q10_SLCaP, V_maxAF, Fx_CaBk_SL, Fx_CaBk_jct1, Fx_CaBk_jct2, G_CaBk, EC50_SR, HSR, Max_SR, Min_SR, kiCa, kim, koCa, kom, ks1, ks2, KSRleak1, KSRleak2, H, Kmf, Kmr, Q10_SRCaP, V_max, Bmax_Calsequestrin, Bmax_SLB_SL, Bmax_SLB_jct1, Bmax_SLB_jct2, Bmax_SLHigh_SL, Bmax_SLHigh_jct1, Bmax_SLHigh_jct2, koff_Calsequestrin, koff_SLB, koff_SLHigh, kon_Calsequestrin, kon_SL, Bmax_Calmodulin, Bmax_Myosin_Ca, Bmax_Myosin_Mg, Bmax_SRB, Bmax_TroponinC, Bmax_TroponinC_Ca_Mg_Ca, Bmax_TroponinC_Ca_Mg_Mg, koff_Calmodulin, koff_Myosin_Ca, koff_Myosin_Mg, koff_SRB, koff_TroponinC, koff_TroponinC_Ca_Mg_Ca, koff_TroponinC_Ca_Mg_Mg, kon_Calmodulin, kon_Myosin_Ca, kon_Myosin_Mg, kon_SRB, kon_TroponinC, kon_TroponinC_Ca_Mg_Ca, kon_TroponinC_Ca_Mg_Mg, Bmax_SL, Bmax_jct1, Bmax_jct2, koff, kon, stim_amplitude, stim_duration, stim_period, stim_start = parameters
 
     # Init return args
     if values is None:
@@ -433,8 +435,8 @@ def rhs(states, t, parameters, values=None):
     Vol_Cell = 3.141592654e-15*cell_length*(cell_radius*cell_radius)
     Vol_SR = 0.035*Vol_Cell
     Vol_SL = 0.02*Vol_Cell
-    Vol_jct1 = 0.000539*Vol_Cell
-    Vol_jct2 = 0.000539*Vol_Cell
+    Vol_jct1 = 0.000539*(w1+0.001)*Vol_Cell
+    Vol_jct2 = 0.000539*(1 - w1+0.001)*Vol_Cell
     Vol_myo = 0.65*Vol_Cell
 
     # Expressions for the Reversal potentials component
@@ -471,7 +473,7 @@ def rhs(states, t, parameters, values=None):
 
     # Expressions for the m gate component
     alpha_m = (15.0816 + 0.32*V)/(1 - 0.0089778037307*math.exp(-0.1*V))
-    beta_m = 0.08*math.exp(-0.0909090909091*V)
+    beta_m = 0.08*math.exp(-V/11.)
     values[2] = (1 - m)*alpha_m - beta_m*m
 
     # Expressions for the INab component
@@ -531,35 +533,32 @@ def rhs(states, t, parameters, values=None):
     i_tos = G_tos*(0.5*R_tos + Y_tos)*(V - E_K)*X_tos
 
     # Expressions for the X_gate component
-    #X_tos_infinity = 1.0/(1 + 0.818730753078*math.exp(-0.0666666666667*V))
-    #tau_X_tos = 0.5 + 9/(1 + 1.22140275816*math.exp(0.0666666666667*V))
     X_tos_infinity = 1.0/(1 + math.exp(-1/5. - V/15.))
+    #print "%f"%(-1/5. - V/15.)
     tau_X_tos = 0.5 + 9/(1 + math.exp(1/5. + V/15.))
     values[5] = (-X_tos + X_tos_infinity)/tau_X_tos
 
     # Expressions for the Y_gate component
-    Y_tos_infinity = 1.0/(1 + 28.5027336438*math.exp(0.1*V))
-    tau_Y_tos = 30 + 3000/(1 + 403.428793493*math.exp(0.1*V))
+    Y_tos_infinity = 1.0/(1 + 28.5027336438*math.exp(V/10.))
+    tau_Y_tos = 30 + 3000/(1 + math.exp(6 + V/10.))
     values[6] = (Y_tos_infinity - Y_tos)/tau_Y_tos
 
     # Expressions for the R_gate component
-    R_tos_infinity = 1.0/(1 + 28.5027336438*math.exp(0.1*V))
-    tau_R_tos = 220 + 2800.0/(1 + 403.428793493*math.exp(0.1*V))
+    R_tos_infinity = 1.0/(1 + 28.5027336438*math.exp(V/10.))
+    tau_R_tos = 220 + 2800.0/(1 + math.exp(6 + V/10.))
     values[7] = (-R_tos + R_tos_infinity)/tau_R_tos
 
     # Expressions for the Itof component
     i_tof = G_tof*(V - E_K)*X_tof*Y_tof
 
     # Expressions for the Itof X gate component
-    #X_tof_infinity = 1.0/(1 + 0.818730753078*math.exp(-0.0666666666667*V))
-    #tau_X_tof = 1.5 + 3.5*math.exp(-0.00111111111111*(V*V))
     X_tof_infinity = 1.0/(1 + math.exp(-1/5. - V/15.))
     tau_X_tof = 1.5 + 3.5*math.exp(-(V*V)/900.)
     values[8] = (-X_tof + X_tof_infinity)/tau_X_tof
 
     # Expressions for the Itof Y gate component
-    Y_tof_infinity = 1.0/(1 + 28.5027336438*math.exp(0.1*V))
-    tau_Y_tof = 20 + 20/(1 + 28.5027336438*math.exp(0.1*V))
+    Y_tof_infinity = 1.0/(1 + 28.5027336438*math.exp(V/10.))
+    tau_Y_tof = 20 + 20/(1 + 28.5027336438*math.exp(V/10.))
     values[9] = (Y_tof_infinity - Y_tof)/tau_Y_tof
 
     # Expressions for the K1 gate component
@@ -577,17 +576,13 @@ def rhs(states, t, parameters, values=None):
     i_Clb = G_ClBk*(V - E_Cl)
 
     # Expressions for the d gate component
-    #d_infinity = 1.0/(1 + 0.0892185174093*math.exp(-0.166666666667*V))
-    #tau_d = (1 -\
-    #    0.0892185174093*math.exp(-0.166666666667*V))*d_infinity/(0.5075 +\
-    #    0.035*V)
     d_infinity = 1.0/(1 + 0.0892185174093*math.exp(-V/6.))
     tau_d = (1 - 0.0892185174093*math.exp(-V/6.))*d_infinity/(0.5075 + 0.035*V)
     values[10] = (d_infinity - d)/tau_d
 
     # Expressions for the f gate component
-    f_infinity = 1.0/(1 + 16964.681259*math.exp(0.277777777778*V)) + 0.6/(1 +\
-        12.1824939607*math.exp(-0.05*V))
+    f_infinity = 0.6/(1 + math.exp(5/2. - V/20.)) + 1.0/(1 +\
+        16964.681259*math.exp(0.277777777778*V))
     tau_f = 1.0/(0.02 + 0.0197*math.exp(-((0.48865 + 0.0337*V)*(0.48865 +\
         0.0337*V))))
     values[11] = (f_infinity - f)/tau_f
@@ -612,7 +607,7 @@ def rhs(states, t, parameters, values=None):
     temp_SL = (-math.pow(Nao, HNa)*Ca_SL*math.exp(F*(-1 + eta)*V/(Rgas*T)) +\
         Cao*math.pow(Na_SL, HNa)*math.exp(F*eta*V/(Rgas*T)))/(1 +\
         ksat*math.exp(F*(-1 + eta)*V/(Rgas*T)))
-    Q_NCX = math.pow(Q10_NCX, -31.0 + 0.1*T)
+    Q_NCX = math.pow(Q10_NCX, -31 + T/10.)
     Ka_SL = 1.0/(1 + (Kd_act*Kd_act*Kd_act)/(Ca_SL*Ca_SL*Ca_SL))
     Ka_jct1 = 1.0/(1 + (Kd_act*Kd_act*Kd_act)/(Ca_jct1*Ca_jct1*Ca_jct1))
     Ka_jct2 = 1.0/(1 + (Kd_act*Kd_act*Kd_act)/(Ca_jct2*Ca_jct2*Ca_jct2))
@@ -633,11 +628,9 @@ def rhs(states, t, parameters, values=None):
     i_NaCa = i_NaCa_jct2 + i_NaCa_SL + i_NaCa_jct1
 
     # Expressions for the ICap component
-    Q_SLCaP = math.pow(Q10_SLCaP, -31.0 + 0.1*T)
-    i_Cap_jct1 = Fx_SLCaP_jct1*V_maxAF*Q_SLCaP/(1 + math.pow(Km/Ca_jct1,\
-        H_ICap))
-    i_Cap_jct2 = Fx_SLCaP_jct2*V_maxAF*Q_SLCaP/(1 + math.pow(Km/Ca_jct2,\
-        H_ICap))
+    Q_SLCaP = math.pow(Q10_SLCaP, -31 + T/10.)
+    i_Cap_jct1 = Fx_SLCaP_jct1*V_maxAF*Q_SLCaP/(1 + math.pow(Km/Ca_jct1, H_ICap))
+    i_Cap_jct2 = Fx_SLCaP_jct2*V_maxAF*Q_SLCaP/(1 + math.pow(Km/Ca_jct2, H_ICap))
     i_Cap_SL = Fx_SLCaP_SL*V_maxAF*Q_SLCaP/(1 + math.pow(Km/Ca_SL, H_ICap))
     i_Cap = i_Cap_SL + i_Cap_jct2 + i_Cap_jct1
 
@@ -666,11 +659,11 @@ def rhs(states, t, parameters, values=None):
     values[20] = Ca_jct2*O2*kiSRCa - kim*I2 + (Ca_jct2*Ca_jct2)*RI2*koSRCa -\
         kom*I2
     j_rel_SR1 = ks1*(Ca_SR - Ca_jct1)*O1
-    j_rel_SR2 = 0*ks2*(Ca_SR - Ca_jct2)*O2
+    j_rel_SR2 = ks2*(Ca_SR - Ca_jct2)*O2
 
     # Expressions for the Jleak SR component
     j_leak_SR1 = KSRleak1*(Ca_SR - Ca_jct1)
-    j_leak_SR2 = 0*KSRleak2*(Ca_SR - Ca_jct2)
+    j_leak_SR2 = KSRleak2*(Ca_SR - Ca_jct2)
 
     # Expressions for the Jpump SR component
     Q_SRCaP = math.pow(Q10_SRCaP, -31.0 + 0.1*T)
@@ -678,11 +671,11 @@ def rhs(states, t, parameters, values=None):
         H))*Q_SRCaP/(1 + math.pow(Cai/Kmf, H) + math.pow(Ca_SR/Kmr, H))
 
     # Expressions for the Ion diffusion component
-    J_Na_jct1_SL = -1.8313e-14*Na_SL + 1.8313e-14*Na_jct1
-    J_Na_jct2_SL = 0
+    J_Na_jct1_SL = 1.8313e-14*w1*(-Na_SL + Na_jct1)
+    J_Na_jct2_SL = 1.8313e-14*(1 - w1)*(-Na_SL + Na_jct2)
     J_Na_SL_myo = 1.6386e-12*Na_SL - 1.6386e-12*Nai
-    J_Ca_jct1_SL = 8.2413e-13*Ca_jct1 - 8.2413e-13*Ca_SL
-    J_Ca_jct2_SL = 0
+    J_Ca_jct1_SL = 8.2413e-13*w1*(-Ca_SL + Ca_jct1)
+    J_Ca_jct2_SL = 8.2413e-13*(1 - w1)*(-Ca_SL + Ca_jct2)
     J_Ca_SL_myo = -3.7243e-12*Cai + 3.7243e-12*Ca_SL
 
     # Expressions for the Cytosolic component
@@ -756,17 +749,12 @@ def rhs(states, t, parameters, values=None):
     values[30] = dNa_SL_buf
     values[31] = -dNa_jct1_buf - Cm*(3*i_NaCa_jct1 + 3*i_NaK_jct1 + i_Na_jct1 +\
         i_CaL_Na_jct1 + i_Nab_jct1)/(F*Vol_jct1) - J_Na_jct1_SL/Vol_jct1
-    print        -dNa_jct1_buf , Cm, 3,i_NaCa_jct1 , 3,i_NaK_jct1 , i_Na_jct1 ,\
-        i_CaL_Na_jct1 , i_Nab_jct1,  F,Vol_jct1  , J_Na_jct1_SL,Vol_jct1
-    print "o",values[31]
-    values[32] = -J_Na_jct2_SL/Vol_jct2 - dNa_jct2_buf - Cm*(3*i_NaCa_jct2 +\
-        i_Nab_jct2 + 3*i_NaK_jct2 + i_CaL_Na_jct2 + i_Na_jct2)/(F*Vol_jct2)
-    print        -dNa_jct2_buf , Cm, 3,i_NaCa_jct2 , 3,i_NaK_jct2 , i_Na_jct2 ,\
-        i_CaL_Na_jct2 , i_Nab_jct2,  F,Vol_jct2  , J_Na_jct2_SL,Vol_jct2
-    print "p", values[32]
-    values[33] = -dNa_SL_buf - Cm*(3*i_NaCa_SL + i_Na_SL + i_CaL_Na_SL +\
-        i_Nab_SL + 3*i_NaK_SL)/(F*Vol_SL) + (J_Na_jct2_SL - J_Na_SL_myo +\
-        J_Na_jct1_SL)/Vol_SL
+    values[32] = -Cm*(3*i_NaCa_jct2 + i_Nab_jct2 + 3*i_NaK_jct2 +\
+        i_CaL_Na_jct2 + i_Na_jct2)/(F*Vol_jct2) - J_Na_jct2_SL/Vol_jct2 -\
+        dNa_jct2_buf
+    values[33] = (J_Na_jct1_SL - J_Na_SL_myo + J_Na_jct2_SL)/Vol_SL -\
+        dNa_SL_buf - Cm*(3*i_NaCa_SL + i_Na_SL + i_CaL_Na_SL + i_Nab_SL +\
+        3*i_NaK_SL)/(F*Vol_SL)
     values[34] = J_Na_SL_myo/Vol_myo
 
     # Expressions for the Ca buffer component
@@ -776,25 +764,27 @@ def rhs(states, t, parameters, values=None):
     values[35] = dCalsequestrin
     dCa_SLB_SL = kon_SL*(-Ca_SLB_SL + Bmax_SLB_SL*Vol_myo/Vol_SL)*Ca_SL -\
         koff_SLB*Ca_SLB_SL
-    dCa_SLB_jct1 = -koff_SLB*Ca_SLB_jct1 +\
-        kon_SL*(0.1*Bmax_SLB_jct1*Vol_myo/Vol_jct1 - Ca_SLB_jct1)*Ca_jct1
+    dCa_SLB_jct1 = kon_SL*(0.1*Bmax_SLB_jct1*Vol_myo/Vol_jct1 -\
+        Ca_SLB_jct1)*Ca_jct1 - koff_SLB*Ca_SLB_jct1
+    #print dCa_SLB_jct1
     dCa_SLB_jct2 = -koff_SLB*Ca_SLB_jct2 +\
         kon_SL*(0.1*Bmax_SLB_jct2*Vol_myo/Vol_jct2 - Ca_SLB_jct2)*Ca_jct2
+    #print dCa_SLB_jct2
     dCa_SLHigh_SL = -koff_SLHigh*Ca_SLHigh_SL +\
         kon_SL*(Bmax_SLHigh_SL*Vol_myo/Vol_SL - Ca_SLHigh_SL)*Ca_SL
-    dCa_SLHigh_jct1 = -koff_SLHigh*Ca_SLHigh_jct1 +\
-        kon_SL*(0.1*Bmax_SLHigh_jct1*Vol_myo/Vol_jct1 -\
-        Ca_SLHigh_jct1)*Ca_jct1
-    dCa_SLHigh_jct2 = kon_SL*(-Ca_SLHigh_jct2 +\
-        0.1*Bmax_SLHigh_jct2*Vol_myo/Vol_jct2)*Ca_jct2 -\
-        koff_SLHigh*Ca_SLHigh_jct2
+    dCa_SLHigh_jct1 = -koff_SLHigh*Ca_SLHigh_jct1 + kon_SL*(-Ca_SLHigh_jct1 +\
+        0.1*Bmax_SLHigh_jct1*Vol_myo/Vol_jct1)*Ca_jct1
+    dCa_SLHigh_jct2 = kon_SL*(0.1*Bmax_SLHigh_jct2*Vol_myo/Vol_jct2 -\
+        Ca_SLHigh_jct2)*Ca_jct2 - koff_SLHigh*Ca_SLHigh_jct2
     values[36] = dCa_SLB_SL
     values[37] = dCa_SLB_jct1
+    #print values[37]
     values[38] = dCa_SLB_jct2
+    #print values[38]
     values[39] = dCa_SLHigh_SL
     values[40] = dCa_SLHigh_jct1
     values[41] = dCa_SLHigh_jct2
-    dCa_jct1_tot_bound = dCa_SLHigh_jct1 + dCa_SLB_jct1
+    dCa_jct1_tot_bound = dCa_SLB_jct1 + dCa_SLHigh_jct1
     dCa_jct2_tot_bound = dCa_SLB_jct2 + dCa_SLHigh_jct2
     dCa_SL_tot_bound = dCa_SLB_SL + dCa_SLHigh_SL
     i_Ca_jct1_tot = i_CaL_Ca_jct1 - 2*i_NaCa_jct1 + i_Cap_jct1 + i_Cab_jct1
@@ -802,16 +792,20 @@ def rhs(states, t, parameters, values=None):
     i_Ca_SL_tot = i_Cap_SL + i_CaL_Ca_SL - 2*i_NaCa_SL + i_Cab_SL
     values[42] = -dCalsequestrin - (j_leak_SR1 + j_leak_SR2)*Vol_myo/Vol_SR +\
         j_pump_SR - j_rel_SR1 - j_rel_SR2
-    print values[42]
-    values[43] = -J_Ca_jct1_SL/Vol_jct1 - Cm*i_Ca_jct1_tot/(2*F*Vol_jct1) -\
-        dCa_jct1_tot_bound + Vol_myo*j_leak_SR1/Vol_jct1 +\
-        Vol_SR*j_rel_SR1/Vol_jct1
-    print values[43]
-    values[44] = Vol_myo*j_leak_SR2/Vol_jct2 -\
-        Cm*i_Ca_jct2_tot/(2*F*Vol_jct2) + Vol_SR*j_rel_SR2/Vol_jct2 -\
-        dCa_jct2_tot_bound - J_Ca_jct2_SL/Vol_jct2
-    print values[45]
-    values[45] = (J_Ca_jct1_SL - J_Ca_SL_myo + J_Ca_jct2_SL)/Vol_SL -\
+    values[43] = -dCa_jct1_tot_bound - Cm*i_Ca_jct1_tot/(2*F*Vol_jct1) -\
+        J_Ca_jct1_SL/Vol_jct1 + Vol_SR*j_rel_SR1/Vol_jct1 +\
+        Vol_myo*j_leak_SR1/Vol_jct1
+    #print "jct1 ", -dCa_jct1_tot_bound , Cm,i_Ca_jct1_tot,2, F,Vol_jct1,  \
+    #    J_Ca_jct1_SL,Vol_jct1 , Vol_SR,j_rel_SR1,Vol_jct1 ,\
+    #    Vol_myo,j_leak_SR1,Vol_jct1
+    values[44] = -dCa_jct2_tot_bound - Cm*i_Ca_jct2_tot/(2*F*Vol_jct2) +\
+        Vol_myo*j_leak_SR2/Vol_jct2 - J_Ca_jct2_SL/Vol_jct2 +\
+        Vol_SR*j_rel_SR2/Vol_jct2
+    #print "jct2 ", j_rel_SR2, j_leak_SR2
+    #print "jct2 ", -dCa_jct2_tot_bound , Cm,i_Ca_jct2_tot,2, F,Vol_jct2,  \
+    #    J_Ca_jct2_SL,Vol_jct2 , Vol_SR,j_rel_SR2,Vol_jct2 ,\
+    #    Vol_myo,j_leak_SR2,Vol_jct2
+    values[45] = (-J_Ca_SL_myo + J_Ca_jct1_SL + J_Ca_jct2_SL)/Vol_SL -\
         dCa_SL_tot_bound - Cm*i_Ca_SL_tot/(2*F*Vol_SL)
     values[46] = -dCa_cytosol_tot_bound - Vol_SR*j_pump_SR/Vol_myo +\
         J_Ca_SL_myo/Vol_myo
@@ -822,7 +816,6 @@ def rhs(states, t, parameters, values=None):
         -stim_period*math.floor(t/stim_period) + t >= stim_start else 0)
     values[47] = -i_NaCa - i_Cl_Ca - i_Cab - i_Clb - i_tos - i_CaL - i_tof -\
         i_Stim - i_Na - i_Cap - i_Nab - i_NaK - i_Kr - i_K1 - i_Kp - i_Ks
-    print"lll"
 
     # Return results
     return values
@@ -874,414 +867,418 @@ def monitor(states, t, parameters, monitored=None):
 
     # Init return args
     if monitored is None:
-        monitored = np.zeros((200,), dtype=np.float_)
+        monitored = np.zeros((201,), dtype=np.float_)
     else:
-        assert isinstance(monitored, np.ndarray) and monitored.shape == (200,)
+        assert isinstance(monitored, np.ndarray) and monitored.shape == (201,)
 
     # Expressions for the Model parameters component
     monitored[0] = 3.141592654e-15*cell_length*(cell_radius*cell_radius)
     monitored[1] = 0.035*monitored[0]
     monitored[2] = 0.02*monitored[0]
-    monitored[3] = 0.000539*monitored[0]
-    monitored[4] = 0
-    monitored[5] = 0.65*monitored[0]
+    monitored[3] = 1.0
+    monitored[4] = 0.000539*monitored[3]*monitored[0]
+    monitored[5] = 0.000539*(1 - monitored[3])*monitored[0]
+    monitored[6] = 0.65*monitored[0]
 
     # Expressions for the Reversal potentials component
-    monitored[133] = Rgas*T*math.log(Nao/Na_jct1)/F
-    monitored[134] = Rgas*T*math.log(Nao/Na_jct2)/F
-    monitored[135] = Rgas*T*math.log(Nao/Na_SL)/F
-    monitored[136] = Rgas*T*math.log(Cao/Ca_jct1)/(2*F)
-    monitored[137] = Rgas*T*math.log(Cao/Ca_jct2)/(2*F)
-    monitored[138] = Rgas*T*math.log(Cao/Ca_SL)/(2*F)
-    monitored[139] = Rgas*T*math.log(Ko/Ki)/F
-    monitored[140] = Rgas*T*math.log(Cli/Clo)/F
+    monitored[134] = Rgas*T*math.log(Nao/Na_jct1)/F
+    monitored[135] = Rgas*T*math.log(Nao/Na_jct2)/F
+    monitored[136] = Rgas*T*math.log(Nao/Na_SL)/F
+    monitored[137] = Rgas*T*math.log(Cao/Ca_jct1)/(2*F)
+    monitored[138] = Rgas*T*math.log(Cao/Ca_jct2)/(2*F)
+    monitored[139] = Rgas*T*math.log(Cao/Ca_SL)/(2*F)
+    monitored[140] = Rgas*T*math.log(Ko/Ki)/F
+    monitored[141] = Rgas*T*math.log(Cli/Clo)/F
 
     # Expressions for the INa component
-    monitored[6] = (m*m*m)*h*j
-    monitored[7] = Fx_Na_jct1*G_INa*(V - monitored[133])*monitored[6]
-    monitored[8] = Fx_Na_jct2*G_INa*(-monitored[134] + V)*monitored[6]
-    monitored[9] = Fx_Na_SL*G_INa*(V - monitored[135])*monitored[6]
-    monitored[10] = monitored[9] + monitored[8] + monitored[7]
+    monitored[7] = (m*m*m)*h*j
+    monitored[8] = Fx_Na_jct1*G_INa*(V - monitored[134])*monitored[7]
+    monitored[9] = Fx_Na_jct2*G_INa*(V - monitored[135])*monitored[7]
+    monitored[10] = Fx_Na_SL*G_INa*(V - monitored[136])*monitored[7]
+    monitored[11] = monitored[10] + monitored[9] + monitored[8]
 
     # Expressions for the h gate component
-    monitored[11] = (1.04951082543e-06*math.exp(-0.147058823529*V) if V < -40 else\
+    monitored[12] = (1.04951082543e-06*math.exp(-0.147058823529*V) if V < -40 else\
         0)
-    monitored[12] = (3.56*math.exp(0.079*V) + 310000.0*math.exp(0.35*V) if V\
+    monitored[13] = (3.56*math.exp(0.079*V) + 310000.0*math.exp(0.35*V) if V\
         < -40 else 1.0/(0.13 + 0.0497581410839*math.exp(-0.0900900900901*V)))
-    monitored[152] = (1 - h)*monitored[11] - h*monitored[12]
+    monitored[153] = -h*monitored[13] + (1 - h)*monitored[12]
 
     # Expressions for the j gate component
-    monitored[13] = (1.0*(37.78 + V)*(-127140.0*math.exp(0.2444*V) -\
+    monitored[14] = (1.0*(37.78 + V)*(-127140.0*math.exp(0.2444*V) -\
         3.474e-05*math.exp(-0.04391*V))/(1 + 50262745826.0*math.exp(0.311*V))\
         if V < -40 else 0)
-    monitored[14] = (0.1212*math.exp(-0.01052*V)/(1 +\
+    monitored[15] = (0.1212*math.exp(-0.01052*V)/(1 +\
         0.0039608683399*math.exp(-0.1378*V)) if V < -40 else\
         0.3*math.exp(-2.535e-07*V)/(1 + 0.0407622039784*math.exp(-0.1*V)))
-    monitored[153] = -j*monitored[14] + (1 - j)*monitored[13]
+    monitored[154] = (1 - j)*monitored[14] - j*monitored[15]
 
     # Expressions for the m gate component
-    monitored[15] = (15.0816 + 0.32*V)/(1 - 0.0089778037307*math.exp(-0.1*V))
-    monitored[16] = 0.08*math.exp(-0.0909090909091*V)
-    monitored[154] = -m*monitored[16] + (1 - m)*monitored[15]
+    monitored[16] = (15.0816 + 0.32*V)/(1 - 0.0089778037307*math.exp(-0.1*V))
+    monitored[17] = 0.08*math.exp(-0.0909090909091*V)
+    monitored[155] = -m*monitored[17] + (1 - m)*monitored[16]
 
     # Expressions for the INab component
-    monitored[17] = Fx_NaBk_jct1*G_NaBk*(V - monitored[133])
-    monitored[18] = Fx_NaBk_jct2*G_NaBk*(-monitored[134] + V)
-    monitored[19] = Fx_NaBk_SL*G_NaBk*(V - monitored[135])
-    monitored[20] = monitored[19] + monitored[18] + monitored[17]
+    monitored[18] = Fx_NaBk_jct1*G_NaBk*(V - monitored[134])
+    monitored[19] = Fx_NaBk_jct2*G_NaBk*(V - monitored[135])
+    monitored[20] = Fx_NaBk_SL*G_NaBk*(V - monitored[136])
+    monitored[21] = monitored[19] + monitored[18] + monitored[20]
 
     # Expressions for the INaK component
-    monitored[21] = -0.142857142857 +\
+    monitored[22] = -0.142857142857 +\
         0.142857142857*math.exp(0.0148588410104*Nao)
-    monitored[22] = 1.0/(1 + 0.0365*math.exp(-F*V/(Rgas*T))*monitored[21] +\
+    monitored[23] = 1.0/(1 + 0.0365*math.exp(-F*V/(Rgas*T))*monitored[22] +\
         0.1245*math.exp(-0.1*F*V/(Rgas*T)))
-    monitored[23] = Fx_NaK_jct1*I_NaK_max*Ko*monitored[22]/((1 +\
+    monitored[24] = Fx_NaK_jct1*I_NaK_max*Ko*monitored[23]/((1 +\
         math.pow(Km_Nai/Na_jct1, H_NaK))*(Km_Ko + Ko))
-    monitored[24] = Fx_NaK_jct2*I_NaK_max*Ko*monitored[22]/((1 +\
+    monitored[25] = Fx_NaK_jct2*I_NaK_max*Ko*monitored[23]/((1 +\
         math.pow(Km_Nai/Na_jct2, H_NaK))*(Km_Ko + Ko))
-    monitored[25] = Fx_NaK_SL*I_NaK_max*Ko*monitored[22]/((1 +\
+    monitored[26] = Fx_NaK_SL*I_NaK_max*Ko*monitored[23]/((1 +\
         math.pow(Km_Nai/Na_SL, H_NaK))*(Km_Ko + Ko))
-    monitored[26] = monitored[24] + monitored[23] + monitored[25]
+    monitored[27] = monitored[24] + monitored[26] + monitored[25]
 
     # Expressions for the Xr gate component
-    monitored[29] = 1.0/(1 + 0.00127263380134*math.exp(-0.133333333333*V))
-    monitored[30] = 1.0/((0.0061 + 0.00061*V)/(-1 +\
+    monitored[30] = 1.0/(1 + 0.00127263380134*math.exp(-0.133333333333*V))
+    monitored[31] = 1.0/((0.0061 + 0.00061*V)/(-1 +\
         4.26311451517*math.exp(0.145*V)) + (0.00966 + 0.00138*V)/(1 -\
         0.422739131746*math.exp(-0.123*V)))
-    monitored[155] = (monitored[29] - Xr)/monitored[30]
+    monitored[156] = (monitored[30] - Xr)/monitored[31]
 
     # Expressions for the Rr gate component
-    monitored[31] = 1.0/(1 + 4.36323731689*math.exp(0.0446428571429*V))
+    monitored[32] = 1.0/(1 + 4.36323731689*math.exp(0.0446428571429*V))
 
     # Expressions for the IKs component
-    monitored[32] = 3 - math.log(1.0*Ca_jct1)
-    monitored[33] = 3 - math.log(1.0*Ca_jct2)
-    monitored[34] = 3 - math.log(1.0*Ca_SL)
-    monitored[35] = 0.00399 + 0.0133/(1 +\
-        6.14421235333e-06*math.exp(1.66666666667*monitored[32]))
+    monitored[33] = 3 - math.log(1.0*Ca_jct1)
+    monitored[34] = 3 - math.log(1.0*Ca_jct2)
+    monitored[35] = 3 - math.log(1.0*Ca_SL)
     monitored[36] = 0.00399 + 0.0133/(1 +\
         6.14421235333e-06*math.exp(1.66666666667*monitored[33]))
     monitored[37] = 0.00399 + 0.0133/(1 +\
         6.14421235333e-06*math.exp(1.66666666667*monitored[34]))
-    monitored[38] = Rgas*T*math.log((Nao*pKNa + Ko)/(pKNa*Nai + Ki))/F
-    monitored[39] = Fx_Ks_jct1*(Xs*Xs)*(V - monitored[38])*monitored[35]
-    monitored[40] = Fx_Ks_jct2*(Xs*Xs)*(V - monitored[38])*monitored[36]
-    monitored[41] = Fx_Ks_SL*(Xs*Xs)*(V - monitored[38])*monitored[37]
-    monitored[42] = monitored[39] + monitored[41] + monitored[40]
+    monitored[38] = 0.00399 + 0.0133/(1 +\
+        6.14421235333e-06*math.exp(1.66666666667*monitored[35]))
+    monitored[39] = Rgas*T*math.log((Nao*pKNa + Ko)/(pKNa*Nai + Ki))/F
+    monitored[40] = Fx_Ks_jct1*(Xs*Xs)*(V - monitored[39])*monitored[36]
+    monitored[41] = Fx_Ks_jct2*(Xs*Xs)*(V - monitored[39])*monitored[37]
+    monitored[42] = Fx_Ks_SL*(Xs*Xs)*(V - monitored[39])*monitored[38]
+    monitored[43] = monitored[41] + monitored[40] + monitored[42]
 
     # Expressions for the Xs gate component
-    monitored[43] = 1.0/(1 + 1.0939777431*math.exp(-0.059880239521*V))
-    monitored[44] = 1.0/((0.002157 + 7.19e-05*V)/(1 -\
+    monitored[44] = 1.0/(1 + 1.0939777431*math.exp(-0.059880239521*V))
+    monitored[45] = 1.0/((0.002157 + 7.19e-05*V)/(1 -\
         0.0117959385198*math.exp(-0.148*V)) + (0.00393 + 0.000131*V)/(-1 +\
         7.85381970442*math.exp(0.0687*V)))
-    monitored[156] = (-Xs + monitored[43])/monitored[44]
+    monitored[157] = (monitored[44] - Xs)/monitored[45]
 
     # Expressions for the IKp component
-    monitored[45] = g_Kp*(V - monitored[139])/(1 +\
+    monitored[46] = g_Kp*(-monitored[140] + V)/(1 +\
         1786.47556538*math.exp(-0.167224080268*V))
 
     # Expressions for the Itos component
-    monitored[46] = G_tos*(0.5*R_tos + Y_tos)*(V - monitored[139])*X_tos
+    monitored[47] = G_tos*(-monitored[140] + V)*(0.5*R_tos + Y_tos)*X_tos
 
     # Expressions for the X_gate component
-    monitored[47] = 1.0/(1 + 0.818730753078*math.exp(-0.0666666666667*V))
-    monitored[48] = 0.5 + 9/(1 + 1.22140275816*math.exp(0.0666666666667*V))
-    monitored[157] = (-X_tos + monitored[47])/monitored[48]
+    monitored[48] = 1.0/(1 + 0.818730753078*math.exp(-0.0666666666667*V))
+    monitored[49] = 0.5 + 9/(1 + 1.22140275816*math.exp(0.0666666666667*V))
+    monitored[158] = (-X_tos + monitored[48])/monitored[49]
 
     # Expressions for the Y_gate component
-    monitored[49] = 1.0/(1 + 28.5027336438*math.exp(0.1*V))
-    monitored[50] = 30 + 3000/(1 + 403.428793493*math.exp(0.1*V))
-    monitored[158] = (monitored[49] - Y_tos)/monitored[50]
+    monitored[50] = 1.0/(1 + 28.5027336438*math.exp(0.1*V))
+    monitored[51] = 30 + 3000/(1 + 403.428793493*math.exp(0.1*V))
+    monitored[159] = (monitored[50] - Y_tos)/monitored[51]
 
     # Expressions for the R_gate component
-    monitored[51] = 1.0/(1 + 28.5027336438*math.exp(0.1*V))
-    monitored[52] = 220 + 2800.0/(1 + 403.428793493*math.exp(0.1*V))
-    monitored[159] = (-R_tos + monitored[51])/monitored[52]
+    monitored[52] = 1.0/(1 + 28.5027336438*math.exp(0.1*V))
+    monitored[53] = 220 + 2800.0/(1 + 403.428793493*math.exp(0.1*V))
+    monitored[160] = (-R_tos + monitored[52])/monitored[53]
 
     # Expressions for the Itof component
-    monitored[53] = G_tof*(V - monitored[139])*X_tof*Y_tof
+    monitored[54] = G_tof*(-monitored[140] + V)*X_tof*Y_tof
 
     # Expressions for the Itof X gate component
-    monitored[54] = 1.0/(1 + 0.818730753078*math.exp(-0.0666666666667*V))
-    monitored[55] = 1.5 + 3.5*math.exp(-0.00111111111111*(V*V))
-    monitored[160] = (-X_tof + monitored[54])/monitored[55]
+    monitored[55] = 1.0/(1 + 0.818730753078*math.exp(-0.0666666666667*V))
+    monitored[56] = 1.5 + 3.5*math.exp(-0.00111111111111*(V*V))
+    monitored[161] = (-X_tof + monitored[55])/monitored[56]
 
     # Expressions for the Itof Y gate component
-    monitored[56] = 1.0/(1 + 28.5027336438*math.exp(0.1*V))
-    monitored[57] = 20 + 20/(1 + 28.5027336438*math.exp(0.1*V))
-    monitored[161] = (-Y_tof + monitored[56])/monitored[57]
+    monitored[57] = 1.0/(1 + 28.5027336438*math.exp(0.1*V))
+    monitored[58] = 20 + 20/(1 + 28.5027336438*math.exp(0.1*V))
+    monitored[162] = (monitored[57] - Y_tof)/monitored[58]
 
     # Expressions for the K1 gate component
-    monitored[143] = 1.02/(1 +\
-        7.35454251046e-07*math.exp(-0.2385*monitored[139] + 0.2385*V))
-    monitored[144] = (1.15340563519e-16*math.exp(-0.06175*monitored[139] +\
-        0.06175*V) + 0.762624006506*math.exp(-0.08032*monitored[139] +\
-        0.08032*V))/(1 + 0.0867722941577*math.exp(0.5143*monitored[139] -\
-        0.5143*V))
-    monitored[145] = monitored[143]/(monitored[144] + monitored[143])
+    monitored[144] = 1.02/(1 +\
+        7.35454251046e-07*math.exp(-0.2385*monitored[140] + 0.2385*V))
+    monitored[145] = (1.15340563519e-16*math.exp(-0.06175*monitored[140] +\
+        0.06175*V) + 0.762624006506*math.exp(0.08032*V -\
+        0.08032*monitored[140]))/(1 + 0.0867722941577*math.exp(-0.5143*V +\
+        0.5143*monitored[140]))
+    monitored[146] = monitored[144]/(monitored[144] + monitored[145])
 
     # Expressions for the ICl Ca component
-    monitored[58] = G_Cl*(V - monitored[140])*(Fx_Cl_SL/(1 + Kd_ClCa/Ca_SL) +\
+    monitored[59] = G_Cl*(V - monitored[141])*(Fx_Cl_SL/(1 + Kd_ClCa/Ca_SL) +\
         Fx_Cl_jct2/(1 + Kd_ClCa/Ca_jct2) + Fx_Cl_jct1/(1 + Kd_ClCa/Ca_jct1))
 
     # Expressions for the IClb component
-    monitored[59] = G_ClBk*(V - monitored[140])
+    monitored[60] = G_ClBk*(V - monitored[141])
 
     # Expressions for the d gate component
-    monitored[70] = 1.0/(1 + 0.0892185174093*math.exp(-0.166666666667*V))
-    monitored[71] = (1 -\
-        0.0892185174093*math.exp(-0.166666666667*V))*monitored[70]/(0.5075 +\
+    monitored[71] = 1.0/(1 + 0.0892185174093*math.exp(-0.166666666667*V))
+    monitored[72] = (1 -\
+        0.0892185174093*math.exp(-0.166666666667*V))*monitored[71]/(0.5075 +\
         0.035*V)
-    monitored[162] = (monitored[70] - d)/monitored[71]
+    monitored[163] = (monitored[71] - d)/monitored[72]
 
     # Expressions for the f gate component
-    monitored[72] = 1.0/(1 + 16964.681259*math.exp(0.277777777778*V)) +\
+    monitored[73] = 1.0/(1 + 16964.681259*math.exp(0.277777777778*V)) +\
         0.6/(1 + 12.1824939607*math.exp(-0.05*V))
-    monitored[73] = 1.0/(0.02 + 0.0197*math.exp(-((0.48865 +\
+    monitored[74] = 1.0/(0.02 + 0.0197*math.exp(-((0.48865 +\
         0.0337*V)*(0.48865 + 0.0337*V))))
-    monitored[163] = (monitored[72] - f)/monitored[73]
+    monitored[164] = (monitored[73] - f)/monitored[74]
 
     # Expressions for the FCa gate component
-    monitored[74] = 1 - fCaB_SL
-    monitored[75] = 1 - fCaB_jct1
-    monitored[76] = 1 - fCaB_jct2
-    monitored[164] = -0.0119*fCaB_SL + 1.7*(1 - fCaB_SL)*Ca_SL
-    monitored[165] = -0.0119*fCaB_jct1 + 1.7*(1 - fCaB_jct1)*Ca_jct1
-    monitored[166] = 1.7*(1 - fCaB_jct2)*Ca_jct2 - 0.0119*fCaB_jct2
+    monitored[75] = 1 - fCaB_SL
+    monitored[76] = 1 - fCaB_jct1
+    monitored[77] = 1 - fCaB_jct2
+    monitored[165] = -0.0119*fCaB_SL + 1.7*(1 - fCaB_SL)*Ca_SL
+    monitored[166] = -0.0119*fCaB_jct1 + 1.7*(1 - fCaB_jct1)*Ca_jct1
+    monitored[167] = 1.7*(1 - fCaB_jct2)*Ca_jct2 - 0.0119*fCaB_jct2
 
     # Expressions for the INaCa component
-    monitored[77] = (-math.pow(Nao, HNa)*Ca_jct1*math.exp(F*(-1 +\
+    monitored[78] = (-math.pow(Nao, HNa)*Ca_jct1*math.exp(F*(-1 +\
         eta)*V/(Rgas*T)) + Cao*math.pow(Na_jct1,\
         HNa)*math.exp(F*eta*V/(Rgas*T)))/(1 + ksat*math.exp(F*(-1 +\
         eta)*V/(Rgas*T)))
-    monitored[78] = (-math.pow(Nao, HNa)*Ca_jct2*math.exp(F*(-1 +\
+    monitored[79] = (-math.pow(Nao, HNa)*Ca_jct2*math.exp(F*(-1 +\
         eta)*V/(Rgas*T)) + Cao*math.pow(Na_jct2,\
         HNa)*math.exp(F*eta*V/(Rgas*T)))/(1 + ksat*math.exp(F*(-1 +\
         eta)*V/(Rgas*T)))
-    monitored[79] = (-math.pow(Nao, HNa)*Ca_SL*math.exp(F*(-1 +\
+    monitored[80] = (-math.pow(Nao, HNa)*Ca_SL*math.exp(F*(-1 +\
         eta)*V/(Rgas*T)) + Cao*math.pow(Na_SL,\
         HNa)*math.exp(F*eta*V/(Rgas*T)))/(1 + ksat*math.exp(F*(-1 +\
         eta)*V/(Rgas*T)))
-    monitored[80] = math.pow(Q10_NCX, -31.0 + 0.1*T)
-    monitored[81] = 1.0/(1 + (Kd_act*Kd_act*Kd_act)/(Ca_SL*Ca_SL*Ca_SL))
-    monitored[82] = 1.0/(1 + (Kd_act*Kd_act*Kd_act)/(Ca_jct1*Ca_jct1*Ca_jct1))
-    monitored[83] = 1.0/(1 + (Kd_act*Kd_act*Kd_act)/(Ca_jct2*Ca_jct2*Ca_jct2))
-    monitored[84] =\
-        Fx_NCX_jct1*V_max_INaCa*monitored[77]*monitored[80]*monitored[82]/(K_mCai*math.pow(Nao,\
+    monitored[81] = math.pow(Q10_NCX, -31.0 + 0.1*T)
+    monitored[82] = 1.0/(1 + (Kd_act*Kd_act*Kd_act)/(Ca_SL*Ca_SL*Ca_SL))
+    monitored[83] = 1.0/(1 + (Kd_act*Kd_act*Kd_act)/(Ca_jct1*Ca_jct1*Ca_jct1))
+    monitored[84] = 1.0/(1 + (Kd_act*Kd_act*Kd_act)/(Ca_jct2*Ca_jct2*Ca_jct2))
+    monitored[85] =\
+        Fx_NCX_jct1*V_max_INaCa*monitored[78]*monitored[81]*monitored[83]/(K_mCai*math.pow(Nao,\
         HNa)*(1 + math.pow(Na_jct1/K_mNai, HNa)) + K_mCao*math.pow(Na_jct1,\
         HNa) + Cao*math.pow(Na_jct1, HNa) + math.pow(Nao, HNa)*Ca_jct1 +\
         math.pow(K_mNao, HNa)*(1 + Ca_jct1/K_mCai)*Ca_jct1)
-    monitored[85] =\
-        Fx_NCX_jct2*V_max_INaCa*monitored[78]*monitored[80]*monitored[83]/(math.pow(K_mNao,\
+    monitored[86] =\
+        Fx_NCX_jct2*V_max_INaCa*monitored[79]*monitored[81]*monitored[84]/(math.pow(K_mNao,\
         HNa)*(1 + Ca_jct2/K_mCai)*Ca_jct2 + K_mCai*math.pow(Nao, HNa)*(1 +\
         math.pow(Na_jct2/K_mNai, HNa)) + Cao*math.pow(Na_jct2, HNa) +\
         math.pow(Nao, HNa)*Ca_jct2 + K_mCao*math.pow(Na_jct2, HNa))
-    monitored[86] =\
-        Fx_NCX_SL*V_max_INaCa*monitored[79]*monitored[80]*monitored[81]/(math.pow(K_mNao,\
+    monitored[87] =\
+        Fx_NCX_SL*V_max_INaCa*monitored[80]*monitored[81]*monitored[82]/(math.pow(K_mNao,\
         HNa)*(1 + Ca_SL/K_mCai)*Ca_SL + math.pow(Nao, HNa)*Ca_SL +\
         Cao*math.pow(Na_SL, HNa) + K_mCao*math.pow(Na_SL, HNa) +\
         K_mCai*math.pow(Nao, HNa)*(1 + math.pow(Na_SL/K_mNai, HNa)))
-    monitored[87] = monitored[86] + monitored[85] + monitored[84]
+    monitored[88] = monitored[86] + monitored[85] + monitored[87]
 
     # Expressions for the ICap component
-    monitored[88] = math.pow(Q10_SLCaP, -31.0 + 0.1*T)
-    monitored[89] = Fx_SLCaP_jct1*V_maxAF*monitored[88]/(1 +\
+    monitored[89] = math.pow(Q10_SLCaP, -31.0 + 0.1*T)
+    monitored[90] = Fx_SLCaP_jct1*V_maxAF*monitored[89]/(1 +\
         math.pow(Km/Ca_jct1, H_ICap))
-    monitored[90] = Fx_SLCaP_jct2*V_maxAF*monitored[88]/(1 +\
+    monitored[91] = Fx_SLCaP_jct2*V_maxAF*monitored[89]/(1 +\
         math.pow(Km/Ca_jct2, H_ICap))
-    monitored[91] = Fx_SLCaP_SL*V_maxAF*monitored[88]/(1 + math.pow(Km/Ca_SL,\
+    monitored[92] = Fx_SLCaP_SL*V_maxAF*monitored[89]/(1 + math.pow(Km/Ca_SL,\
         H_ICap))
-    monitored[92] = monitored[89] + monitored[91] + monitored[90]
+    monitored[93] = monitored[90] + monitored[91] + monitored[92]
 
     # Expressions for the ICab component
-    monitored[93] = Fx_CaBk_jct1*G_CaBk*(V - monitored[136])
-    monitored[94] = Fx_CaBk_jct2*G_CaBk*(-monitored[137] + V)
-    monitored[95] = Fx_CaBk_SL*G_CaBk*(V - monitored[138])
-    monitored[96] = monitored[93] + monitored[94] + monitored[95]
+    monitored[94] = Fx_CaBk_jct1*G_CaBk*(V - monitored[137])
+    monitored[95] = Fx_CaBk_jct2*G_CaBk*(V - monitored[138])
+    monitored[96] = Fx_CaBk_SL*G_CaBk*(-monitored[139] + V)
+    monitored[97] = monitored[96] + monitored[94] + monitored[95]
 
     # Expressions for the Jrel SR component
-    monitored[97] = Max_SR - (Max_SR - Min_SR)/(1 + math.pow(EC50_SR/Ca_SR,\
+    monitored[98] = Max_SR - (Max_SR - Min_SR)/(1 + math.pow(EC50_SR/Ca_SR,\
         HSR))
-    monitored[98] = koCa/monitored[97]
-    monitored[99] = kiCa*monitored[97]
-    monitored[100] = 1 - I1 - O1 - R1
-    monitored[101] = 1 - R2 - O2 - I2
-    monitored[167] = kom*O1 + kim*monitored[100] - Ca_jct1*R1*monitored[99] -\
-        (Ca_jct1*Ca_jct1)*R1*monitored[98]
-    monitored[168] = -(Ca_jct2*Ca_jct2)*R2*monitored[98] -\
-        Ca_jct2*R2*monitored[99] + kim*monitored[101] + kom*O2
-    monitored[169] = kim*I1 - kom*O1 + (Ca_jct1*Ca_jct1)*R1*monitored[98] -\
-        Ca_jct1*O1*monitored[99]
-    monitored[170] = (Ca_jct2*Ca_jct2)*R2*monitored[98] + kim*I2 -\
-        Ca_jct2*O2*monitored[99] - kom*O2
-    monitored[171] = (Ca_jct1*Ca_jct1)*monitored[100]*monitored[98] +\
-        Ca_jct1*O1*monitored[99] - kom*I1 - kim*I1
-    monitored[172] = (Ca_jct2*Ca_jct2)*monitored[101]*monitored[98] +\
-        Ca_jct2*O2*monitored[99] - kim*I2 - kom*I2
-    monitored[102] = ks1*(Ca_SR - Ca_jct1)*O1
-    monitored[103] = ks2*(Ca_SR - Ca_jct2)*O2
+    monitored[99] = koCa/monitored[98]
+    monitored[100] = kiCa*monitored[98]
+    monitored[101] = 1 - I1 - O1 - R1
+    monitored[102] = 1 - R2 - O2 - I2
+    monitored[168] = kom*O1 - (Ca_jct1*Ca_jct1)*R1*monitored[99] -\
+        Ca_jct1*R1*monitored[100] + kim*monitored[101]
+    monitored[169] = -Ca_jct2*R2*monitored[100] + kim*monitored[102] -\
+        (Ca_jct2*Ca_jct2)*R2*monitored[99] + kom*O2
+    monitored[170] = kim*I1 - Ca_jct1*O1*monitored[100] +\
+        (Ca_jct1*Ca_jct1)*R1*monitored[99] - kom*O1
+    monitored[171] = -Ca_jct2*O2*monitored[100] + kim*I2 +\
+        (Ca_jct2*Ca_jct2)*R2*monitored[99] - kom*O2
+    monitored[172] = (Ca_jct1*Ca_jct1)*monitored[101]*monitored[99] - kom*I1 -\
+        kim*I1 + Ca_jct1*O1*monitored[100]
+    monitored[173] = -kim*I2 - kom*I2 +\
+        (Ca_jct2*Ca_jct2)*monitored[102]*monitored[99] +\
+        Ca_jct2*O2*monitored[100]
+    monitored[103] = ks1*(Ca_SR - Ca_jct1)*O1
+    monitored[104] = ks2*(Ca_SR - Ca_jct2)*O2
 
     # Expressions for the Jleak SR component
-    monitored[104] = KSRleak1*(Ca_SR - Ca_jct1)
-    monitored[105] = KSRleak2*(Ca_SR - Ca_jct2)
+    monitored[105] = KSRleak1*(Ca_SR - Ca_jct1)
+    monitored[106] = KSRleak2*(Ca_SR - Ca_jct2)
 
     # Expressions for the Jpump SR component
-    monitored[106] = math.pow(Q10_SRCaP, -31.0 + 0.1*T)
-    monitored[107] = V_max*(math.pow(Cai/Kmf, H) - math.pow(Ca_SR/Kmr,\
-        H))*monitored[106]/(1 + math.pow(Cai/Kmf, H) + math.pow(Ca_SR/Kmr,\
+    monitored[107] = math.pow(Q10_SRCaP, -31.0 + 0.1*T)
+    monitored[108] = V_max*(math.pow(Cai/Kmf, H) - math.pow(Ca_SR/Kmr,\
+        H))*monitored[107]/(1 + math.pow(Cai/Kmf, H) + math.pow(Ca_SR/Kmr,\
         H))
 
     # Expressions for the Ion diffusion component
-    monitored[146] = -1.8313e-14*Na_SL + 1.8313e-14*Na_jct1
-    monitored[147] = 0
-    monitored[148] = 1.6386e-12*Na_SL - 1.6386e-12*Nai
-    monitored[149] = 8.2413e-13*Ca_jct1 - 8.2413e-13*Ca_SL
-    monitored[150] = 0
-    monitored[151] = -3.7243e-12*Cai + 3.7243e-12*Ca_SL
+    monitored[147] = 1.8313e-14*monitored[3]*(-Na_SL + Na_jct1)
+    monitored[148] = 1.8313e-14*(1 - monitored[3])*(-Na_SL + Na_jct2)
+    monitored[149] = 1.6386e-12*Na_SL - 1.6386e-12*Nai
+    monitored[150] = 8.2413e-13*monitored[3]*(-Ca_SL + Ca_jct1)
+    monitored[151] = 8.2413e-13*(1 - monitored[3])*(-Ca_SL + Ca_jct2)
+    monitored[152] = -3.7243e-12*Cai + 3.7243e-12*Ca_SL
 
     # Expressions for the Cytosolic component
-    monitored[121] = kon_TroponinC*(-Ca_TroponinC + Bmax_TroponinC)*Cai -\
+    monitored[122] = kon_TroponinC*(-Ca_TroponinC + Bmax_TroponinC)*Cai -\
         koff_TroponinC*Ca_TroponinC
-    monitored[122] = -koff_TroponinC_Ca_Mg_Ca*Ca_TroponinC_Ca_Mg +\
+    monitored[123] = -koff_TroponinC_Ca_Mg_Ca*Ca_TroponinC_Ca_Mg +\
         kon_TroponinC_Ca_Mg_Ca*(-Ca_TroponinC_Ca_Mg - Mg_TroponinC_Ca_Mg +\
         Bmax_TroponinC_Ca_Mg_Ca)*Cai
-    monitored[123] = Mgi*kon_TroponinC_Ca_Mg_Mg*(-Ca_TroponinC_Ca_Mg +\
+    monitored[124] = Mgi*kon_TroponinC_Ca_Mg_Mg*(-Ca_TroponinC_Ca_Mg +\
         Bmax_TroponinC_Ca_Mg_Mg - Mg_TroponinC_Ca_Mg) -\
         koff_TroponinC_Ca_Mg_Mg*Mg_TroponinC_Ca_Mg
-    monitored[124] = -koff_Calmodulin*Ca_Calmodulin +\
+    monitored[125] = -koff_Calmodulin*Ca_Calmodulin +\
         kon_Calmodulin*(Bmax_Calmodulin - Ca_Calmodulin)*Cai
-    monitored[125] = kon_Myosin_Ca*(Bmax_Myosin_Ca - Mg_Myosin -\
+    monitored[126] = kon_Myosin_Ca*(Bmax_Myosin_Ca - Mg_Myosin -\
         Ca_Myosin)*Cai - koff_Myosin_Ca*Ca_Myosin
-    monitored[126] = Mgi*kon_Myosin_Mg*(Bmax_Myosin_Mg - Mg_Myosin -\
+    monitored[127] = Mgi*kon_Myosin_Mg*(Bmax_Myosin_Mg - Mg_Myosin -\
         Ca_Myosin) - koff_Myosin_Mg*Mg_Myosin
-    monitored[127] = kon_SRB*(-Ca_SRB + Bmax_SRB)*Cai - koff_SRB*Ca_SRB
-    monitored[128] = monitored[124] + monitored[127] + monitored[125] +\
-        monitored[126] + monitored[122] + monitored[123] + monitored[121]
-    monitored[173] = monitored[121]
+    monitored[128] = kon_SRB*(-Ca_SRB + Bmax_SRB)*Cai - koff_SRB*Ca_SRB
+    monitored[129] = monitored[128] + monitored[122] + monitored[123] +\
+        monitored[126] + monitored[124] + monitored[125] + monitored[127]
     monitored[174] = monitored[122]
     monitored[175] = monitored[123]
     monitored[176] = monitored[124]
     monitored[177] = monitored[125]
     monitored[178] = monitored[126]
     monitored[179] = monitored[127]
+    monitored[180] = monitored[128]
 
     # Expressions for the IKr component
-    monitored[27] = 0.0129099444874*math.sqrt(Ko)
-    monitored[28] = (V - monitored[139])*Xr*monitored[27]*monitored[31]
+    monitored[28] = 0.0129099444874*math.sqrt(Ko)
+    monitored[29] = (-monitored[140] + V)*Xr*monitored[28]*monitored[32]
 
     # Expressions for the IK1 component
-    monitored[141] = 0.387298334621*math.sqrt(Ko)
-    monitored[142] = (V - monitored[139])*monitored[141]*monitored[145]
+    monitored[142] = 0.387298334621*math.sqrt(Ko)
+    monitored[143] = (-monitored[140] + V)*monitored[142]*monitored[146]
 
     # Expressions for the ICaL component
-    monitored[60] = math.pow(Q10_CaL, -31.0 + 0.1*T)
-    monitored[61] = 0.45*(F*F)*V*d*f*monitored[60]/(Rgas*T)
-    monitored[62] =\
-        4*Fx_ICaL_jct1*PCa*(gamma_Cai*Ca_jct1*math.exp(2*F*V/(Rgas*T)) -\
-        Cao*gamma_Cao)*monitored[61]*monitored[75]/(-1 +\
-        math.exp(2*F*V/(Rgas*T)))
+    monitored[61] = math.pow(Q10_CaL, -31.0 + 0.1*T)
+    monitored[62] = 0.45*(F*F)*V*d*f*monitored[61]/(Rgas*T)
     monitored[63] =\
+        4*Fx_ICaL_jct1*PCa*(gamma_Cai*Ca_jct1*math.exp(2*F*V/(Rgas*T)) -\
+        Cao*gamma_Cao)*monitored[62]*monitored[76]/(-1 +\
+        math.exp(2*F*V/(Rgas*T)))
+    monitored[64] =\
         4*Fx_ICaL_jct2*PCa*(gamma_Cai*Ca_jct2*math.exp(2*F*V/(Rgas*T)) -\
-        Cao*gamma_Cao)*monitored[61]*monitored[76]/(-1 +\
+        Cao*gamma_Cao)*monitored[62]*monitored[77]/(-1 +\
         math.exp(2*F*V/(Rgas*T)))
-    monitored[64] = Fx_ICaL_jct1*PNa*(-Nao*gamma_Nao +\
-        gamma_Nai*Na_jct1*math.exp(F*V/(Rgas*T)))*monitored[61]*monitored[75]/(-1 +\
+    monitored[65] = Fx_ICaL_jct1*PNa*(-Nao*gamma_Nao +\
+        gamma_Nai*Na_jct1*math.exp(F*V/(Rgas*T)))*monitored[62]*monitored[76]/(-1 +\
         math.exp(F*V/(Rgas*T)))
-    monitored[65] = Fx_ICaL_jct2*PNa*(-Nao*gamma_Nao +\
-        gamma_Nai*Na_jct2*math.exp(F*V/(Rgas*T)))*monitored[61]*monitored[76]/(-1 +\
+    monitored[66] = Fx_ICaL_jct2*PNa*(-Nao*gamma_Nao +\
+        gamma_Nai*Na_jct2*math.exp(F*V/(Rgas*T)))*monitored[62]*monitored[77]/(-1 +\
         math.exp(F*V/(Rgas*T)))
-    monitored[66] =\
+    monitored[67] =\
         4*Fx_ICaL_SL*PCa*(gamma_Cai*Ca_SL*math.exp(2*F*V/(Rgas*T)) -\
-        Cao*gamma_Cao)*monitored[61]*monitored[74]/(-1 +\
+        Cao*gamma_Cao)*monitored[62]*monitored[75]/(-1 +\
         math.exp(2*F*V/(Rgas*T)))
-    monitored[67] = Fx_ICaL_SL*PNa*(-Nao*gamma_Nao +\
-        gamma_Nai*Na_SL*math.exp(F*V/(Rgas*T)))*monitored[61]*monitored[74]/(-1 +\
+    monitored[68] = Fx_ICaL_SL*PNa*(-Nao*gamma_Nao +\
+        gamma_Nai*Na_SL*math.exp(F*V/(Rgas*T)))*monitored[62]*monitored[75]/(-1 +\
         math.exp(F*V/(Rgas*T)))
-    monitored[68] = PK*(-Ko*gamma_Ko +\
-        Ki*gamma_Ki*math.exp(F*V/(Rgas*T)))*(Fx_ICaL_SL*monitored[74] +\
-        Fx_ICaL_jct1*monitored[75] +\
-        Fx_ICaL_jct2*monitored[76])*monitored[61]/(-1 +\
-        math.exp(F*V/(Rgas*T)))
-    monitored[69] = monitored[66] + monitored[63] + monitored[67] +\
-        monitored[65] + monitored[62] + monitored[64] + monitored[68]
+    monitored[69] = PK*(-Ko*gamma_Ko +\
+        Ki*gamma_Ki*math.exp(F*V/(Rgas*T)))*(Fx_ICaL_jct1*monitored[76] +\
+        Fx_ICaL_jct2*monitored[77] +\
+        Fx_ICaL_SL*monitored[75])*monitored[62]/(-1 + math.exp(F*V/(Rgas*T)))
+    monitored[70] = monitored[69] + monitored[67] + monitored[66] +\
+        monitored[68] + monitored[64] + monitored[65] + monitored[63]
 
     # Expressions for the Na buffer component
-    monitored[129] = kon*(Bmax_jct1 - Na_jct1_buf)*Na_jct1 - koff*Na_jct1_buf
-    monitored[130] = kon*(Bmax_jct2 - Na_jct2_buf)*Na_jct2 - koff*Na_jct2_buf
-    monitored[131] = -koff*Na_SL_buf + kon*(-Na_SL_buf + Bmax_SL)*Na_SL
-    monitored[180] = monitored[129]
+    monitored[130] = kon*(Bmax_jct1 - Na_jct1_buf)*Na_jct1 - koff*Na_jct1_buf
+    monitored[131] = kon*(Bmax_jct2 - Na_jct2_buf)*Na_jct2 - koff*Na_jct2_buf
+    monitored[132] = -koff*Na_SL_buf + kon*(-Na_SL_buf + Bmax_SL)*Na_SL
     monitored[181] = monitored[130]
     monitored[182] = monitored[131]
-    monitored[183] = -Cm*(3*monitored[23] + monitored[17] + monitored[7] +\
-        3*monitored[84] + monitored[64])/(F*monitored[3]) -\
-        monitored[146]/monitored[3] - monitored[129]
+    monitored[183] = monitored[132]
     monitored[184] = -monitored[147]/monitored[4] - Cm*(monitored[18] +\
-        3*monitored[24] + 3*monitored[85] + monitored[65] +\
-        monitored[8])/(F*monitored[4]) - monitored[130]
-    monitored[185] = -Cm*(monitored[9] + monitored[67] + monitored[19] +\
-        3*monitored[86] + 3*monitored[25])/(F*monitored[2]) - monitored[131]\
-        + (monitored[146] - monitored[148] + monitored[147])/monitored[2]
-    monitored[186] = monitored[148]/monitored[5]
+        3*monitored[85] + monitored[8] + monitored[65] +\
+        3*monitored[24])/(F*monitored[4]) - monitored[130]
+    monitored[185] = -Cm*(monitored[19] + monitored[66] + monitored[9] +\
+        3*monitored[86] + 3*monitored[25])/(F*monitored[5]) -\
+        monitored[148]/monitored[5] - monitored[131]
+    monitored[186] = (monitored[148] + monitored[147] -\
+        monitored[149])/monitored[2] - monitored[132] - Cm*(3*monitored[87] +\
+        monitored[10] + monitored[68] + monitored[20] +\
+        3*monitored[26])/(F*monitored[2])
+    monitored[187] = monitored[149]/monitored[6]
 
     # Expressions for the Ca buffer component
-    monitored[108] = kon_Calsequestrin*(-Ca_Calsequestrin +\
-        Bmax_Calsequestrin*monitored[5]/monitored[1])*Ca_SR -\
-        koff_Calsequestrin*Ca_Calsequestrin
-    monitored[187] = monitored[108]
-    monitored[109] = -koff_SLB*Ca_SLB_SL + kon_SL*(-Ca_SLB_SL +\
-        Bmax_SLB_SL*monitored[5]/monitored[2])*Ca_SL
-    monitored[110] = kon_SL*(0.1*Bmax_SLB_jct1*monitored[5]/monitored[3] -\
-        Ca_SLB_jct1)*Ca_jct1 - koff_SLB*Ca_SLB_jct1
-    monitored[111] = -koff_SLB*Ca_SLB_jct2 + kon_SL*(-Ca_SLB_jct2 +\
-        0.1*Bmax_SLB_jct2*monitored[5]/monitored[4])*Ca_jct2
-    monitored[112] = -koff_SLHigh*Ca_SLHigh_SL +\
-        kon_SL*(Bmax_SLHigh_SL*monitored[5]/monitored[2] -\
-        Ca_SLHigh_SL)*Ca_SL
-    monitored[113] = kon_SL*(0.1*Bmax_SLHigh_jct1*monitored[5]/monitored[3] -\
-        Ca_SLHigh_jct1)*Ca_jct1 - koff_SLHigh*Ca_SLHigh_jct1
-    monitored[114] = kon_SL*(0.1*Bmax_SLHigh_jct2*monitored[5]/monitored[4] -\
-        Ca_SLHigh_jct2)*Ca_jct2 - koff_SLHigh*Ca_SLHigh_jct2
+    monitored[109] =\
+        kon_Calsequestrin*(Bmax_Calsequestrin*monitored[6]/monitored[1] -\
+        Ca_Calsequestrin)*Ca_SR - koff_Calsequestrin*Ca_Calsequestrin
     monitored[188] = monitored[109]
+    monitored[110] = -koff_SLB*Ca_SLB_SL + kon_SL*(-Ca_SLB_SL +\
+        Bmax_SLB_SL*monitored[6]/monitored[2])*Ca_SL
+    monitored[111] = kon_SL*(0.1*Bmax_SLB_jct1*monitored[6]/monitored[4] -\
+        Ca_SLB_jct1)*Ca_jct1 - koff_SLB*Ca_SLB_jct1
+    monitored[112] = -koff_SLB*Ca_SLB_jct2 + kon_SL*(-Ca_SLB_jct2 +\
+        0.1*Bmax_SLB_jct2*monitored[6]/monitored[5])*Ca_jct2
+    monitored[113] = kon_SL*(Bmax_SLHigh_SL*monitored[6]/monitored[2] -\
+        Ca_SLHigh_SL)*Ca_SL - koff_SLHigh*Ca_SLHigh_SL
+    monitored[114] = -koff_SLHigh*Ca_SLHigh_jct1 +\
+        kon_SL*(0.1*Bmax_SLHigh_jct1*monitored[6]/monitored[4] -\
+        Ca_SLHigh_jct1)*Ca_jct1
+    monitored[115] = kon_SL*(-Ca_SLHigh_jct2 +\
+        0.1*Bmax_SLHigh_jct2*monitored[6]/monitored[5])*Ca_jct2 -\
+        koff_SLHigh*Ca_SLHigh_jct2
     monitored[189] = monitored[110]
     monitored[190] = monitored[111]
     monitored[191] = monitored[112]
     monitored[192] = monitored[113]
     monitored[193] = monitored[114]
-    monitored[115] = monitored[113] + monitored[110]
-    monitored[116] = monitored[111] + monitored[114]
-    monitored[117] = monitored[109] + monitored[112]
-    monitored[118] = monitored[93] - 2*monitored[84] + monitored[89] +\
-        monitored[62]
-    monitored[119] = monitored[63] + monitored[94] + monitored[90] -\
-        2*monitored[85]
-    monitored[120] = monitored[66] - 2*monitored[86] + monitored[91] +\
+    monitored[194] = monitored[115]
+    monitored[116] = monitored[114] + monitored[111]
+    monitored[117] = monitored[115] + monitored[112]
+    monitored[118] = monitored[110] + monitored[113]
+    monitored[119] = monitored[90] - 2*monitored[85] + monitored[94] +\
+        monitored[63]
+    monitored[120] = monitored[91] - 2*monitored[86] + monitored[64] +\
         monitored[95]
-    monitored[194] = -(monitored[105] +\
-        monitored[104])*monitored[5]/monitored[1] - monitored[103] +\
-        monitored[107] - monitored[108] - monitored[102]
-    monitored[195] = monitored[104]*monitored[5]/monitored[3] +\
-        monitored[102]*monitored[1]/monitored[3] - monitored[115] -\
-        monitored[149]/monitored[3] - Cm*monitored[118]/(2*F*monitored[3])
-    monitored[196] = -monitored[150]/monitored[4] -\
-        Cm*monitored[119]/(2*F*monitored[4]) +\
-        monitored[105]*monitored[5]/monitored[4] - monitored[116] +\
-        monitored[103]*monitored[1]/monitored[4]
-    monitored[197] = (-monitored[151] + monitored[149] +\
-        monitored[150])/monitored[2] - monitored[117] -\
-        Cm*monitored[120]/(2*F*monitored[2])
-    monitored[198] = monitored[151]/monitored[5] - monitored[128] -\
-        monitored[107]*monitored[1]/monitored[5]
+    monitored[121] = monitored[67] + monitored[96] + monitored[92] -\
+        2*monitored[87]
+    monitored[195] = -monitored[103] - monitored[109] - (monitored[105] +\
+        monitored[106])*monitored[6]/monitored[1] - monitored[104] +\
+        monitored[108]
+    monitored[196] = -Cm*monitored[119]/(2*F*monitored[4]) +\
+        monitored[103]*monitored[1]/monitored[4] +\
+        monitored[105]*monitored[6]/monitored[4] -\
+        monitored[150]/monitored[4] - monitored[116]
+    monitored[197] = -Cm*monitored[120]/(2*F*monitored[5]) +\
+        monitored[106]*monitored[6]/monitored[5] - monitored[117] +\
+        monitored[104]*monitored[1]/monitored[5] -\
+        monitored[151]/monitored[5]
+    monitored[198] = (monitored[151] + monitored[150] -\
+        monitored[152])/monitored[2] - Cm*monitored[121]/(2*F*monitored[2]) -\
+        monitored[118]
+    monitored[199] = -monitored[108]*monitored[1]/monitored[6] +\
+        monitored[152]/monitored[6] - monitored[129]
 
     # Expressions for the Cell component
-    monitored[132] = (-stim_amplitude if\
+    monitored[133] = (-stim_amplitude if\
         -stim_period*math.floor(t/stim_period) + t <= stim_start +\
         stim_duration and -stim_period*math.floor(t/stim_period) + t >=\
         stim_start else 0)
-    monitored[199] = -monitored[87] - monitored[53] - monitored[69] -\
-        monitored[58] - monitored[96] - monitored[59] - monitored[92] -\
-        monitored[142] - monitored[10] - monitored[20] - monitored[42] -\
-        monitored[26] - monitored[132] - monitored[46] - monitored[28] -\
-        monitored[45]
+    monitored[200] = -monitored[70] - monitored[143] - monitored[29] -\
+        monitored[11] - monitored[46] - monitored[43] - monitored[59] -\
+        monitored[93] - monitored[60] - monitored[27] - monitored[21] -\
+        monitored[47] - monitored[54] - monitored[97] - monitored[88] -\
+        monitored[133]
 
     # Return results
     return monitored

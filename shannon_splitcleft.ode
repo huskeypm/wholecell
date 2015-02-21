@@ -300,8 +300,9 @@ component("Model parameters")
 Vol_Cell = 3.141592654*(cell_radius/1000.)**2*cell_length/1000.**3 # l
 Vol_SR = 0.035*Vol_Cell # l
 Vol_SL = 0.02*Vol_Cell # l
-Vol_jct1 = 0.0539*0.01*Vol_Cell *1.0 # l
-Vol_jct2 = 0.0539*0.01*Vol_Cell *0.0 # l
+w1 = 1. # 
+Vol_jct1 = 0.0539*0.01*Vol_Cell *w1  # l
+Vol_jct2 = 0.0539*0.01*Vol_Cell *(1-w1) # l 
 Vol_myo = 0.65*Vol_Cell # l
 
 component("Reversal potentials")
@@ -498,11 +499,11 @@ j_pump_SR = Q_SRCaP*V_max*((Cai/Kmf)**H - (Ca_SR/Kmr)**H)/(1 + (Cai/Kmf)**H + (C
 
 component("Ion diffusion")
 #PKH  wjct1 = 1   wjct2 = 1-wjct2
-J_Na_jct1_SL = 1.0*(Na_jct1 - Na_SL)*1.8313e-14 # mmole*ms**-1
-J_Na_jct2_SL = 0.0*(Na_jct2 - Na_SL)*1.8313e-14 # mmole*ms**-1
+J_Na_jct1_SL = w1*(Na_jct1 - Na_SL)*1.8313e-14 # mmole*ms**-1
+J_Na_jct2_SL = (1-w1)*(Na_jct2 - Na_SL)*1.8313e-14 # mmole*ms**-1
 J_Na_SL_myo = (Na_SL - Nai)*1.6386e-12 # mmole*ms**-1
-J_Ca_jct1_SL = 1.0*(Ca_jct1 - Ca_SL)*8.2413e-13 # mmole*ms**-1
-J_Ca_jct2_SL = 0.0*(Ca_jct2 - Ca_SL)*8.2413e-13 # mmole*ms**-1
+J_Ca_jct1_SL = w1*(Ca_jct1 - Ca_SL)*8.2413e-13 # mmole*ms**-1
+J_Ca_jct2_SL = (1-w1)*(Ca_jct2 - Ca_SL)*8.2413e-13 # mmole*ms**-1
 J_Ca_SL_myo = (Ca_SL - Cai)*3.7243e-12 # mmole*ms**-1
 
 component("Ca buffer", "Cytosolic")
