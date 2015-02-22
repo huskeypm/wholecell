@@ -1,4 +1,4 @@
-# Gotran generated code for the  "shannon_splitcleft" model
+## Gotran generated code for the  "shannon_splitcleft" model
 from __future__ import division
 w1 = 0.5
 
@@ -437,6 +437,7 @@ def rhs(states, t, parameters, values=None):
     Vol_SL = 0.02*Vol_Cell
     Vol_jct1 = 0.000539*(w1+0.001)*Vol_Cell
     Vol_jct2 = 0.000539*(1 - w1+0.001)*Vol_Cell
+    #print Vol_jct1, Vol_jct2
     Vol_myo = 0.65*Vol_Cell
 
     # Expressions for the Reversal potentials component
@@ -660,10 +661,12 @@ def rhs(states, t, parameters, values=None):
         kom*I2
     j_rel_SR1 = ks1*(Ca_SR - Ca_jct1)*O1
     j_rel_SR2 = ks2*(Ca_SR - Ca_jct2)*O2
+    #print j_rel_SR1, j_rel_SR2
 
     # Expressions for the Jleak SR component
     j_leak_SR1 = KSRleak1*(Ca_SR - Ca_jct1)
     j_leak_SR2 = KSRleak2*(Ca_SR - Ca_jct2)
+    #print j_leak_SR1, j_leak_SR2
 
     # Expressions for the Jpump SR component
     Q_SRCaP = math.pow(Q10_SRCaP, -31.0 + 0.1*T)
@@ -677,6 +680,7 @@ def rhs(states, t, parameters, values=None):
     J_Ca_jct1_SL = 8.2413e-13*w1*(-Ca_SL + Ca_jct1)
     J_Ca_jct2_SL = 8.2413e-13*(1 - w1)*(-Ca_SL + Ca_jct2)
     J_Ca_SL_myo = -3.7243e-12*Cai + 3.7243e-12*Ca_SL
+    #print J_Ca_SL_myo
 
     # Expressions for the Cytosolic component
     dCa_TroponinC = kon_TroponinC*(-Ca_TroponinC + Bmax_TroponinC)*Cai -\
@@ -722,6 +726,7 @@ def rhs(states, t, parameters, values=None):
     i_CaL_Ca_jct2 =\
         4*Fx_ICaL_jct2*PCa*(gamma_Cai*Ca_jct2*math.exp(2*F*V/(Rgas*T)) -\
         Cao*gamma_Cao)*fCa_jct2*temp/(-1 + math.exp(2*F*V/(Rgas*T)))
+    #print i_CaL_Ca_jct1, i_CaL_Ca_jct2
     i_CaL_Na_jct1 = Fx_ICaL_jct1*PNa*(-Nao*gamma_Nao +\
         gamma_Nai*Na_jct1*math.exp(F*V/(Rgas*T)))*fCa_jct1*temp/(-1 +\
         math.exp(F*V/(Rgas*T)))
@@ -792,6 +797,7 @@ def rhs(states, t, parameters, values=None):
     i_Ca_SL_tot = i_Cap_SL + i_CaL_Ca_SL - 2*i_NaCa_SL + i_Cab_SL
     values[42] = -dCalsequestrin - (j_leak_SR1 + j_leak_SR2)*Vol_myo/Vol_SR +\
         j_pump_SR - j_rel_SR1 - j_rel_SR2
+    #print values[42], j_leak_SR1 , j_leak_SR2, j_rel_SR1 , j_rel_SR2
     values[43] = -dCa_jct1_tot_bound - Cm*i_Ca_jct1_tot/(2*F*Vol_jct1) -\
         J_Ca_jct1_SL/Vol_jct1 + Vol_SR*j_rel_SR1/Vol_jct1 +\
         Vol_myo*j_leak_SR1/Vol_jct1
@@ -801,14 +807,20 @@ def rhs(states, t, parameters, values=None):
     values[44] = -dCa_jct2_tot_bound - Cm*i_Ca_jct2_tot/(2*F*Vol_jct2) +\
         Vol_myo*j_leak_SR2/Vol_jct2 - J_Ca_jct2_SL/Vol_jct2 +\
         Vol_SR*j_rel_SR2/Vol_jct2
+    #print values[43],values[44]
     #print "jct2 ", j_rel_SR2, j_leak_SR2
     #print "jct2 ", -dCa_jct2_tot_bound , Cm,i_Ca_jct2_tot,2, F,Vol_jct2,  \
     #    J_Ca_jct2_SL,Vol_jct2 , Vol_SR,j_rel_SR2,Vol_jct2 ,\
     #    Vol_myo,j_leak_SR2,Vol_jct2
     values[45] = (-J_Ca_SL_myo + J_Ca_jct1_SL + J_Ca_jct2_SL)/Vol_SL -\
         dCa_SL_tot_bound - Cm*i_Ca_SL_tot/(2*F*Vol_SL)
+    #values[45] = 0 # no current 
+    #values[45] = (-J_Ca_SL_myo + 0*J_Ca_jct1_SL + 0*J_Ca_jct2_SL)/Vol_SL -\
+    #    dCa_SL_tot_bound - Cm*i_Ca_SL_tot/(2*F*Vol_SL)
     values[46] = -dCa_cytosol_tot_bound - Vol_SR*j_pump_SR/Vol_myo +\
         J_Ca_SL_myo/Vol_myo
+    #print J_Ca_SL_myo
+    
 
     # Expressions for the Cell component
     i_Stim = (-stim_amplitude if -stim_period*math.floor(t/stim_period) + t\
@@ -876,8 +888,8 @@ def monitor(states, t, parameters, monitored=None):
     monitored[1] = 0.035*monitored[0]
     monitored[2] = 0.02*monitored[0]
     monitored[3] = 1.0
-    monitored[4] = 0.000539*monitored[3]*monitored[0]
-    monitored[5] = 0.000539*(1 - monitored[3])*monitored[0]
+    monitored[4] = 0.000539*(monitored[3]+0.001)*monitored[0]
+    monitored[5] = 0.000539*(1 - monitored[3]+0.001)*monitored[0]
     monitored[6] = 0.65*monitored[0]
 
     # Expressions for the Reversal potentials component
