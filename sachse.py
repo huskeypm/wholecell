@@ -7,7 +7,6 @@ import matplotlib.pylab as plt
 from scipy.interpolate import griddata
 class empty:pass 
 
-useMPI = True
 idxCa = 0 # PDE 
 idxBuff = 1
 idxFluo = 2
@@ -62,6 +61,7 @@ def buffered(totB,freeCa,kFwd,kback):
     return totB/(KD/freeCa + 1) 
 
 class Params():
+  useMPI = True
   paraview = True  
   verbose=False 
 
@@ -516,7 +516,9 @@ def tsolve(fileName="sarcomere.xml",\
       ts.append(t0)
       concs.append(concis)
       # doesn't work w mpi 
-      if useMPI==False:
+      print "MPI mode", params.useMPI
+      if params.useMPI==False:
+        print "SDF"
         us.append(InterpolateData(mesh,u_n[idxCa]))
 
       # update
@@ -544,7 +546,7 @@ def tsolve(fileName="sarcomere.xml",\
   results.u_n = u_n  
   # pickle-safe
   results.concs = np.asarray(concs)
-  if useMPI==False:
+  if params.useMPI==False:
     results.us = us
   return results     
 
