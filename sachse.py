@@ -8,6 +8,8 @@ import numpy as np
 import matplotlib.pylab as plt
 from scipy.interpolate import griddata
 class empty:pass 
+import sys
+sys.path.append("./siam/")
 
 idxCa = 0 # PDE 
 idxBuff = 1
@@ -21,40 +23,40 @@ eps = 0.05
 nm_to_um = 1.e-3
 ttRad = 0.25 # [um]
 
-## For 4TT geometry
-class TopTT(SubDomain):
-  def inside(self,x,on_boundary):
-    # Define TT loc 
-    centroid1 = np.array([self.mmin[0],self.mmax[1]])
-    centroid2 = np.array([self.mmax[0],self.mmax[1]])
-
-    # check if point is nearby 
-    d1 = np.linalg.norm(centroid1-x[0:2])
-    d2 = np.linalg.norm(centroid2-x[0:2])
-    isTT1 = (d1 < (ttRad+eps))
-    isTT2 = (d2 < (ttRad+eps))
-    isTT = isTT1 or isTT2
-
-    #print x,centroid,d,isTT
-    #print x[0], edge, on_boundary
-    return on_boundary and isTT
-
-class BottomTT(SubDomain):
-  def inside(self,x,on_boundary):
-    # Define TT loc 
-    centroid1 = np.array([self.mmin[0],self.mmin[1]])
-    centroid2 = np.array([self.mmax[0],self.mmin[1]])
-
-    # check if point is nearby 
-    d1 = np.linalg.norm(centroid1-x[0:2])
-    d2 = np.linalg.norm(centroid2-x[0:2])
-    isTT1 = (d1 < (ttRad+eps))
-    isTT2 = (d2 < (ttRad+eps))
-    isTT = isTT1 or isTT2
-
-    #print x,centroid,d,isTT
-    #print x[0], edge, on_boundary
-    return on_boundary and isTT
+### For 4TT geometry
+#class TopTT(SubDomain):
+#  def inside(self,x,on_boundary):
+#    # Define TT loc 
+#    centroid1 = np.array([self.mmin[0],self.mmax[1]])
+#    centroid2 = np.array([self.mmax[0],self.mmax[1]])
+#
+#    # check if point is nearby 
+#    d1 = np.linalg.norm(centroid1-x[0:2])
+#    d2 = np.linalg.norm(centroid2-x[0:2])
+#    isTT1 = (d1 < (ttRad+eps))
+#    isTT2 = (d2 < (ttRad+eps))
+#    isTT = isTT1 or isTT2
+#
+#    #print x,centroid,d,isTT
+#    #print x[0], edge, on_boundary
+#    return on_boundary and isTT
+#
+#class BottomTT(SubDomain):
+#  def inside(self,x,on_boundary):
+#    # Define TT loc 
+#    centroid1 = np.array([self.mmin[0],self.mmin[1]])
+#    centroid2 = np.array([self.mmax[0],self.mmin[1]])
+#
+#    # check if point is nearby 
+#    d1 = np.linalg.norm(centroid1-x[0:2])
+#    d2 = np.linalg.norm(centroid2-x[0:2])
+#    isTT1 = (d1 < (ttRad+eps))
+#    isTT2 = (d2 < (ttRad+eps))
+#    isTT = isTT1 or isTT2
+#
+#    #print x,centroid,d,isTT
+#    #print x[0], edge, on_boundary
+#    return on_boundary and isTT
 
 
 ## For 2TT geometry
@@ -86,14 +88,6 @@ class RightTT(SubDomain):
     #print x,centroid,d,isTT
     #print x[0], edge, on_boundary
     return on_boundary and isTT
-
-
-# This is where SSL is 
-class OuterSarcolemma(SubDomain):
-  def inside(self,x,on_boundary):
-    edge = (np.abs(x[2]- self.mmax[2]) < DOLFIN_EPS) 
-    #print x[0], edge, on_boundary
-    return on_boundary and edge
 
 # [CaB] = [Btot]/(KD/[Ca]+1)
 def buffered(totB,freeCa,kFwd,kback):
@@ -240,22 +234,38 @@ def tsolve(fileName="sarcomere2TT.xml",\
   if debug:
     params.T = 10
 
-  # Create mesh 
+  ## Create mesh 
   if debug: 
     mesh = UnitCubeMesh(16,16,16)  
     mesh = UnitCubeMesh(5,5,5)
 
   if "2D" in mode:
+    import sarcomere2DSSL
     if mode=="2D_SSL":
       1 # ME: R,R,Q  
+      cm = sarcomere2DSSL.sarcomere2DSSL(mode="wSSL")
+          
     if mode=="2D_noSSL":
       1 # ME: R,Q    
+        # p/rxn for SSL 
+      cm = sarcomere2DSSL.sarcomere2DSSL(mode="woSSL")
 
-    mesh = UnitCubeMesh(16,16,16)  
-  else: 
+  elif "sachse" in mode: 
     if mode=="sachse4TT":
-      fileName = "sarcomere4TT.xml"
-    mesh = Mesh(fileName)   # not working with xml files I"ve been generatinf 
+      import sarcomere4TT
+      cm = sarcomere4TT.sarcomere4TT()
+    else: 
+      import sarcomere2TT
+      cm = sarcomere2TT.sarcomere2TT()
+
+  elif "satin" in mode:
+    import sarcomereSatin
+    cm = sarcomereSatin.sarcomereSatin()
+    
+    
+
+  mesh = cm.GetMesh()
+  quit()
   dim =mesh.ufl_cell().geometric_dimension()
 
   # function spaces
@@ -291,23 +301,26 @@ def tsolve(fileName="sarcomere2TT.xml",\
   if mode!="sachse4TT":
     boundary = LeftTT()
   else:
-    boundary = BottomTT()
+    import sarcomere4TT as cm
+    boundary = cm.BottomTT()
 
   boundary.mmin = np.min(mesh.coordinates(),axis=0)
   boundary.mmax = np.max(mesh.coordinates(),axis=0)
   lMarker = 2
   boundary.mark(subdomains,lMarker)
+  
   if mode!="sachse4TT":
     boundary = RightTT()
   else: 
-    boundary = TopTT()
+    boundary = cm.TopTT()
 
   boundary.mmin = np.min(mesh.coordinates(),axis=0)
   boundary.mmax = np.max(mesh.coordinates(),axis=0)
   rMarker = 3
   boundary.mark(subdomains,rMarker)
+
   if dim>2:
-    boundary = OuterSarcolemma()
+    boundary = cm.OuterSarcolemma()
     boundary.mmax = np.max(mesh.coordinates(),axis=0)
     slMarker = 4
     boundary.mark(subdomains,slMarker)
@@ -362,20 +375,22 @@ def tsolve(fileName="sarcomere2TT.xml",\
     1 
 
   if mode=="sachse4TT":
-    # TT radius 
-    xl= 0.25
-    sc = 0.01
-    #lhs = 1/(1+np.exp((xs-xl)/sc))    
-    xr = 2-0.25
-    #rhs = 1-1/(1+np.exp((xs-xr)/sc))    
+#    # TT radius 
+#    xl= 0.25
+#    sc = 0.01
+#    #lhs = 1/(1+np.exp((xs-xl)/sc))    
+#    xr = 2-0.25
+#    #rhs = 1-1/(1+np.exp((xs-xr)/sc))    
+#
+#    # location of zline 
+#    zLine = Expression("1/(1+exp((x[0]-xl)/sc)) + 1-1/(1+exp((x[0]-xr)/sc))", \
+#      xl=xl,xr=xr,sc=sc)
+#    # location of cytosol
+#    cytosol = Expression("(1-1/(1+exp((x[0]-xl)/sc)))*(1/(1+exp((x[0]-xr)/sc)))", \
+#      xl=xl,xr=xr,sc=sc)
 
-    # location of zline 
-    zLine = Expression("1/(1+exp((x[0]-xl)/sc)) + 1-1/(1+exp((x[0]-xr)/sc))", \
-      xl=xl,xr=xr,sc=sc)
-    # location of cytosol
-    cytosol = Expression("(1-1/(1+exp((x[0]-xl)/sc)))*(1/(1+exp((x[0]-xr)/sc)))", \
-      xl=xl,xr=xr,sc=sc)
-
+    zLine = cm.zLine
+    cytosol= cm.cytosol
 
     pBuff = zLine
     #plt.plot(xs,)
@@ -646,6 +661,12 @@ if __name__ == "__main__":
     elif(arg=="-test1"):
       doit(debug=False,mode="ode")    
       quit()
+    elif(arg=="-test2D"):
+      doit(debug=False,mode="2D_SSL")    
+      quit()
+    elif(arg=="-testsatin"):
+      doit(debug=False,mode="satin")    
+      quit()
     elif(arg=="-test2"):
       params = Params()
       params.T = 20
@@ -663,18 +684,5 @@ if __name__ == "__main__":
 
 
   raise RuntimeError("Arguments not understood")
-
-
-
-
-  
-
-
-
-
-
-  raise RuntimeError("Arguments not understood")
-
-
 
 
