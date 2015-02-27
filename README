@@ -40,3 +40,10 @@ dolfin-convert sarcomere.msh sarcomere.xml
 
 
 More instructions are included in the individual notebooks 
+
+
+\subsection{MPI} 
+source dolfin.bash
+ipcluster start --engines=MPI --n  4 
+
+start notebook as normal after that (MPIDolfin.ipynb) 

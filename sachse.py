@@ -1,6 +1,8 @@
 #
 # Time dependent solver, single species 
 # 
+# TODO get concentrations of buffs, etc correct
+#
 from dolfin import *
 import numpy as np
 import matplotlib.pylab as plt
@@ -19,7 +21,43 @@ eps = 0.05
 nm_to_um = 1.e-3
 ttRad = 0.25 # [um]
 
+## For 4TT geometry
+class TopTT(SubDomain):
+  def inside(self,x,on_boundary):
+    # Define TT loc 
+    centroid1 = np.array([self.mmin[0],self.mmax[1]])
+    centroid2 = np.array([self.mmax[0],self.mmax[1]])
 
+    # check if point is nearby 
+    d1 = np.linalg.norm(centroid1-x[0:2])
+    d2 = np.linalg.norm(centroid2-x[0:2])
+    isTT1 = (d1 < (ttRad+eps))
+    isTT2 = (d2 < (ttRad+eps))
+    isTT = isTT1 or isTT2
+
+    #print x,centroid,d,isTT
+    #print x[0], edge, on_boundary
+    return on_boundary and isTT
+
+class BottomTT(SubDomain):
+  def inside(self,x,on_boundary):
+    # Define TT loc 
+    centroid1 = np.array([self.mmin[0],self.mmin[1]])
+    centroid2 = np.array([self.mmax[0],self.mmin[1]])
+
+    # check if point is nearby 
+    d1 = np.linalg.norm(centroid1-x[0:2])
+    d2 = np.linalg.norm(centroid2-x[0:2])
+    isTT1 = (d1 < (ttRad+eps))
+    isTT2 = (d2 < (ttRad+eps))
+    isTT = isTT1 or isTT2
+
+    #print x,centroid,d,isTT
+    #print x[0], edge, on_boundary
+    return on_boundary and isTT
+
+
+## For 2TT geometry
 class LeftTT(SubDomain):
   def inside(self,x,on_boundary):
     #edge = (np.abs(x[0]- self.mmin[0]) < DOLFIN_EPS) 
@@ -49,6 +87,8 @@ class RightTT(SubDomain):
     #print x[0], edge, on_boundary
     return on_boundary and isTT
 
+
+# This is where SSL is 
 class OuterSarcolemma(SubDomain):
   def inside(self,x,on_boundary):
     edge = (np.abs(x[2]- self.mmax[2]) < DOLFIN_EPS) 
@@ -120,56 +160,6 @@ class InitialConditions(Expression):
     return (nDOF,)
 
  # TODO put in real info 
-def UpdateBeardVals(nC,bM,mgatpi_uM,fadpi_uM ,fmgi_uM ):
-  
-
-  ### [mM] ###
-  print "mgatpi %f [uM] adpi %f [uM] mgi %f [uM] " % \
-   (mgatpi_uM,fadpi_uM,fmgi_uM)
-  cmgatpi = mgatpi_uM * uM_to_mM
-  cfadpi = fadpi_uM * uM_to_mM
-  cfmgi = fmgi_uM * uM_to_mM
-  
-  # get nucleotide concentreations at vertex i 
-  # convert MgATP into free ATP (used by Beard)
-  #catpi = nC.mATP_to_fATP( cmgatpi )                
-  ctatpi = nC.mATP_to_tATP( cmgatpi,cfmgi)           
-  cfatpi = ctatpi - cmgatpi 
-  ctadpi = nC.fADP_to_tADP( cfadpi,cfmgi)           
-  cmgadpi = ctadpi - cfadpi 
-
-  ## Compute nucleotide flux using beard model" 
-  # Current doesn't use [Mg]
-  jtatpi,jtadpi,dummy = bM.jNucleotide(ctatpi*mM_to_M,ctadpi*mM_to_M) # ,cmgi)
-  # multiply by '-1', since negative flux represents ATP diffusion 
-  # into cytosol 
-  jtatpi*=-1
-  jtadpi*=-1
-  #print "%f %f %f" % (ctatpi,ctadpi,jtatpi)
-
-  #jtatpi = jtadpi = 0. ; print "KILLING JATP flux"
-  # jNucleotide returns mM/s, 1 mM/s = 1000 uM/1000 ms = 1 [uM/ms]
-  print "[fatp] %f [mgatp] %f [tatp] %f [mM] jtATP %f [mM/s]\n"\
-    % ( cfatpi,cmgatpi,ctatpi,jtatpi)
-  print "[fadp] %f [mgadp] %f [tadp] %f [mM] jtATP %f [mM/s]\n"\
-    % ( cfadpi,cmgadpi,ctadpi,jtadpi)
-
-
-  # j = dN/dt --> dN = j*dt
-  # j [mM/s] <==> j[uM/ms]
-  # dt [ms] * j [uM/ms] = delatp [uM] --> delatp [mM]
-  deltatpi = params.dt * jtatpi * uM_to_mM
-  deltadpi = params.dt * jtadpi * uM_to_mM
-
-
-  # first will assume that total nucleotide is added (substracted) 
-  # from the free nucleotide; 
-  # When we add del_FreeATP to the FreeATP concentration, we push 
-  # the Mg+fATP<-->MgATP from equilibrium. Therefore, we recompute
-  # the system at equlibrium  
-  cfatpn = cfatpi + deltatpi
-  cfadpn = cfadpi + deltadpi
-  #print "fatpn %f (before equil) " % cfatpn
 
 
 def InterpolateData(mesh,u,dims=3,mode="line",doplot=False):    
@@ -241,9 +231,9 @@ class MyEquation(NonlinearProblem):
 # In[18]:
 
 # TODO verify units 
-def tsolve(fileName="sarcomere.xml",\
+def tsolve(fileName="sarcomere2TT.xml",\
            outName="output.pvd",\
-           mode="sachse", # sachse, ode, bcs \ 
+           mode="sachse2TT", # sachse2TT, sachse4TT, ode, bcs \ 
            params = Params(),\
 	   debug=False): 
  
@@ -254,12 +244,23 @@ def tsolve(fileName="sarcomere.xml",\
   if debug: 
     mesh = UnitCubeMesh(16,16,16)  
     mesh = UnitCubeMesh(5,5,5)
+
+  if "2D" in mode:
+    if mode=="2D_SSL":
+      1 # ME: R,R,Q  
+    if mode=="2D_noSSL":
+      1 # ME: R,Q    
+
+    mesh = UnitCubeMesh(16,16,16)  
   else: 
+    if mode=="sachse4TT":
+      fileName = "sarcomere4TT.xml"
     mesh = Mesh(fileName)   # not working with xml files I"ve been generatinf 
   dim =mesh.ufl_cell().geometric_dimension()
 
   # function spaces
   V = FunctionSpace(mesh, "Lagrange", 1)
+  ## PKH R = FunctionSpace(mesh,"R",0) # for each compartment 
   Vs = []
   for i in range(nDOF):
         #print i 
@@ -286,12 +287,21 @@ def tsolve(fileName="sarcomere.xml",\
   # problem specific          
   subdomains = MeshFunction("size_t",mesh,dim-1)
   subdomains.set_all(0)
-  boundary = LeftTT()
+ 
+  if mode!="sachse4TT":
+    boundary = LeftTT()
+  else:
+    boundary = BottomTT()
+
   boundary.mmin = np.min(mesh.coordinates(),axis=0)
   boundary.mmax = np.max(mesh.coordinates(),axis=0)
   lMarker = 2
   boundary.mark(subdomains,lMarker)
-  boundary = RightTT()
+  if mode!="sachse4TT":
+    boundary = RightTT()
+  else: 
+    boundary = TopTT()
+
   boundary.mmin = np.min(mesh.coordinates(),axis=0)
   boundary.mmax = np.max(mesh.coordinates(),axis=0)
   rMarker = 3
@@ -334,11 +344,9 @@ def tsolve(fileName="sarcomere.xml",\
   # Test flux locations 
   # PKH verified 150216
   if mode=="bcs":
+    ## Might ultimately put BC for mitochondria (top/bottom) here  
+
     #bc = DirichletBC(ME.sub(0),Constant(1.),subdomains,lMarker)
-    #bcs.append(bc)
-    #bc = DirichletBC(ME.sub(0),Constant(2.),subdomains,rMarker)
-    #bcs.append(bc)
-    #bc = DirichletBC(ME.sub(0),Constant(1.),subdomains,slMarker)
     #bcs.append(bc)
  
     # doesn't seem to work with ME.sub
@@ -352,13 +360,37 @@ def tsolve(fileName="sarcomere.xml",\
     #quit()
     #view.PrintSubdomains(mesh,subdomains)
     1 
+
+  if mode=="sachse4TT":
+    # TT radius 
+    xl= 0.25
+    sc = 0.01
+    #lhs = 1/(1+np.exp((xs-xl)/sc))    
+    xr = 2-0.25
+    #rhs = 1-1/(1+np.exp((xs-xr)/sc))    
+
+    # location of zline 
+    zLine = Expression("1/(1+exp((x[0]-xl)/sc)) + 1-1/(1+exp((x[0]-xr)/sc))", \
+      xl=xl,xr=xr,sc=sc)
+    # location of cytosol
+    cytosol = Expression("(1-1/(1+exp((x[0]-xl)/sc)))*(1/(1+exp((x[0]-xr)/sc)))", \
+      xl=xl,xr=xr,sc=sc)
+
+
+    pBuff = zLine
+    #plt.plot(xs,)
+    #plt.plot(xs,lhs+rhs)
+    #plt.plot(xs,1-(lhs+rhs))
+  else:
+    pBuff = Expression("1.")
    
-  elif mode=="sachse":
+  # works for either sachse2 or sachse4TT
+  if "sachse" in mode:
     #- buffer 
     kp = params.alphabuff 
     btot = params.Btot 
     km = params.betabuff   # probably describe this as a state
-    Jbuff = kp*cCa_n*(btot - cBuff_n) - km*cBuff_n   # probably describe this as a state
+    Jbuff = pBuff*(kp*cCa_n*(btot - cBuff_n) - km*cBuff_n)  # probably describe this as a state
     RHSis[idxCa] += -Jbuff*vCa*dx
     RHSis[idxBuff] += +Jbuff*vBuff*dx
   
@@ -516,7 +548,7 @@ def tsolve(fileName="sarcomere.xml",\
       ts.append(t0)
       concs.append(concis)
       # doesn't work w mpi 
-      print "MPI mode", params.useMPI
+      #print "MPI mode", params.useMPI
       if params.useMPI==False:
         print "SDF"
         us.append(InterpolateData(mesh,u_n[idxCa]))
@@ -617,8 +649,24 @@ if __name__ == "__main__":
     elif(arg=="-test2"):
       params = Params()
       params.T = 20
-      doit(debug=False,params=params,mode="sachse")
+      doit(debug=False,params=params,mode="sachse2TT")
       quit()
+    elif(arg=="-test4"):
+      params = Params()
+      params.T = 20
+      doit(debug=False,params=params,mode="sachse4TT")
+      quit()
+  
+
+
+
+
+
+  raise RuntimeError("Arguments not understood")
+
+
+
+
   
 
 
