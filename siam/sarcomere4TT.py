@@ -80,4 +80,29 @@ class sarcomere4TT():
     self.cytosol = Expression("(1-1/(1+exp((x[0]-xl)/sc)))*(1/(1+exp((x[0]-xr)/sc)))", \
           xl=xl,xr=xr,sc=sc)
 
+  def Boundaries(self,subdomains):
+    mesh = self.mesh
+
+    boundary = BottomTT()
+    boundary.mmin = np.min(mesh.coordinates(),axis=0)
+    boundary.mmax = np.max(mesh.coordinates(),axis=0)
+    lMarker = 2
+    boundary.mark(subdomains,lMarker)
+  
+    boundary = TopTT()
+  
+    boundary.mmin = np.min(mesh.coordinates(),axis=0)
+    boundary.mmax = np.max(mesh.coordinates(),axis=0)
+    rMarker = 3
+    boundary.mark(subdomains,rMarker)
+  
+    boundary = OuterSarcolemma()
+    boundary.mmax = np.max(mesh.coordinates(),axis=0)
+    slMarker = 4
+    boundary.mark(subdomains,slMarker)
+  
+    return lMarker,rMarker,slMarker
+  
+  
+
 

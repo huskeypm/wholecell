@@ -23,71 +23,6 @@ eps = 0.05
 nm_to_um = 1.e-3
 ttRad = 0.25 # [um]
 
-### For 4TT geometry
-#class TopTT(SubDomain):
-#  def inside(self,x,on_boundary):
-#    # Define TT loc 
-#    centroid1 = np.array([self.mmin[0],self.mmax[1]])
-#    centroid2 = np.array([self.mmax[0],self.mmax[1]])
-#
-#    # check if point is nearby 
-#    d1 = np.linalg.norm(centroid1-x[0:2])
-#    d2 = np.linalg.norm(centroid2-x[0:2])
-#    isTT1 = (d1 < (ttRad+eps))
-#    isTT2 = (d2 < (ttRad+eps))
-#    isTT = isTT1 or isTT2
-#
-#    #print x,centroid,d,isTT
-#    #print x[0], edge, on_boundary
-#    return on_boundary and isTT
-#
-#class BottomTT(SubDomain):
-#  def inside(self,x,on_boundary):
-#    # Define TT loc 
-#    centroid1 = np.array([self.mmin[0],self.mmin[1]])
-#    centroid2 = np.array([self.mmax[0],self.mmin[1]])
-#
-#    # check if point is nearby 
-#    d1 = np.linalg.norm(centroid1-x[0:2])
-#    d2 = np.linalg.norm(centroid2-x[0:2])
-#    isTT1 = (d1 < (ttRad+eps))
-#    isTT2 = (d2 < (ttRad+eps))
-#    isTT = isTT1 or isTT2
-#
-#    #print x,centroid,d,isTT
-#    #print x[0], edge, on_boundary
-#    return on_boundary and isTT
-
-
-## For 2TT geometry
-class LeftTT(SubDomain):
-  def inside(self,x,on_boundary):
-    #edge = (np.abs(x[0]- self.mmin[0]) < DOLFIN_EPS) 
-    # Define TT loc 
-    yMid = 0.5*(self.mmax[1]+self.mmin[1])
-    centroid = np.array([self.mmin[0],yMid])
-
-    # check if point is nearby 
-    d = np.linalg.norm(centroid-x[0:2])
-    isTT = (d < (ttRad+eps))
-
-    #print x,centroid,d,isTT
-    #print x[0], edge, on_boundary
-    return on_boundary and isTT
-
-class RightTT(SubDomain):
-  def inside(self,x,on_boundary):
-    #edge = (np.abs(x[0]- self.mmax[0]) < DOLFIN_EPS) 
-    yMid = 0.5*(self.mmax[1]+self.mmin[1])
-    centroid = np.array([self.mmax[0],yMid])
-
-    # check if point is nearby 
-    d = np.linalg.norm(centroid-x[0:2])
-    isTT = (d < (ttRad+eps))
-
-    #print x,centroid,d,isTT
-    #print x[0], edge, on_boundary
-    return on_boundary and isTT
 
 # [CaB] = [Btot]/(KD/[Ca]+1)
 def buffered(totB,freeCa,kFwd,kback):
@@ -231,12 +166,9 @@ def tsolve(fileName="sarcomere2TT.xml",\
            params = Params(),\
 	   debug=False): 
  
-  if debug:
-    params.T = 10
-
   ## Create mesh 
   if debug: 
-    mesh = UnitCubeMesh(16,16,16)  
+    params.T = 10
     mesh = UnitCubeMesh(5,5,5)
 
   if "2D" in mode:
@@ -265,7 +197,6 @@ def tsolve(fileName="sarcomere2TT.xml",\
     
 
   mesh = cm.GetMesh()
-  quit()
   dim =mesh.ufl_cell().geometric_dimension()
 
   # function spaces
@@ -297,33 +228,7 @@ def tsolve(fileName="sarcomere2TT.xml",\
   # problem specific          
   subdomains = MeshFunction("size_t",mesh,dim-1)
   subdomains.set_all(0)
- 
-  if mode!="sachse4TT":
-    boundary = LeftTT()
-  else:
-    import sarcomere4TT as cm
-    boundary = cm.BottomTT()
-
-  boundary.mmin = np.min(mesh.coordinates(),axis=0)
-  boundary.mmax = np.max(mesh.coordinates(),axis=0)
-  lMarker = 2
-  boundary.mark(subdomains,lMarker)
-  
-  if mode!="sachse4TT":
-    boundary = RightTT()
-  else: 
-    boundary = cm.TopTT()
-
-  boundary.mmin = np.min(mesh.coordinates(),axis=0)
-  boundary.mmax = np.max(mesh.coordinates(),axis=0)
-  rMarker = 3
-  boundary.mark(subdomains,rMarker)
-
-  if dim>2:
-    boundary = cm.OuterSarcolemma()
-    boundary.mmax = np.max(mesh.coordinates(),axis=0)
-    slMarker = 4
-    boundary.mark(subdomains,slMarker)
+  lMarker,rMarker,slMarker = cm.Boundaries(subdomains)
 
   ## decide on source of probability density  
   init_cond = InitialConditions()
@@ -375,19 +280,6 @@ def tsolve(fileName="sarcomere2TT.xml",\
     1 
 
   if mode=="sachse4TT":
-#    # TT radius 
-#    xl= 0.25
-#    sc = 0.01
-#    #lhs = 1/(1+np.exp((xs-xl)/sc))    
-#    xr = 2-0.25
-#    #rhs = 1-1/(1+np.exp((xs-xr)/sc))    
-#
-#    # location of zline 
-#    zLine = Expression("1/(1+exp((x[0]-xl)/sc)) + 1-1/(1+exp((x[0]-xr)/sc))", \
-#      xl=xl,xr=xr,sc=sc)
-#    # location of cytosol
-#    cytosol = Expression("(1-1/(1+exp((x[0]-xl)/sc)))*(1/(1+exp((x[0]-xr)/sc)))", \
-#      xl=xl,xr=xr,sc=sc)
 
     zLine = cm.zLine
     cytosol= cm.cytosol
@@ -400,7 +292,8 @@ def tsolve(fileName="sarcomere2TT.xml",\
     pBuff = Expression("1.")
    
   # works for either sachse2 or sachse4TT
-  if "sachse" in mode:
+  #if "reaction" in mode:
+  if 1:
     #- buffer 
     kp = params.alphabuff 
     btot = params.Btot 
@@ -650,6 +543,8 @@ if __name__ == "__main__":
   #  #print "arg"
 
   # Loops over each argument in the command line 
+  params = Params()
+  params.T = 20
   for i,arg in enumerate(sys.argv):
     # calls 'doit' with the next argument following the argument '-validation'
     if(arg=="-debug"):
@@ -665,16 +560,12 @@ if __name__ == "__main__":
       doit(debug=False,mode="2D_SSL")    
       quit()
     elif(arg=="-testsatin"):
-      doit(debug=False,mode="satin")    
+      doit(debug=False,params=params,mode="satin")    
       quit()
     elif(arg=="-test2"):
-      params = Params()
-      params.T = 20
       doit(debug=False,params=params,mode="sachse2TT")
       quit()
     elif(arg=="-test4"):
-      params = Params()
-      params.T = 20
       doit(debug=False,params=params,mode="sachse4TT")
       quit()
   

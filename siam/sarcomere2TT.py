@@ -7,41 +7,36 @@ ttRad = 0.25 # [um]
 eps = 0.05
 
 
-
-## Boundary defs
-class TopTT(SubDomain):
+## For 2TT geometry
+class LeftTT(SubDomain):
   def inside(self,x,on_boundary):
+    #edge = (np.abs(x[0]- self.mmin[0]) < DOLFIN_EPS) 
     # Define TT loc 
-    centroid1 = np.array([self.mmin[0],self.mmax[1]])
-    centroid2 = np.array([self.mmax[0],self.mmax[1]])
+    yMid = 0.5*(self.mmax[1]+self.mmin[1])
+    centroid = np.array([self.mmin[0],yMid])
 
     # check if point is nearby 
-    d1 = np.linalg.norm(centroid1-x[0:2])
-    d2 = np.linalg.norm(centroid2-x[0:2])
-    isTT1 = (d1 < (ttRad+eps))
-    isTT2 = (d2 < (ttRad+eps))
-    isTT = isTT1 or isTT2
+    d = np.linalg.norm(centroid-x[0:2])
+    isTT = (d < (ttRad+eps))
 
     #print x,centroid,d,isTT
     #print x[0], edge, on_boundary
     return on_boundary and isTT
 
-class BottomTT(SubDomain):
+class RightTT(SubDomain):
   def inside(self,x,on_boundary):
-    # Define TT loc 
-    centroid1 = np.array([self.mmin[0],self.mmin[1]])
-    centroid2 = np.array([self.mmax[0],self.mmin[1]])
+    #edge = (np.abs(x[0]- self.mmax[0]) < DOLFIN_EPS) 
+    yMid = 0.5*(self.mmax[1]+self.mmin[1])
+    centroid = np.array([self.mmax[0],yMid])
 
     # check if point is nearby 
-    d1 = np.linalg.norm(centroid1-x[0:2])
-    d2 = np.linalg.norm(centroid2-x[0:2])
-    isTT1 = (d1 < (ttRad+eps))
-    isTT2 = (d2 < (ttRad+eps))
-    isTT = isTT1 or isTT2
+    d = np.linalg.norm(centroid-x[0:2])
+    isTT = (d < (ttRad+eps))
 
     #print x,centroid,d,isTT
     #print x[0], edge, on_boundary
     return on_boundary and isTT
+
 
 # This is where SSL is 
 class OuterSarcolemma(SubDomain):
@@ -59,5 +54,30 @@ class sarcomere2TT():
     self.mesh = Mesh(self.fileName)
     return self.mesh 
 
+  def Boundaries(self,subdomains):
+    mesh = self.mesh
+
+    boundary = LeftTT()
+    boundary.mmin = np.min(mesh.coordinates(),axis=0)
+    boundary.mmax = np.max(mesh.coordinates(),axis=0)
+    lMarker = 2
+    boundary.mark(subdomains,lMarker)
+  
+    boundary = RightTT()
+  
+    boundary.mmin = np.min(mesh.coordinates(),axis=0)
+    boundary.mmax = np.max(mesh.coordinates(),axis=0)
+    rMarker = 3
+    boundary.mark(subdomains,rMarker)
+  
+    boundary = OuterSarcolemma()
+    boundary.mmax = np.max(mesh.coordinates(),axis=0)
+    slMarker = 4
+    boundary.mark(subdomains,slMarker)
 
 
+    return lMarker,rMarker,slMarker
+
+  
+  
+  
