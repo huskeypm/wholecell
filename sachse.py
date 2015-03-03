@@ -3,6 +3,8 @@
 # 
 # TODO get concentrations of buffs, etc correct
 #
+# Check README/Fields for SIAM models section for details on implementation 
+#
 from dolfin import *
 import numpy as np
 import matplotlib.pylab as plt
@@ -11,12 +13,7 @@ class empty:pass
 import sys
 sys.path.append("./siam/")
 
-idxCa = 0 # PDE 
-idxBuff = 1
-idxFluo = 2
-nComp = 1 # compartments
-nSpec = 3
-nDOF= nComp*nSpec
+nDOF = 5
 eps = 0.05
 
 ## Units
@@ -48,6 +45,7 @@ class Params():
   DBuff = Constant(0.) # TnC
   DFluo = 0.1 # [um^2/ms] verified 
   Ds = [DCa,DBuff,DFluo]
+  DCa_SSL = 0.6 * DCa
 
 
   # buffer (mostly TnC) 
@@ -55,6 +53,12 @@ class Params():
   Btot = 70. # [TnC] [uM] verified 
   betabuff = 0.04 # koff verfied [1/ms]
  
+  # buffer (imaginary for SSL) 
+  alphabuff_SSL=0.04 # kon verified [1/uMms] 
+  Btot_SSL = 70. # [TnC] [uM] verified 
+  betabuff_SSL = 0.04 # koff verfied [1/ms]
+    
+
   # fluo
   alphafluo=0.23 # kon fluo  [1/uMms] verified 
   Ftot = 50. # [Fluo] [uM] verified  
@@ -70,23 +74,9 @@ class Params():
   cCainit =0.1  # Verified [uM]
   cBuffinit = buffered(Btot,cCainit,alphabuff,betabuff)  # TnC unverified [uM]
   cFluoinit = buffered(Ftot,cCainit,alphafluo,betafluo)  # [uM]
-  cInits = [cCainit,cBuffinit,cFluoinit]
+  cInits = [cCainit,cBuffinit,cFluoinit,cCainit,cCainit]  # cCaCleft=cCainit, cCaSSL=cCainit at start 
 
-class InitialConditions(Expression):
 
-  def eval(self, values, x):
-    # edge  
-    #if (x[0] < 0.5 and np.linalg.norm(x[1:2]) < 0.5):
-    # corner 
-    #oif (np.linalg.norm(x -np.zeros(3) ) < 0.5):
-    for i,j in enumerate(self.params.cInits):
-            #print i 
-            values[i] = j
-#      values[0] = self.params.cCainit
-#      values[1] = self.params.cBuffinit
-#      values[2] = self.params.cFluoinit
-  def value_shape(self):
-    return (nDOF,)
 
  # TODO put in real info 
 
@@ -160,8 +150,7 @@ class MyEquation(NonlinearProblem):
 # In[18]:
 
 # TODO verify units 
-def tsolve(fileName="sarcomere2TT.xml",\
-           outName="output.pvd",\
+def tsolve(outName="output.pvd",\
            mode="sachse2TT", # sachse2TT, sachse4TT, ode, bcs \ 
            params = Params(),\
 	   debug=False): 
@@ -172,46 +161,112 @@ def tsolve(fileName="sarcomere2TT.xml",\
     mesh = UnitCubeMesh(5,5,5)
 
   if "2D" in mode:
-    import sarcomere2DSSL
     if mode=="2D_SSL":
-      1 # ME: R,R,Q  
-      cm = sarcomere2DSSL.sarcomere2DSSL(mode="wSSL")
+      import sarcomere2DSSL
+      cm = sarcomere2DSSL.sarcomere2DSSL(params=params)
           
     if mode=="2D_noSSL":
-      1 # ME: R,Q    
         # p/rxn for SSL 
-      cm = sarcomere2DSSL.sarcomere2DSSL(mode="woSSL")
+      import sarcomere2DwoSSL
+      cm = sarcomere2DwoSSL.sarcomere2DwoSSL(params=params)
 
   elif "sachse" in mode: 
     if mode=="sachse4TT":
       import sarcomere4TT
-      cm = sarcomere4TT.sarcomere4TT()
+      cm = sarcomere4TT.sarcomere4TT(params=params)
     else: 
       import sarcomere2TT
-      cm = sarcomere2TT.sarcomere2TT()
+      cm = sarcomere2TT.sarcomere2TT(params=params)
 
   elif "satin" in mode:
     import sarcomereSatin
-    cm = sarcomereSatin.sarcomereSatin()
+    cm = sarcomereSatin.sarcomereSatin(params=params)
     
-    
-
+  cm.params.nDOF = cm.nDOF # goes in master class 
+  nDOF = cm.nDOF  
+  print cm.nDOF
   mesh = cm.GetMesh()
   dim =mesh.ufl_cell().geometric_dimension()
 
+
+  idxCa = 0 # PDE 
+  idxBuff = 1
+  idxFluo = 2
+  idxCaCleft = 3
+  idxCaSL = 4  # not always used
+
   # function spaces
   V = FunctionSpace(mesh, "Lagrange", 1)
-  ## PKH R = FunctionSpace(mesh,"R",0) # for each compartment 
+  R = FunctionSpace(mesh,"R",0) # for each compartment 
+  if 0:
+	mode = "2D_SSL"
+	# cleft 
+	#Vs.append(R) # Ca2+, cleft 
+	dcadt = - (cleft-SSL)/volcleft
+
+	# SSL  
+	#Vs.append(R) # Ca2+, SSL  
+	dcadt = + (cleft-SSL)/volSSL   
+	dcadt += - (SSL-cyto)/volSSL   
+
+	# Cytosol
+	# C; CBuff1,2; CFluo
+	dcadt += + (SSL-cyto)/volXXX   
+
+
+	mode = "2D_noSSL"
+	# cleft 
+	#Vs.append(R) # Ca2+, cleft 
+	#same as above 
+	# SSL
+	pSSL = dirac
+	DSSL = 0.6 * D
+	func = highAffBuffer
+	dcadt = + (cleft-SSL)/volXXX 
+
+
+	# Cytosol
+	# C; CBuff1,2; CFluo
+	pCyto = 1 - pSSL 
+
+
+	mode = "3D"
+	# use 2D arg 
+
+
+	mode = "satin"
+	# use 2D arg 
+
+
+
+
+
+
+
+
+
+#######
+
+
   Vs = []
-  for i in range(nDOF):
+  for i in range(cm.nDOF_Fields):
         #print i 
         Vs.append(V)
+  for i in range(cm.nDOF_Scalars):
+        #print i 
+        Vs.append(R)
   ME = MixedFunctionSpace(Vs) # Ca, Buffered Ca, Fluo Ca
 
   # Define trial and test functions
   du    = TrialFunction(ME)
-  vCa,vBuff,vFluo  = TestFunctions(ME)
-  vs = [vCa,vBuff,vFluo]
+  if cm.nDOF == 4: 
+    vCa,vBuff,vFluo, vCaCleft  = TestFunctions(ME)
+    vs = [vCa,vBuff,vFluo,vCaCleft]
+  elif cm.nDOF == 5: 
+    vCa,vBuff,vFluo, vCaCleft,vCaSSL  = TestFunctions(ME)
+    vs = [vCa,vBuff,vFluo,vCaCleft,vCaSSL]
+  else:
+    raise RuntimeError("Not prepared to handle this") 
 
   # Define functions
   u_n   = Function(ME)  # current solution
@@ -219,10 +274,18 @@ def tsolve(fileName="sarcomere2TT.xml",\
 
   # split mixed functions
   #print "WARNING: not sure how to generalize"       
-  cCa_n,cBuff_n, cFluo_n = split(u_n)
-  cns = [cCa_n,cBuff_n, cFluo_n]
-  cCa_0,cBuff_0, cFluo_0 = split(u_0)
-  c0s = [cCa_0,cBuff_0, cFluo_0]
+  if cm.nDOF == 4:
+    cCa_n,cBuff_n, cFluo_n,cCaCleft_n = split(u_n)
+    cns = [cCa_n,cBuff_n, cFluo_n,cCaCleft_n]
+    cCa_0,cBuff_0, cFluo_0, cCaCleft_0 = split(u_0)
+    c0s = [cCa_0,cBuff_0, cFluo_0, cCaCleft_0]
+  elif cm.nDOF == 5:
+    cCa_n,cBuff_n, cFluo_n,cCaCleft_n,cCaSSL_n = split(u_n)
+    cns = [cCa_n,cBuff_n, cFluo_n,cCaCleft_n,cCaSSL_n]
+    cCa_0,cBuff_0, cFluo_0, cCaCleft_0,cCaSSL_0 = split(u_0)
+    c0s = [cCa_0,cBuff_0, cFluo_0, cCaCleft_0,cCaSSL_0]
+  else:
+    raise RuntimeError("Not prepared to handle this") 
 
   ## mark boundaries 
   # problem specific          
@@ -231,7 +294,7 @@ def tsolve(fileName="sarcomere2TT.xml",\
   lMarker,rMarker,slMarker = cm.Boundaries(subdomains)
 
   ## decide on source of probability density  
-  init_cond = InitialConditions()
+  init_cond = cm.InitialConditions()
   init_cond.params = params
   u_n.interpolate(init_cond)
   u_0.interpolate(init_cond)
@@ -253,10 +316,16 @@ def tsolve(fileName="sarcomere2TT.xml",\
   ## diffusion 
   Ds  = params.Ds     
   RHSis=[]
-  for i in range(nDOF):
+  for i in range(cm.nDOF_Fields):
     #RHSi= -inner(Ds[i]*grad(cns[i]), grad(vs[i]))*dx
     RHSi= -inner(Ds[i]*grad(u_n[i]), grad(vs[i]))*dx
     RHSis.append(RHSi)
+
+  for i in range(cm.nDOF_Scalars):
+    j = i + cm.nDOF_Fields
+    RHSi = Constant(0)*vs[j]*dx # for consistency
+    RHSis.append(RHSi)
+
 
   ## buffreactions
   # Test flux locations 
@@ -386,23 +455,25 @@ def tsolve(fileName="sarcomere2TT.xml",\
   #LHS = (cCa_n-cCa_0)*vCa/dt * dx - RHSCa
   LHSis=[]
   L=0
-  for i in range(nDOF):
+  for i in range(cm.nDOF_Fields):
     # TODO DBL check 
     #LHSi= (cns[i]-c0s[i])*vs[i]/dt * dx - RHSis[i]     
     LHSi= (u_n[i]-u_0[i])*vs[i]/dt * dx - RHSis[i]     
     LHSis.append(RHSi)
     L+= LHSi
-  #i = 0 
-  #LHSi0 = (cns[i]-c0s[i])*vs[i]/dt * dx - RHSis[i]
-  #i = 1 
-  #LHSi1 = (cns[i]-c0s[i])*vs[i]/dt * dx - RHSis[i]
-  #i = 2 
-  #LHSi2 = (cns[i]-c0s[i])*vs[i]/dt * dx - RHSis[i]
-  #L = LHSi0 + LHSi1 + LHSi2
-    
+
+  for i in range(cm.nDOF_Scalars):
+    j = i + cm.nDOF_Fields
+    dist = 1.
+    LHSi = (u_n[j]-u_0[j])*vs[j]/dt * dx - RHSis[j]
+    L+= LHSi
+    print "Need to follow coupledreaction example" 
+
+
   # Compute directional derivative about u in the direction of du (Jacobian)
   # (for Newton iterations) 
   a = derivative(L, u_n, du)
+  quit()
   
   
   # Create nonlinear problem and Newton solver
@@ -425,7 +496,7 @@ def tsolve(fileName="sarcomere2TT.xml",\
       plot(u_n.sub(i),rescale=True)
       interactive()	
 
-  file << (u_n,t) 
+  file << (u_n.sub(idxCa),t) 
   while (t < params.T):
       # advance 
       t0=t
@@ -433,7 +504,7 @@ def tsolve(fileName="sarcomere2TT.xml",\
       solver.solve(problem,u_n.vector())
 
       # store 
-      file << (u_n,t) 
+      file << (u_n.sub(idxCa),t) 
 
       
       # store
@@ -558,6 +629,9 @@ if __name__ == "__main__":
       quit()
     elif(arg=="-test2D"):
       doit(debug=False,mode="2D_SSL")    
+      quit()
+    elif(arg=="-test2Dno"):
+      doit(debug=False,mode="2D_noSSL")    
       quit()
     elif(arg=="-testsatin"):
       doit(debug=False,params=params,mode="satin")    

@@ -47,3 +47,26 @@ source dolfin.bash
 ipcluster start --engines=MPI --n  4 
 
 start notebook as normal after that (MPIDolfin.ipynb) 
+
+\subsection{Fields for SIAM models} 
+
+
+2D with SSL
+Cyto: V(Ca), V(Buff), V(Fluo) 
+Cleft: R (Ca)
+SL: R(Ca) o
+
+2D without SSL
+Cyto: V(Ca), V(Buff), V(Fluo) 
+      D(ssl region), rxn(ssl region) 
+      D(cyto region), rxn(cyto region) 
+Cleft: R (Ca)
+SL: in cyto
+
+3D
+Cyto: V(Ca), V(Buff), V(Fluo) 
+      D(ssl region), rxn(ssl region) 
+      D(cyto region), rxn(cyto region) 
+Cleft: R (Ca)
+SL: in cyto 
+

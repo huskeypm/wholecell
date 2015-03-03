@@ -1,6 +1,7 @@
 from dolfin import * 
 import numpy as np
 
+from sarcomereBase import *
 
 ## var
 ttRad = 0.25 # [um]
@@ -45,10 +46,14 @@ class OuterSarcolemma(SubDomain):
     #print x[0], edge, on_boundary
     return on_boundary and edge
 
-class sarcomere2TT():
-  def __init__(self,mode=""):
+class sarcomere2TT(sarcomereBase):
+  def __init__(self,params="",mode=""):
     self.mode = mode
-    self.fileName = "sarcomere2TT.xml"
+    self.fileName = "./siam/sarcomere2TT.xml"
+    self.nDOF_Fields= 3
+    self.nDOF_Scalars= 1 # cleft
+    self.nDOF = self.nDOF_Fields + self.nDOF_Scalars
+    self.params = params 
 
   def GetMesh(self):
     self.mesh = Mesh(self.fileName)
@@ -77,6 +82,19 @@ class sarcomere2TT():
 
 
     return lMarker,rMarker,slMarker
+
+  # Need to manually put in DOF for now  
+  class InitialConditions(Expression):
+    def eval(self, values, x):
+      for i in range(self.params.nDOF):
+              #print i 
+              values[i] = self.params.cInits[i]
+    def value_shape(self):
+      return (4,)             
+    
+    
+  
+  
 
   
   
