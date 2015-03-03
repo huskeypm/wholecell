@@ -77,6 +77,8 @@ class Params():
   cInits = [cCainit,cBuffinit,cFluoinit,cCainit,cCainit]  # cCaCleft=cCainit, cCaSSL=cCainit at start 
 
 
+  volume_SSL = 1.
+  volume_Cleft = 1.
 
  # TODO put in real info 
 
@@ -193,7 +195,7 @@ def tsolve(outName="output.pvd",\
   idxBuff = 1
   idxFluo = 2
   idxCaCleft = 3
-  idxCaSL = 4  # not always used
+  idxCaSSL = 4  # not always used
 
   # function spaces
   V = FunctionSpace(mesh, "Lagrange", 1)
@@ -246,6 +248,9 @@ def tsolve(outName="output.pvd",\
 
 
 #######
+  volumeCytosol = Constant(assemble(Constant(1.0)*dx(domain=mesh)))
+  volume_fracCS = volumeCytosol/params.volume_SSL
+  volume_fracCC = volumeCytosol/params.volume_Cleft   
 
 
   Vs = []
@@ -321,6 +326,7 @@ def tsolve(outName="output.pvd",\
     RHSi= -inner(Ds[i]*grad(u_n[i]), grad(vs[i]))*dx
     RHSis.append(RHSi)
 
+  # no diffusion in scalar domain 
   for i in range(cm.nDOF_Scalars):
     j = i + cm.nDOF_Fields
     RHSi = Constant(0)*vs[j]*dx # for consistency
@@ -348,6 +354,17 @@ def tsolve(outName="output.pvd",\
     #view.PrintSubdomains(mesh,subdomains)
     1 
 
+  # Testing now to make sure we're passing Ca correctly 
+  if 1:
+    iryr = Expression("a*exp(-(t-to)/tau)",a=params.ryrAmp,\
+                                    to=params.ryrOffset,\
+                                    tau=params.ryrTau,\
+                                    t=0)
+    jRyR = 0.1*iryr 
+
+    #RHSis[idxCaCleft] += jRyR*vCaCleft*dx # (lMarker,domain=mesh)
+    RHSis[idxCa] += jRyR*vCa*dx # (lMarker,domain=mesh)
+
   if mode=="sachse4TT":
 
     zLine = cm.zLine
@@ -362,7 +379,13 @@ def tsolve(outName="output.pvd",\
    
   # works for either sachse2 or sachse4TT
   #if "reaction" in mode:
-  if 1:
+  ## within-compartment reactions 
+  if 0:
+    ## Scalar Cleft domain 
+    # not sure the volume fraction is correct 
+    # RHSis[idxCaSSL] += (1/volumeFrac_CS)*param*vCaSSL*dx
+  
+    ## Field cytosol domain 
     #- buffer 
     kp = params.alphabuff 
     btot = params.Btot 
@@ -434,8 +457,8 @@ def tsolve(outName="output.pvd",\
     jCa = Expression("r",r=0)
     jCa.r = 0.1
     RHSis[idxCa] += -jCa*vCa*dx
-  else:
-    raise RuntimeError("Need to give a mode option") 
+  #else:
+  #  raise RuntimeError("Need to give a mode option") 
 
   
   
@@ -452,28 +475,48 @@ def tsolve(outName="output.pvd",\
     
   ### LHS    
   dt = params.dt
+  ## Cytosol (PDE) domain 
   #LHS = (cCa_n-cCa_0)*vCa/dt * dx - RHSCa
-  LHSis=[]
+  ##LHSis=[]
   L=0
+  Dcomp = 1. 
+  dist = 1.
   for i in range(cm.nDOF_Fields):
     # TODO DBL check 
     #LHSi= (cns[i]-c0s[i])*vs[i]/dt * dx - RHSis[i]     
     LHSi= (u_n[i]-u_0[i])*vs[i]/dt * dx - RHSis[i]     
-    LHSis.append(RHSi)
+    #LHSis.append(RHSi)
     L+= LHSi
 
+
+  ## Cleft/SSL domains
+  print "WARNING: need to use volfracCS for SSl, CC for Cleft"
   for i in range(cm.nDOF_Scalars):
     j = i + cm.nDOF_Fields
-    dist = 1.
-    LHSi = (u_n[j]-u_0[j])*vs[j]/dt * dx - RHSis[j]
+    LHSi = (u_n[j]-u_0[j])*vs[j]/(dt*volume_fracCS) * dx - RHSis[j]
     L+= LHSi
-    print "Need to follow coupledreaction example" 
+
+  # Ca fluxes between compartments (no buffers)
+  print "WARNING: rename as CleftSSL vs Cleft"
+  # verified flux is working 
+  if cm.nDOF==4:
+    # Flux from Cleft to cytosol - verified (not calibrated)  
+    L -= Dcomp*(cCaCleft_n - cCa_n)*vCa/dist*ds(lMarker) 
+    L += Dcomp*(cCaCleft_n - cCa_n)*vCaCleft/dist*ds(lMarker) 
+    1
+  if cm.nDOF==5:
+    # Flux from cleft to SSL - verified    
+    L -= Dcomp*(cCaCleft_n - cCaSSL_n)*vCaCleft/dist*dx   #ds(markerCS) 
+    L += Dcomp*(cCaCleft_n - cCaSSL_n)*vCaSSL/dist*dx   #ds(markerCS) 
+    # Flux from SSL to cytosol 
+    L -= Dcomp*(cCaSSL_n - cCa_n)*vCa/dist*ds(lMarker) 
+    L += Dcomp*(cCaSSL_n - cCa_n)*vCaSSL/dist*ds(lMarker) 
+    1
 
 
   # Compute directional derivative about u in the direction of du (Jacobian)
   # (for Newton iterations) 
   a = derivative(L, u_n, du)
-  quit()
   
   
   # Create nonlinear problem and Newton solver
@@ -520,9 +563,23 @@ def tsolve(outName="output.pvd",\
       for i in range(nDOF):
         #assembles[i] = assemble(cns[i]*dx(domain=mesh))
         assembles[i] = assemble(u_n[i]*dx(domain=mesh))
-      concis  = assembles/vol  
+      concis = assembles
+      for i in range(cm.nDOF_Fields):
+        concis[i]  = assembles[i]/vol  
+      print "WARNING: must use correct volume" 
+      for i in range(cm.nDOF_Scalars):
+        j = i = cm.nDOF_Fields
+        concis[j]  = assembles[j]/vol  
+
       if MPI.rank(mpi_comm_world())==0:
-        print "Conc Ca", concis[idxCa]
+        if cm.nDOF == 4: 
+          print "Conc CaCleft", concis[idxCaCleft]
+          print "Conc Ca", concis[idxCa]
+        if cm.nDOF == 5: 
+          print "Conc CaCleft", concis[idxCaCleft]
+          print "Conc CaSSL", concis[idxCaSSL]
+          print "Conc Ca", concis[idxCa]
+ 
  
       ts.append(t0)
       concs.append(concis)
@@ -615,7 +672,7 @@ if __name__ == "__main__":
 
   # Loops over each argument in the command line 
   params = Params()
-  params.T = 20
+  params.T = 5  
   for i,arg in enumerate(sys.argv):
     # calls 'doit' with the next argument following the argument '-validation'
     if(arg=="-debug"):
@@ -625,13 +682,13 @@ if __name__ == "__main__":
       doit(debug=False)    
       quit()
     elif(arg=="-test1"):
-      doit(debug=False,mode="ode")    
+      doit(debug=False,params=params,mode="ode")    
       quit()
     elif(arg=="-test2D"):
-      doit(debug=False,mode="2D_SSL")    
+      doit(debug=False,params=params,mode="2D_SSL")    
       quit()
     elif(arg=="-test2Dno"):
-      doit(debug=False,mode="2D_noSSL")    
+      doit(debug=False,params=params,mode="2D_noSSL")    
       quit()
     elif(arg=="-testsatin"):
       doit(debug=False,params=params,mode="satin")    
@@ -642,7 +699,7 @@ if __name__ == "__main__":
     elif(arg=="-test4"):
       doit(debug=False,params=params,mode="sachse4TT")
       quit()
-  
+
 
 
 
