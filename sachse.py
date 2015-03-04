@@ -1,10 +1,16 @@
 #
 # Time dependent solver, single species 
 # 
-# TODO get concentrations of buffs, etc correct
+# TODO 
+# - get correct SAs, volumes for all compartments
+# - check that Ca is conserved between compartments 
+# - get concentrations of buffs, etc correct
+# - add diffusivity/buffer as D' = D B/(1+KD)
 #
 # Check README/Fields for SIAM models section for details on implementation 
 #
+# Validations
+# - Ca flows between compartments, both ways 
 from dolfin import *
 import numpy as np
 import matplotlib.pylab as plt
@@ -13,7 +19,6 @@ class empty:pass
 import sys
 sys.path.append("./siam/")
 
-nDOF = 5
 eps = 0.05
 
 ## Units
@@ -77,58 +82,10 @@ class Params():
   cInits = [cCainit,cBuffinit,cFluoinit,cCainit,cCainit]  # cCaCleft=cCainit, cCaSSL=cCainit at start 
 
 
-  volume_SSL = 1.
-  volume_Cleft = 1.
+  volume_SSL = 1.01
+  volume_Cleft = 1.02
 
  # TODO put in real info 
-
-
-def InterpolateData(mesh,u,dims=3,mode="line",doplot=False):    
-#    mesh = results.mesh
-    #dims = np.max(mesh.coordinates(),axis=0) - np.min(mesh.coordinates(),axis=0)
-    mmin = np.min(mesh.coordinates(),axis=0)
-    mmax = np.max(mesh.coordinates(),axis=0)
-    
-    #u = results.u_n.split()[0]
-    #u = results.u_n
-    up = project(u,FunctionSpace(mesh,"CG",1))
-    res = 100
-    #(gx,gy,gz) = np.mgrid[0:dims[0]:(res*1j),
-    #                      dims[1]/2.:dims[1]/2.:1j,
-    #                      0:dims[2]:(res*1j)]
-    #if dims==3:
-    
-    if mode=="slice":
-      (gx,gy,gz) = np.mgrid[mmin[0]:mmax[0]:(res*1j),
-                            mmin[1]:mmax[1]:(res*1j),  
-                                  0:0:1j]
-      img0 = griddata(mesh.coordinates(),up.vector(),(gx,gy,gz))
-      #print np.shape(img0)
-      img0 = np.reshape(img0[:,:,0],[res,res])
-
-      if doplot:
-        plt.pcolormesh(img0)
-        plt.colorbar()
-        plt.gcf().savefig("test.png")
-      return img0
-
-    if mode=="line":
-    
-      yMid = 0.5*(mmax[1]+mmin[1])
-      (gx,gy,gz) = np.mgrid[mmin[0]:mmax[0]:(res*1j),
-                            yMid:yMid:1j,  
-                            0:0:1j]
-      line = griddata(mesh.coordinates(),up.vector(),(gx,gy,gz))
-      #print np.shape(line)
-      #img0 = np.reshape(line[:,0,0],[res])
-      line = np.ndarray.flatten(line)
-      #print np.shape(line)
-      if doplot:
-        plt.plot(line)
-        plt.gcf().savefig("test1.png") 
-      return line 
-
-
 
 
 # Nonlinear equation 
@@ -155,6 +112,7 @@ class MyEquation(NonlinearProblem):
 def tsolve(outName="output.pvd",\
            mode="sachse2TT", # sachse2TT, sachse4TT, ode, bcs \ 
            params = Params(),\
+           hdfName = "out.h5",
 	   debug=False): 
  
   ## Create mesh 
@@ -185,8 +143,6 @@ def tsolve(outName="output.pvd",\
     cm = sarcomereSatin.sarcomereSatin(params=params)
     
   cm.params.nDOF = cm.nDOF # goes in master class 
-  nDOF = cm.nDOF  
-  print cm.nDOF
   mesh = cm.GetMesh()
   dim =mesh.ufl_cell().geometric_dimension()
 
@@ -198,7 +154,7 @@ def tsolve(outName="output.pvd",\
   idxCaSSL = 4  # not always used
 
   # function spaces
-  V = FunctionSpace(mesh, "Lagrange", 1)
+  V = FunctionSpace(mesh, "CG", 1)
   R = FunctionSpace(mesh,"R",0) # for each compartment 
   if 0:
 	mode = "2D_SSL"
@@ -248,6 +204,16 @@ def tsolve(outName="output.pvd",\
 
 
 #######
+  ## Decide whether SSL is an explicit compartment or lumped into cyto 
+  compartmentSSL = False
+  if cm.nDOF == 4: 
+    compartmentSSL = False
+  elif cm.nDOF == 5: 
+    compartmentSSL = True   
+  else:
+    raise RuntimeError("Not prepared to handle this") 
+
+
   volumeCytosol = Constant(assemble(Constant(1.0)*dx(domain=mesh)))
   volume_fracCS = volumeCytosol/params.volume_SSL
   volume_fracCC = volumeCytosol/params.volume_Cleft   
@@ -264,14 +230,12 @@ def tsolve(outName="output.pvd",\
 
   # Define trial and test functions
   du    = TrialFunction(ME)
-  if cm.nDOF == 4: 
-    vCa,vBuff,vFluo, vCaCleft  = TestFunctions(ME)
-    vs = [vCa,vBuff,vFluo,vCaCleft]
-  elif cm.nDOF == 5: 
+  if compartmentSSL: 
     vCa,vBuff,vFluo, vCaCleft,vCaSSL  = TestFunctions(ME)
     vs = [vCa,vBuff,vFluo,vCaCleft,vCaSSL]
   else:
-    raise RuntimeError("Not prepared to handle this") 
+    vCa,vBuff,vFluo, vCaCleft  = TestFunctions(ME)
+    vs = [vCa,vBuff,vFluo,vCaCleft]
 
   # Define functions
   u_n   = Function(ME)  # current solution
@@ -279,18 +243,16 @@ def tsolve(outName="output.pvd",\
 
   # split mixed functions
   #print "WARNING: not sure how to generalize"       
-  if cm.nDOF == 4:
-    cCa_n,cBuff_n, cFluo_n,cCaCleft_n = split(u_n)
-    cns = [cCa_n,cBuff_n, cFluo_n,cCaCleft_n]
-    cCa_0,cBuff_0, cFluo_0, cCaCleft_0 = split(u_0)
-    c0s = [cCa_0,cBuff_0, cFluo_0, cCaCleft_0]
-  elif cm.nDOF == 5:
+  if compartmentSSL: 
     cCa_n,cBuff_n, cFluo_n,cCaCleft_n,cCaSSL_n = split(u_n)
     cns = [cCa_n,cBuff_n, cFluo_n,cCaCleft_n,cCaSSL_n]
     cCa_0,cBuff_0, cFluo_0, cCaCleft_0,cCaSSL_0 = split(u_0)
     c0s = [cCa_0,cBuff_0, cFluo_0, cCaCleft_0,cCaSSL_0]
-  else:
-    raise RuntimeError("Not prepared to handle this") 
+  else: 
+    cCa_n,cBuff_n, cFluo_n,cCaCleft_n = split(u_n)
+    cns = [cCa_n,cBuff_n, cFluo_n,cCaCleft_n]
+    cCa_0,cBuff_0, cFluo_0, cCaCleft_0 = split(u_0)
+    c0s = [cCa_0,cBuff_0, cFluo_0, cCaCleft_0]
 
   ## mark boundaries 
   # problem specific          
@@ -355,15 +317,77 @@ def tsolve(outName="output.pvd",\
     1 
 
   # Testing now to make sure we're passing Ca correctly 
+  ## Cleft reactions 
   if 1:
     iryr = Expression("a*exp(-(t-to)/tau)",a=params.ryrAmp,\
                                     to=params.ryrOffset,\
                                     tau=params.ryrTau,\
                                     t=0)
-    jRyR = 0.1*iryr 
+    # implement later 
+    #iryrDefect = Expression("a/(1+pow((Km/ca),n))",a=params.ryrAmp,
+    #                                           Km=params.ryrKm,
+    #                                           n=5,
+    #                                           ca = 0.1)
 
-    #RHSis[idxCaCleft] += jRyR*vCaCleft*dx # (lMarker,domain=mesh)
-    RHSis[idxCa] += jRyR*vCa*dx # (lMarker,domain=mesh)
+    # Torres description 
+    #delta0 = 1.  # TBD
+    #delta = 1.
+    #F = 1.
+    #V = 1.
+    #jRyR = delta0 * iryr / (2*F*delta*V)
+   
+    # converted into 3D using fluxes.pdf
+    # TODO: warning: i think this needs to be updated according to the 
+    # SA overwhich jRyr is applied. Check eqn 7 in fluxes.pdf
+    jRyR = 0.1*iryr 
+    #jRyRDefect = 0.1*iryrDefect
+
+
+    #jRyR = delta0 / (2*F*delta*V)
+    #print "jRyR ", jRyR
+    # Add left/right TTs
+    #ttConfig = "both"
+    #RHSis[idxCa] += jRyR*vCa*ds(lMarker,domain=mesh)
+    #RHSis[idxCa] += jRyR*vCa*ds(rMarker,domain=mesh)
+    #ttConfig = "normalL,defectR"
+
+    RHSis[idxCaCleft] += jRyR*vCaCleft*dx # (lMarker,domain=mesh)
+    #RHSis[idxCa] += jRyRDefect*vCa*ds(rMarker,domain=mesh)
+
+  ## SSL reactions
+  if 0: 
+    1 
+
+  ## Cyto reactions 
+  if 0: 
+    #RHSis[idxCa] += jRyR*vCa*dx # (lMarker,domain=mesh)
+    #- buffer 
+    kp = params.alphabuff 
+    btot = params.Btot 
+    km = params.betabuff   # probably describe this as a state
+    Jbuff = pBuff*(kp*cCa_n*(btot - cBuff_n) - km*cBuff_n)  # probably describe this as a state
+    RHSis[idxCa] += -Jbuff*vCa*dx
+    RHSis[idxBuff] += +Jbuff*vBuff*dx
+  
+    #- fluo 
+    kp = params.alphafluo 
+    ftot = params.Ftot 
+    km = params.betafluo   # probably describe this as a state
+    Jfluo = kp*cCa_n*(ftot - cFluo_n) - km*cFluo_n   # probably describe this as a state
+    RHSis[idxCa] += -Jfluo*vCa*dx
+    RHSis[idxFluo] += +Jfluo*vFluo*dx
+
+    # NCX
+    r = Constant(0.001)
+    jNCX= r
+    RHSis[idxCa] += jNCX*cns[idxCa]*vs[idxCa]*ds(slMarker,domain=mesh)
+  
+
+    # SERCA (here we assume SERCA is one of the cyto fluxes)  
+    r = Constant(0.001)
+    JSERCA= r*cns[idxCa]*vs[idxCa]*dx
+    RHSis[idxCa] += JSERCA
+  
 
   if mode=="sachse4TT":
 
@@ -381,78 +405,11 @@ def tsolve(outName="output.pvd",\
   #if "reaction" in mode:
   ## within-compartment reactions 
   if 0:
-    ## Scalar Cleft domain 
-    # not sure the volume fraction is correct 
-    # RHSis[idxCaSSL] += (1/volumeFrac_CS)*param*vCaSSL*dx
-  
-    ## Field cytosol domain 
-    #- buffer 
-    kp = params.alphabuff 
-    btot = params.Btot 
-    km = params.betabuff   # probably describe this as a state
-    Jbuff = pBuff*(kp*cCa_n*(btot - cBuff_n) - km*cBuff_n)  # probably describe this as a state
-    RHSis[idxCa] += -Jbuff*vCa*dx
-    RHSis[idxBuff] += +Jbuff*vBuff*dx
-  
-    #- fluo 
-    kp = params.alphafluo 
-    ftot = params.Ftot 
-    km = params.betafluo   # probably describe this as a state
-    Jfluo = kp*cCa_n*(ftot - cFluo_n) - km*cFluo_n   # probably describe this as a state
-    RHSis[idxCa] += -Jfluo*vCa*dx
-    RHSis[idxFluo] += +Jfluo*vFluo*dx
-  
-    #Jfluo = alphafluo * u * (Ftot - FC) - betafluo*FC   # probably describe this as a state
-
-    ## boundary reactions 
-    # RyR
-    # TODO add NCX, etc 
-    iryr = Expression("a*exp(-(t-to)/tau)",a=params.ryrAmp,\
-                                    to=params.ryrOffset,\
-                                    tau=params.ryrTau,\
-                                    t=0)
-    iryrDefect = Expression("a/(1+pow((Km/ca),n))",a=params.ryrAmp,
-                                               Km=params.ryrKm,
-                                               n=5,
-                                               ca = 0.1)
-    # Torres description 
-    #delta0 = 1.  # TBD
-    #delta = 1.
-    #F = 1.
-    #V = 1.
-    #jRyR = delta0 * iryr / (2*F*delta*V)
-   
-    # converted into 3D using fluxes.pdf
-    # TODO: warning: i think this needs to be updated according to the 
-    # SA overwhich jRyr is applied. Check eqn 7 in fluxes.pdf
-    jRyR = 0.1*iryr 
-    jRyRDefect = 0.1*iryrDefect
-
-
-    #jRyR = delta0 / (2*F*delta*V)
-    #print "jRyR ", jRyR
-    # Add left/right TTs
-    ttConfig = "both"
-    #RHSis[idxCa] += jRyR*vCa*ds(lMarker,domain=mesh)
-    #RHSis[idxCa] += jRyR*vCa*ds(rMarker,domain=mesh)
-    ttConfig = "normalL,defectR"
-    RHSis[idxCa] += jRyR*vCa*ds(lMarker,domain=mesh)
-    RHSis[idxCa] += jRyRDefect*vCa*ds(rMarker,domain=mesh)
-
-    # NCX
-    r = Constant(0.001)
-    jSarco= r
-    RHSis[idxCa] += jSarco*cns[idxCa]*vs[idxCa]*ds(slMarker,domain=mesh)
-  
-
-    # SERCA (here we assume SERCA is one of the cyto fluxes)  
-    r = Constant(0.001)
-    JCyto = r*cns[idxCa]*vs[idxCa]*dx
-    RHSis[idxCa] += JCyto
-
+    1
   # eerything communicated through ode model 
+  # Will be done at some other time 
   #elif mode=="satin" or mode=="despa":
-  elif mode=="ode":
+  if mode=="ode":
     # TODO 
     jCa = Expression("r",r=0)
     jCa.r = 0.1
@@ -496,21 +453,21 @@ def tsolve(outName="output.pvd",\
     LHSi = (u_n[j]-u_0[j])*vs[j]/(dt*volume_fracCS) * dx - RHSis[j]
     L+= LHSi
 
-  # Ca fluxes between compartments (no buffers)
+  ## Ca fluxes between compartments (no buffers)
   print "WARNING: rename as CleftSSL vs Cleft"
   # verified flux is working 
-  if cm.nDOF==4:
-    # Flux from Cleft to cytosol - verified (not calibrated)  
-    L -= Dcomp*(cCaCleft_n - cCa_n)*vCa/dist*ds(lMarker) 
-    L += Dcomp*(cCaCleft_n - cCa_n)*vCaCleft/dist*ds(lMarker) 
-    1
-  if cm.nDOF==5:
+  if compartmentSSL: 
     # Flux from cleft to SSL - verified    
     L -= Dcomp*(cCaCleft_n - cCaSSL_n)*vCaCleft/dist*dx   #ds(markerCS) 
     L += Dcomp*(cCaCleft_n - cCaSSL_n)*vCaSSL/dist*dx   #ds(markerCS) 
     # Flux from SSL to cytosol 
     L -= Dcomp*(cCaSSL_n - cCa_n)*vCa/dist*ds(lMarker) 
     L += Dcomp*(cCaSSL_n - cCa_n)*vCaSSL/dist*ds(lMarker) 
+    1
+  else:
+    # Flux from Cleft to cytosol - verified (not calibrated)  
+    L -= Dcomp*(cCaCleft_n - cCa_n)*vCa/dist*ds(lMarker) 
+    L += Dcomp*(cCaCleft_n - cCa_n)*vCaCleft/dist*ds(lMarker) 
     1
 
 
@@ -539,7 +496,22 @@ def tsolve(outName="output.pvd",\
       plot(u_n.sub(i),rescale=True)
       interactive()	
 
+  ## File IO
+  ctr=0
   file << (u_n.sub(idxCa),t) 
+  Hdf=HDF5File(mesh.mpi_comm(), hdfName, "w")
+  Hdf.write(mesh, "mesh")
+  # temp hack for storing volume 
+  x = Function(V)
+  x.vector()[0] = params.volume_SSL
+  Hdf.write(x,"volume_SSL")
+  x.vector()[0] = params.volume_Cleft
+  Hdf.write(x,"volume_Cleft")
+  params.volume_Cyto = assemble(Constant(1.)*dx(domain=mesh))
+  x.vector()[0] = params.volume_Cyto
+  Hdf.write(x,"volume_Cyto")
+
+  ## Loop 
   while (t < params.T):
       # advance 
       t0=t
@@ -559,25 +531,31 @@ def tsolve(outName="output.pvd",\
 
       ## reporting 
       vol = assemble(Constant(1.)*dx(domain=mesh))
-      assembles=np.zeros(nDOF)
-      for i in range(nDOF):
+      assembles=np.zeros(cm.nDOF)
+      for i in range(cm.nDOF):
         #assembles[i] = assemble(cns[i]*dx(domain=mesh))
         assembles[i] = assemble(u_n[i]*dx(domain=mesh))
+
       concis = assembles
       for i in range(cm.nDOF_Fields):
-        concis[i]  = assembles[i]/vol  
-      print "WARNING: must use correct volume" 
-      for i in range(cm.nDOF_Scalars):
-        j = i = cm.nDOF_Fields
-        concis[j]  = assembles[j]/vol  
+        concis[i]  = assembles[i]/params.volume_Cyto
+      #print "WARNING: must use correct volume" 
+      #for i in range(cm.nDOF_Scalars):
+      #  j = i = cm.nDOF_Fields
+      if compartmentSSL: 
+        concis[idxCaCleft]  = assembles[idxCaCleft]/params.volume_Cleft
+        #print "ass ", assembles[idxCaCleft]
+        concis[idxCaSSL]  = assembles[idxCaSSL]/params.volume_SSL
+      else: 
+        concis[idxCaCleft]  = assembles[idxCaCleft]/params.volume_Cleft
 
       if MPI.rank(mpi_comm_world())==0:
-        if cm.nDOF == 4: 
-          print "Conc CaCleft", concis[idxCaCleft]
-          print "Conc Ca", concis[idxCa]
-        if cm.nDOF == 5: 
+        if compartmentSSL: 
           print "Conc CaCleft", concis[idxCaCleft]
           print "Conc CaSSL", concis[idxCaSSL]
+          print "Conc Ca", concis[idxCa]
+        else:
+          print "Conc CaCleft", concis[idxCaCleft]
           print "Conc Ca", concis[idxCa]
  
  
@@ -585,9 +563,26 @@ def tsolve(outName="output.pvd",\
       concs.append(concis)
       # doesn't work w mpi 
       #print "MPI mode", params.useMPI
-      if params.useMPI==False:
-        print "SDF"
-        us.append(InterpolateData(mesh,u_n[idxCa]))
+      #if params.useMPI==False:
+      #  print "SDF"
+      #  #us.append(InterpolateData(mesh,u_n[idxCa]))
+ 
+      # store hdf 
+      if compartmentSSL:
+        uCa = project(u_n[idxCa],V)
+        Hdf.write(uCa,"uCa",ctr)
+        uCaSSL = project(u_n[idxCaSSL],R)
+        Hdf.write(uCaSSL,"uCaSSL",ctr)
+        uCaCleft = project(u_n[idxCaCleft],R)
+        #print "ass2 ", assemble(uCaCleft*dx)
+        Hdf.write(uCaCleft,"uCaCleft",ctr)
+      else: 
+        uCa = project(u_n[idxCa],FunctionSpace(mesh,"CG",1))
+        Hdf.write(uCa,"uCa",ctr)
+        uCaCleft = project(u_n[idxCa],FunctionSpace(mesh,"R",0)) 
+        Hdf.write(uCaCleft,"uCaCleft",ctr)
+
+      ctr+=1
 
       # update
       if mode=="sachse":
@@ -605,9 +600,11 @@ def tsolve(outName="output.pvd",\
         #def UpdateBeardVals(nC,bM,mgatpi_uM,fadpi_uM ,fmgi_uM ):
         jCa.r  = 0. # TODO update with ode 
       t += dt
+  ##  End loop 
 
 
   #
+  Hdf.close()
   results = empty()
   # not pickle-safe
   results.mesh = mesh 
@@ -623,8 +620,8 @@ def tsolve(outName="output.pvd",\
 def whosalive():
   print "I'm alive!"
 
-def doit(debug=True,mode="",params=Params()):  
-  tsolve(debug=debug,mode=mode,params=params)
+def doit(debug=True,mode="",params=Params(),hdfName="a.h5"):  
+  tsolve(debug=debug,mode=mode,params=params,hdfName=hdfName)
 #!/usr/bin/env python
 import sys
 ##################################
@@ -682,22 +679,28 @@ if __name__ == "__main__":
       doit(debug=False)    
       quit()
     elif(arg=="-test1"):
-      doit(debug=False,params=params,mode="ode")    
+      tag = "ode"
+      doit(debug=False,params=params,hdfName=tag+".h5",mode=tag)
       quit()
     elif(arg=="-test2D"):
-      doit(debug=False,params=params,mode="2D_SSL")    
+      tag = "2D_SSL"
+      doit(debug=False,params=params,hdfName=tag+".h5",mode=tag)
       quit()
     elif(arg=="-test2Dno"):
-      doit(debug=False,params=params,mode="2D_noSSL")    
+      tag = "2D_noSSL"
+      doit(debug=False,params=params,hdfName=tag+".h5",mode=tag)
       quit()
     elif(arg=="-testsatin"):
-      doit(debug=False,params=params,mode="satin")    
+      tag = "satin"
+      doit(debug=False,params=params,hdfName=tag+".h5",mode=tag)
       quit()
     elif(arg=="-test2"):
-      doit(debug=False,params=params,mode="sachse2TT")
+      tag = "sachse2TT"
+      doit(debug=False,params=params,hdfName=tag+".h5",mode=tag)
       quit()
     elif(arg=="-test4"):
-      doit(debug=False,params=params,mode="sachse4TT")
+      tag = "sachse4TT"
+      doit(debug=False,params=params,hdfName=tag+".h5",mode=tag)
       quit()
 
 
