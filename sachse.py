@@ -510,6 +510,7 @@ def tsolve(outName="output.pvd",\
   params.volume_Cyto = assemble(Constant(1.)*dx(domain=mesh))
   x.vector()[0] = params.volume_Cyto
   Hdf.write(x,"volume_Cyto")
+  print params.volume_SSL
 
   ## Loop 
   while (t < params.T):

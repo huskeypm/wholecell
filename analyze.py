@@ -6,7 +6,10 @@ import numpy as np
 import matplotlib.pylab as plt
 from scipy.interpolate import griddata
 
-def InterpolateData(mesh,u,dims=3,mode="line",doplot=False):    
+def InterpolateData(mesh,u,dims=2,mode="line",doplot=False):    
+    if dims==3: 
+      raise RuntimeError("Only 2D support right now") 
+
 #    mesh = results.mesh
     #dims = np.max(mesh.coordinates(),axis=0) - np.min(mesh.coordinates(),axis=0)
     mmin = np.min(mesh.coordinates(),axis=0)
@@ -20,12 +23,17 @@ def InterpolateData(mesh,u,dims=3,mode="line",doplot=False):
     #                      dims[1]/2.:dims[1]/2.:1j,
     #                      0:dims[2]:(res*1j)]
     #if dims==3:
+
     
     if mode=="slice":
-      (gx,gy,gz) = np.mgrid[mmin[0]:mmax[0]:(res*1j),
-                            mmin[1]:mmax[1]:(res*1j),  
-                                  0:0:1j]
-      img0 = griddata(mesh.coordinates(),up.vector(),(gx,gy,gz))
+      #(gx,gy,gz) = np.mgrid[mmin[0]:mmax[0]:(res*1j),
+      #                      mmin[1]:mmax[1]:(res*1j),  
+      #                            0:0:1j]
+      #img0 = griddata(mesh.coordinates(),up.vector(),(gx,gy,gz))
+      (gx,gy) = np.mgrid[mmin[0]:mmax[0]:(res*1j),
+                            mmin[1]:mmax[1]:(res*1j)]  
+      img0 = griddata(mesh.coordinates(),up.vector(),(gx,gy))
+
       #print np.shape(img0)
       img0 = np.reshape(img0[:,:,0],[res,res])
 
@@ -38,10 +46,14 @@ def InterpolateData(mesh,u,dims=3,mode="line",doplot=False):
     if mode=="line":
     
       yMid = 0.5*(mmax[1]+mmin[1])
-      (gx,gy,gz) = np.mgrid[mmin[0]:mmax[0]:(res*1j),
-                            yMid:yMid:1j,  
-                            0:0:1j]
-      line = griddata(mesh.coordinates(),up.vector(),(gx,gy,gz))
+      #(gx,gy,gz) = np.mgrid[mmin[0]:mmax[0]:(res*1j),
+      #                      yMid:yMid:1j,  
+      #                      0:0:1j]
+      #line = griddata(mesh.coordinates(),up.vector(),(gx,gy,gz))
+
+      (gx,gy) = np.mgrid[mmin[0]:mmax[0]:(res*1j),
+                            yMid:yMid:1j]  
+      line = griddata(mesh.coordinates(),up.vector(),(gx,gy))
       #print np.shape(line)
       #img0 = np.reshape(line[:,0,0],[res])
       line = np.ndarray.flatten(line)
@@ -51,6 +63,20 @@ def InterpolateData(mesh,u,dims=3,mode="line",doplot=False):
         plt.gcf().savefig("test1.png") 
       return line 
 
+
+def ReadHdfSlice(hdfFile,i=0,verbose=True):
+  hdf = HDF5File(mpi_comm_world(),hdfFile,'r')
+  mesh = Mesh()
+  hdf.read(mesh,"mesh",False)
+  V = FunctionSpace(mesh,"CG",1)
+  u = Function(V)
+
+  dataset = "uCa/vector_%d"%i
+  attr = hdf.attributes(dataset)
+  if verbose:
+      print 'Retrieving time step:', attr['timestamp']
+  hdf.read(u, dataset)
+  return mesh,u 
 
 def ReadHdf(hdfFile,ssl=False,verbose=False):
   hdf = HDF5File(mpi_comm_world(),hdfFile,'r')
@@ -70,7 +96,7 @@ def ReadHdf(hdfFile,ssl=False,verbose=False):
   volume_Cleft= x.vector()[0]
   hdf.read(x,"volume_Cyto")  
   volume_Cyto= x.vector()[0]
-  #print volume_Cleft,volume_SSL,volume_Cyto
+  print volume_Cleft,volume_SSL,volume_Cyto
   
   attr = hdf.attributes("uCa")
   nsteps = attr['count']
