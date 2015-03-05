@@ -145,16 +145,22 @@ def tsolve(outName="output.pvd",\
   def conservation():
       ## PKH test
       acCaCleft_n = assemble(cCaCleft_n*volFrac_ClftCyto*dx())
-      ccCaCleft_n = assemble(cCaCleft_n*volFrac_ClftCyto/volCleft*dx())
+      #ccCaCleft_n = assemble(cCaCleft_n*volFrac_ClftCyto/volCleft*dx())
+      # below is shorthand, but i left comment above so its clear where it originated 
+      ccCaCleft_n = assemble(cCaCleft_n*volCyto*dx())
       acCaSSL_n = assemble(cCaSSL_n*volFrac_SSLCyto*dx())
-      ccCaSSL_n = assemble(cCaSSL_n*volFrac_SSLCyto/volSSL*dx())
+      #ccCaSSL_n = assemble(cCaSSL_n*volFrac_SSLCyto/volSSL*dx())
+      ccCaSSL_n = assemble(cCaSSL_n*volCyto*dx())
       acCa_n = assemble(cCa_n*dx())
       ccCa_n = assemble(cCa_n/volCyto*dx())
-      print "cCa_n " , acCa_n, "conc ", ccCa_n
-      print "cCaSSL_n " , acCaSSL_n, "conc ", ccCaSSL_n
-      print "cCaCleft_n " , acCaCleft_n, "conc ", ccCaCleft_n
       conserved = acCaSSL_n+acCaCleft_n+acCa_n
-      print "CONSERVATION:", conserved
+    
+      if MPI.rank(mpi_comm_world())==0:
+        print "cCa_n " , acCa_n, "conc ", ccCa_n
+        print "cCaSSL_n " , acCaSSL_n, "conc ", ccCaSSL_n
+        print "cCaCleft_n " , acCaCleft_n, "conc ", ccCaCleft_n
+        print "CONSERVATION:", conserved
+
       return conserved
 
   
@@ -186,22 +192,29 @@ def tsolve(outName="output.pvd",\
       ## solve 
       solve(F==0, U_n)
 
+      # report 
+      print "############### ", t
+      conserved_ti = conservation()
+
       ## store 
       file << (U_n.sub(idxCa),t)
       # store hdf 
       #if compartmentSSL:
       if 1: 
-        uCa = project(U_n[idxCa],V)
+        uCa = project(cCa_n,V)
         hdf.write(uCa,"uCa",ctr)
-        uCaSSL = project(U_n[idxCaSSL],R)
+
+        # see conservation routine above for why we multiply by volCyto 
+        uCaSSL = project(cCaSSL_n,R)      
+        uCaSSL.vector()[:]*=volCyto
+        #print assemble(uCaSSL*dx())
         hdf.write(uCaSSL,"uCaSSL",ctr)
-        uCaCleft = project(U_n[idxCaCleft],R)
-        #print "ass2 ", assemble(uCaCleft*dx)
+
+        uCaCleft = project(cCaCleft_n,R)         
+        uCaCleft.vector()[:]*=volCyto
+        #print assemble(uCaCleft*dx())
         hdf.write(uCaCleft,"uCaCleft",ctr)
 
-      # report 
-      print "############### ", t
-      conserved_ti = conservation()
 
   
       ## update 

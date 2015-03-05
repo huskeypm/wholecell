@@ -90,13 +90,13 @@ def ReadHdf(hdfFile,ssl=False,verbose=False):
 
   # temp hack for grabbing doubles
   x = Function(V) 
-  hdf.read(x,"volume_SSL")
-  volume_SSL = x.vector()[0]
-  hdf.read(x,"volume_Cleft")
-  volume_Cleft= x.vector()[0]
-  hdf.read(x,"volume_Cyto")  
-  volume_Cyto= x.vector()[0]
-  print volume_Cleft,volume_SSL,volume_Cyto
+  hdf.read(x,"volSSL")
+  volSSL = x.vector()[0]
+  hdf.read(x,"volCleft")
+  volCleft= x.vector()[0]
+  hdf.read(x,"volCyto")  
+  volCyto= x.vector()[0]
+  print volCleft,volSSL,volCyto
   
   attr = hdf.attributes("uCa")
   nsteps = attr['count']
@@ -116,7 +116,7 @@ def ReadHdf(hdfFile,ssl=False,verbose=False):
       print 'Retrieving time step:', attr['timestamp']
     hdf.read(u, dataset)
     #print "Assemble %d/%f" % (i,assemble(u*dx))
-    concsCa[i] = assemble(u*dx)/volume_Cyto
+    concsCa[i] = assemble(u*dx)/volCyto
 
     # uCaSSL scalar
     if ssl:
@@ -124,14 +124,14 @@ def ReadHdf(hdfFile,ssl=False,verbose=False):
       attr = hdf.attributes(dataset)
       hdf.read(ur, dataset)
       #print "Assemble %d/%f" % (i,assemble(ur*dx))
-      concsCaSSL[i]= assemble(ur*dx)/volume_SSL
+      concsCaSSL[i]= assemble(ur*dx) # /volSSL
 
     # uCaCleft scalar
     dataset = "uCaCleft/vector_%d"%i
     attr = hdf.attributes(dataset)
     hdf.read(ur, dataset)
     #print "Assemble %d/%f" % (i,assemble(ur*dx))
-    concsCaCleft[i]= assemble(ur*dx)/volume_Cleft
+    concsCaCleft[i]= assemble(ur*dx) # /volCleft
 
     # 
     if verbose:
