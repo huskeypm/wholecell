@@ -1,7 +1,7 @@
 from dolfin import * 
 import numpy as np
 
-from sarcomereBase import *
+from sarcomereBase import SarcomereBase
 
 
 ## var
@@ -27,8 +27,10 @@ class OuterSarcolemma(SubDomain):
 
 
 
-class sarcomere2DwoSSL(sarcomereBase):             
+class sarcomere2DwoSSL(SarcomereBase):             
   def __init__(self,params=""):
+    SarcomereBase.__init__(self)
+
     self.nDOF_Fields= 3
     self.nDOF_Scalars= 1  # cleft
     self.nDOF = self.nDOF_Fields + self.nDOF_Scalars

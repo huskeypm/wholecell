@@ -1,7 +1,8 @@
 from dolfin import * 
 import numpy as np
 
-from sarcomereBase import *
+from sarcomereBase import SarcomereBase
+
 
 
 ## var
@@ -26,8 +27,9 @@ class OuterSarcolemma(SubDomain):
 
 
 
-class sarcomere2DSSL(sarcomereBase):             
+class Sarcomere2DSSL(SarcomereBase):             
   def __init__(self,params=""):
+    SarcomereBase.__init__(self)
     self.nDOF_Fields= 3
     self.nDOF_Scalars= 2  # cleft, SSL 
     self.nDOF = self.nDOF_Fields + self.nDOF_Scalars
@@ -35,6 +37,11 @@ class sarcomere2DSSL(sarcomereBase):
 
   def GetMesh(self):
     self.mesh = UnitSquareMesh(16,16)
+    #V = FunctionSpace(self.mesh,"CG",1)
+    #self.area = assemble(Constant(1.)*ds(domain=self.mesh))
+    #self.volume  = assemble(Constant(1.)*dx(domain=self.mesh))
+
+
     return self.mesh 
 
   def Boundaries(self,subdomains):

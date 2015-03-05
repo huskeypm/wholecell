@@ -1,7 +1,7 @@
 from dolfin import * 
 import numpy as np
 
-from sarcomereBase import *
+from sarcomereBase import SarcomereBase
 
 
 ## var
@@ -49,8 +49,9 @@ class OuterSarcolemma(SubDomain):
     #print x[0], edge, on_boundary
     return on_boundary and edge
 
-class sarcomereSatin(sarcomereBase):
+class sarcomereSatin(SarcomereBase):
   def __init__(self,params="",mode=""):
+    SarcomereBase.__init__(self)
     self.mode = mode
     self.fileName = "./siam/sarco.xml" 
     self.nDOF_Fields= 3

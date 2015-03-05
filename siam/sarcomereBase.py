@@ -1,11 +1,27 @@
+from dolfin import *
 
-class sarcomereBase(object):
+class SarcomereBase(object):
   def __init__(self):
-    1
+    self.fileName = "NONE"
+    self.idxCa = 0 # PDE 
+    self.idxBuff = 1
+    self.idxFluo = 2
+    self.idxCaCleft = 3
+    self.idxCaSSL = 4  # not always used
+    print "HSDFDSF"
 
   def GetMesh(self):
     return 1 
  
   def GetReactions(self):
     return 1  
+
+  def CalcGeomAttributes(self):
+    V = FunctionSpace(self.mesh,"CG",1)
+    self.area = assemble(Constant(1.)*ds(domain=self.mesh))
+    self.volume  = assemble(Constant(1.)*dx(domain=self.mesh))
+
+  def GetIndices(self):
+    return [self.idxCa,self.idxBuff,self.idxFluo,\
+            self.idxCaCleft,self.idxCaSSL]
 

@@ -1,7 +1,7 @@
 from dolfin import * 
 import numpy as np
 
-from sarcomereBase import *
+from sarcomereBase import SarcomereBase
 
 ## var
 ttRad = 0.25 # [um]
@@ -46,8 +46,9 @@ class OuterSarcolemma(SubDomain):
     #print x[0], edge, on_boundary
     return on_boundary and edge
 
-class sarcomere2TT(sarcomereBase):
+class sarcomere2TT(SarcomereBase):
   def __init__(self,params="",mode=""):
+    SarcomereBase.__init__(self)
     self.mode = mode
     self.fileName = "./siam/sarcomere2TT.xml"
     self.nDOF_Fields= 3

@@ -11,6 +11,12 @@
 #
 # Validations
 # - Ca flows between compartments, both ways 
+#
+# Standard units
+# time [ms]
+# volume fluxes [uM/ms]
+# currents [A/F]?
+
 from dolfin import *
 import numpy as np
 import matplotlib.pylab as plt
@@ -82,8 +88,15 @@ class Params():
   cInits = [cCainit,cBuffinit,cFluoinit,cCainit,cCainit]  # cCaCleft=cCainit, cCaSSL=cCainit at start 
 
 
-  volume_SSL = 1.01
-  volume_Cleft = 1.02
+  # compartments 
+  Dcomp = 1.   # [um^2/ms] 
+  dist = 1e-2 # [um]
+  volume_SSL = 0.50 # [um^3]
+  volume_Cleft = 0.70 # [um^3]
+
+  # debug
+  jConstant = 1 # [uM/ms]
+
 
  # TODO put in real info 
 
@@ -123,7 +136,7 @@ def tsolve(outName="output.pvd",\
   if "2D" in mode:
     if mode=="2D_SSL":
       import sarcomere2DSSL
-      cm = sarcomere2DSSL.sarcomere2DSSL(params=params)
+      cm = sarcomere2DSSL.Sarcomere2DSSL(params=params)
           
     if mode=="2D_noSSL":
         # p/rxn for SSL 
@@ -145,8 +158,14 @@ def tsolve(outName="output.pvd",\
   cm.params.nDOF = cm.nDOF # goes in master class 
   mesh = cm.GetMesh()
   dim =mesh.ufl_cell().geometric_dimension()
+  cm.CalcGeomAttributes()
+  print "MOVE ME" 
+  params.volumeCytosol = cm.volume
+  volume_fracCS = params.volumeCytosol/params.volume_SSL
+  volume_fracCC = params.volumeCytosol/params.volume_Cleft   
 
 
+  [idxCa,idxBuff,idxFluo,idxCaCleft,idxCaSSL]=cm.GetIndices()
   idxCa = 0 # PDE 
   idxBuff = 1
   idxFluo = 2
@@ -214,9 +233,6 @@ def tsolve(outName="output.pvd",\
     raise RuntimeError("Not prepared to handle this") 
 
 
-  volumeCytosol = Constant(assemble(Constant(1.0)*dx(domain=mesh)))
-  volume_fracCS = volumeCytosol/params.volume_SSL
-  volume_fracCC = volumeCytosol/params.volume_Cleft   
 
 
   Vs = []
@@ -318,7 +334,7 @@ def tsolve(outName="output.pvd",\
 
   # Testing now to make sure we're passing Ca correctly 
   ## Cleft reactions 
-  if 1:
+  if 0:
     iryr = Expression("a*exp(-(t-to)/tau)",a=params.ryrAmp,\
                                     to=params.ryrOffset,\
                                     tau=params.ryrTau,\
@@ -354,11 +370,17 @@ def tsolve(outName="output.pvd",\
     RHSis[idxCaCleft] += jRyR*vCaCleft*dx # (lMarker,domain=mesh)
     #RHSis[idxCa] += jRyRDefect*vCa*ds(rMarker,domain=mesh)
 
+  ## STOPPED HERE 
   ## SSL reactions
   if 0: 
     1 
 
   ## Cyto reactions 
+  debugCyto=True
+  if debugCyto:
+    RHSis[idxCa] += params.jConstant/params.volumeCytosol*vCa*dx 
+    1
+
   if 0: 
     #RHSis[idxCa] += jRyR*vCa*dx # (lMarker,domain=mesh)
     #- buffer 
@@ -378,15 +400,15 @@ def tsolve(outName="output.pvd",\
     RHSis[idxFluo] += +Jfluo*vFluo*dx
 
     # NCX
-    r = Constant(0.001)
-    jNCX= r
-    RHSis[idxCa] += jNCX*cns[idxCa]*vs[idxCa]*ds(slMarker,domain=mesh)
+    #r = Constant(0.001)
+    #jNCX= r
+    #RHSis[idxCa] += jNCX*cns[idxCa]*vs[idxCa]*ds(slMarker,domain=mesh)
   
 
     # SERCA (here we assume SERCA is one of the cyto fluxes)  
-    r = Constant(0.001)
-    JSERCA= r*cns[idxCa]*vs[idxCa]*dx
-    RHSis[idxCa] += JSERCA
+    #r = Constant(0.001)
+    #JSERCA= r*cns[idxCa]*vs[idxCa]*dx
+    #RHSis[idxCa] += JSERCA
   
 
   if mode=="sachse4TT":
@@ -436,8 +458,6 @@ def tsolve(outName="output.pvd",\
   #LHS = (cCa_n-cCa_0)*vCa/dt * dx - RHSCa
   ##LHSis=[]
   L=0
-  Dcomp = 1. 
-  dist = 1.
   for i in range(cm.nDOF_Fields):
     # TODO DBL check 
     #LHSi= (cns[i]-c0s[i])*vs[i]/dt * dx - RHSis[i]     
@@ -454,8 +474,9 @@ def tsolve(outName="output.pvd",\
     L+= LHSi
 
   ## Ca fluxes between compartments (no buffers)
-  print "WARNING: rename as CleftSSL vs Cleft"
   # verified flux is working 
+  Dcomp = params.Dcomp
+  dist  = params.dist 
   if compartmentSSL: 
     # Flux from cleft to SSL - verified    
     L -= Dcomp*(cCaCleft_n - cCaSSL_n)*vCaCleft/dist*dx   #ds(markerCS) 
@@ -511,6 +532,7 @@ def tsolve(outName="output.pvd",\
   x.vector()[0] = params.volume_Cyto
   Hdf.write(x,"volume_Cyto")
   print params.volume_SSL
+  
 
   ## Loop 
   while (t < params.T):
@@ -670,7 +692,7 @@ if __name__ == "__main__":
 
   # Loops over each argument in the command line 
   params = Params()
-  params.T = 5  
+  params.T = 10 
   for i,arg in enumerate(sys.argv):
     # calls 'doit' with the next argument following the argument '-validation'
     if(arg=="-debug"):
