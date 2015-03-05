@@ -20,6 +20,7 @@
 from dolfin import *
 import numpy as np
 import matplotlib.pylab as plt
+from scipy.interpolate import griddata
 class empty:pass 
 import sys
 sys.path.append("./siam/")
@@ -176,6 +177,53 @@ def tsolve(outName="output.pvd",\
   # function spaces
   V = FunctionSpace(mesh, "CG", 1)
   R = FunctionSpace(mesh,"R",0) # for each compartment 
+  if 0:
+	mode = "2D_SSL"
+	# cleft 
+	#Vs.append(R) # Ca2+, cleft 
+	dcadt = - (cleft-SSL)/volcleft
+
+	# SSL  
+	#Vs.append(R) # Ca2+, SSL  
+	dcadt = + (cleft-SSL)/volSSL   
+	dcadt += - (SSL-cyto)/volSSL   
+
+	# Cytosol
+	# C; CBuff1,2; CFluo
+	dcadt += + (SSL-cyto)/volXXX   
+
+
+	mode = "2D_noSSL"
+	# cleft 
+	#Vs.append(R) # Ca2+, cleft 
+	#same as above 
+	# SSL
+	pSSL = dirac
+	DSSL = 0.6 * D
+	func = highAffBuffer
+	dcadt = + (cleft-SSL)/volXXX 
+
+
+	# Cytosol
+	# C; CBuff1,2; CFluo
+	pCyto = 1 - pSSL 
+
+
+	mode = "3D"
+	# use 2D arg 
+
+
+	mode = "satin"
+	# use 2D arg 
+
+
+
+
+
+
+
+
+
 #######
   ## Decide whether SSL is an explicit compartment or lumped into cyto 
   compartmentSSL = False
@@ -266,6 +314,145 @@ def tsolve(outName="output.pvd",\
 
 
   ## buffreactions
+  # Test flux locations 
+  # PKH verified 150216
+  if mode=="bcs":
+    ## Might ultimately put BC for mitochondria (top/bottom) here  
+
+    #bc = DirichletBC(ME.sub(0),Constant(1.),subdomains,lMarker)
+    #bcs.append(bc)
+ 
+    # doesn't seem to work with ME.sub
+    #import view 
+    #bc = DirichletBC(V,Constant(1.),subdomains,lMarker)
+    #bcs.append(bc)
+    ##view.PrintBoundary(mesh,bcs)
+    #marked1 = Function(V)
+    #bc.apply(marked1.vector())
+    #File("marked.pvd") << marked1
+    #quit()
+    #view.PrintSubdomains(mesh,subdomains)
+    1 
+
+  # Testing now to make sure we're passing Ca correctly 
+  ## Cleft reactions 
+  if 0:
+    iryr = Expression("a*exp(-(t-to)/tau)",a=params.ryrAmp,\
+                                    to=params.ryrOffset,\
+                                    tau=params.ryrTau,\
+                                    t=0)
+    # implement later 
+    #iryrDefect = Expression("a/(1+pow((Km/ca),n))",a=params.ryrAmp,
+    #                                           Km=params.ryrKm,
+    #                                           n=5,
+    #                                           ca = 0.1)
+
+    # Torres description 
+    #delta0 = 1.  # TBD
+    #delta = 1.
+    #F = 1.
+    #V = 1.
+    #jRyR = delta0 * iryr / (2*F*delta*V)
+   
+    # converted into 3D using fluxes.pdf
+    # TODO: warning: i think this needs to be updated according to the 
+    # SA overwhich jRyr is applied. Check eqn 7 in fluxes.pdf
+    jRyR = 0.1*iryr 
+    #jRyRDefect = 0.1*iryrDefect
+
+
+    #jRyR = delta0 / (2*F*delta*V)
+    #print "jRyR ", jRyR
+    # Add left/right TTs
+    #ttConfig = "both"
+    #RHSis[idxCa] += jRyR*vCa*ds(lMarker,domain=mesh)
+    #RHSis[idxCa] += jRyR*vCa*ds(rMarker,domain=mesh)
+    #ttConfig = "normalL,defectR"
+
+    RHSis[idxCaCleft] += jRyR*vCaCleft*dx # (lMarker,domain=mesh)
+    #RHSis[idxCa] += jRyRDefect*vCa*ds(rMarker,domain=mesh)
+
+  ## STOPPED HERE 
+  ## SSL reactions
+  if 0: 
+    1 
+
+  ## Cyto reactions 
+  debugCyto=False
+  if debugCyto:
+    RHSis[idxCa] += params.jConstant/params.volumeCytosol*vCa*dx 
+    1
+
+  if 0: 
+    #RHSis[idxCa] += jRyR*vCa*dx # (lMarker,domain=mesh)
+    #- buffer 
+    kp = params.alphabuff 
+    btot = params.Btot 
+    km = params.betabuff   # probably describe this as a state
+    Jbuff = pBuff*(kp*cCa_n*(btot - cBuff_n) - km*cBuff_n)  # probably describe this as a state
+    RHSis[idxCa] += -Jbuff*vCa*dx
+    RHSis[idxBuff] += +Jbuff*vBuff*dx
+  
+    #- fluo 
+    kp = params.alphafluo 
+    ftot = params.Ftot 
+    km = params.betafluo   # probably describe this as a state
+    Jfluo = kp*cCa_n*(ftot - cFluo_n) - km*cFluo_n   # probably describe this as a state
+    RHSis[idxCa] += -Jfluo*vCa*dx
+    RHSis[idxFluo] += +Jfluo*vFluo*dx
+
+    # NCX
+    #r = Constant(0.001)
+    #jNCX= r
+    #RHSis[idxCa] += jNCX*cns[idxCa]*vs[idxCa]*ds(slMarker,domain=mesh)
+  
+
+    # SERCA (here we assume SERCA is one of the cyto fluxes)  
+    #r = Constant(0.001)
+    #JSERCA= r*cns[idxCa]*vs[idxCa]*dx
+    #RHSis[idxCa] += JSERCA
+  
+
+  if mode=="sachse4TT":
+
+    zLine = cm.zLine
+    cytosol= cm.cytosol
+
+    pBuff = zLine
+    #plt.plot(xs,)
+    #plt.plot(xs,lhs+rhs)
+    #plt.plot(xs,1-(lhs+rhs))
+  else:
+    pBuff = Expression("1.")
+   
+  # works for either sachse2 or sachse4TT
+  #if "reaction" in mode:
+  ## within-compartment reactions 
+  if 0:
+    1
+  # eerything communicated through ode model 
+  # Will be done at some other time 
+  #elif mode=="satin" or mode=="despa":
+  if mode=="ode":
+    # TODO 
+    jCa = Expression("r",r=0)
+    jCa.r = 0.1
+    RHSis[idxCa] += -jCa*vCa*dx
+  #else:
+  #  raise RuntimeError("Need to give a mode option") 
+
+  
+  
+  # RyR release at R TT  
+  #RHS+=  r1*q*ds(rMarker,domain=mesh)
+  # RyR release at L TT  
+  # replace w  j = (c/k)^n / (1 + (c/k)^n)
+  #RHS+=  r3*q*ds(lMarker,domain=mesh) 
+  # NCX extrusion at SL 
+  # make function of u through Expression 
+  #if dim==3:
+  #  RHS+= -r2*u*q*ds(slMarker,domain=mesh) 
+  
     
   ### LHS    
   dt = params.dt
@@ -292,20 +479,20 @@ def tsolve(outName="output.pvd",\
   # verified flux is working 
   Dcomp = Constant(params.Dcomp*0.)
   dist  = params.dist 
-  #if compartmentSSL: 
-  #  # Flux from cleft to SSL - verified    
-  #  L -= Dcomp*(cCaCleft_n - cCaSSL_n)*vCaCleft/dist*dx() #ds(markerCS) 
-  #  L += Dcomp*(cCaCleft_n - cCaSSL_n)*vCaSSL/dist*dx() #ds(markerCS) 
-  #  # Flux from SSL to cytosol 
-  #  L -= Dcomp*(cCaSSL_n - cCa_n)*vCa/dist*ds(lMarker) 
-  #  L += Dcomp*(cCaSSL_n - cCa_n)*vCaSSL/dist*ds(lMarker) 
-  #  1
-  #else:
-  #  # Flux from Cleft to cytosol - verified (not calibrated)  
-  #  L -= Dcomp*(cCaCleft_n - cCa_n)*vCa/dist*ds(lMarker) 
-  #  L += Dcomp*(cCaCleft_n - cCa_n)*vCaCleft/dist*ds(lMarker) 
-  #  1
-#
+  if compartmentSSL: 
+    # Flux from cleft to SSL - verified    
+    L -= Dcomp*(cCaCleft_n - cCaSSL_n)*vCaCleft/dist*dx() #ds(markerCS) 
+    L += Dcomp*(cCaCleft_n - cCaSSL_n)*vCaSSL/dist*dx() #ds(markerCS) 
+    # Flux from SSL to cytosol 
+    L -= Dcomp*(cCaSSL_n - cCa_n)*vCa/dist*ds(lMarker) 
+    L += Dcomp*(cCaSSL_n - cCa_n)*vCaSSL/dist*ds(lMarker) 
+    1
+  else:
+    # Flux from Cleft to cytosol - verified (not calibrated)  
+    L -= Dcomp*(cCaCleft_n - cCa_n)*vCa/dist*ds(lMarker) 
+    L += Dcomp*(cCaCleft_n - cCa_n)*vCaCleft/dist*ds(lMarker) 
+    1
+
 
   # Compute directional derivative about u in the direction of du (Jacobian)
   # (for Newton iterations) 
