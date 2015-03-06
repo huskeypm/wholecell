@@ -8,7 +8,6 @@ class SarcomereBase(object):
     self.idxFluo = 2
     self.idxCaCleft = 3
     self.idxCaSSL = 4  # not always used
-    print "HSDFDSF"
 
   def GetMesh(self):
     return 1 

@@ -11,28 +11,28 @@ class Boundary(SubDomain):
     return left and on_boundary
 
 class Params():
-  useMPI = True
-  paraview = True
+  #useMPI = True
+  #paraview = True
   verbose=False
 
-  T = 3.  # [ms]
-  dt = 1. # [ms] 
+  T = 3.  # Total simulation time [ms]
+  dt = 1. # time-step size [ms] 
 
-  D_SSLCyto = Constant(1.0) # [um^2/ms]
-  D_CleftSSL = Constant(1.0)
-  D_CleftCyto= Constant(1.0)
+  D_SSLCyto = Constant(1.0) # Diffusion rate between SSL/Cyto compartments (if SSL exists) [um^2/ms]
+  D_CleftSSL = Constant(1.0 ) #  Diffusion rate between Cleft/SSL compartments (if SSL exists)
+  D_CleftCyto= Constant(1.0) #  Diffusion rate between Cleft/Cyto compartments (if SSL does not exist)
   dist = Constant(1.0) # distance between compartments [um] 
 
 
   # Init conditions
-  cCaCleftInit = 0.1  # [uM] 
+  cCaCleftInit = 0.1  # Initial Ca concentration in Cleft compartment [uM] 
   cCaSSLInit = 1.0
   cCaInit = 10.
 
-  volSSL = 100. #Constant(2.) # [um^3] *float(volCyto))
-  volCleft = 1. #  Constant(4.) # [um^3] *float(volSSL))
+  volSSL = 100. # Volume of SSL domain [um^3]
+  volCleft = 1. # [um^3] 
 
-  jTest = 0.1 # [uM/ms]
+  jTest = 0.1 # Generic flux applied to cytosolic domain [uM/ms]
 
 def validation():
   ## flux 
@@ -128,7 +128,6 @@ def tsolve(outName="output.pvd",\
   tstop = params.T
   
   # volume/area info 
-  print "PUT INTO BASE CLASS" 
   volCyto = params.volCyto
   #volCyto = Constant(assemble(Constant(1.0)*dx()))
   areaCyto = Constant(assemble(Constant(1.0)*ds(face_marker)))
@@ -141,10 +140,6 @@ def tsolve(outName="output.pvd",\
   volFrac_CleftCyto= volCleft/volCyto
   volFrac_CytoCleft= 1/volFrac_CleftCyto           
 
-# System
-  ssl = False
-  #ssl = True
-  
   # System
   
   ## PDE 

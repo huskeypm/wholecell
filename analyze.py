@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pylab as plt
 from scipy.interpolate import griddata
 
-def InterpolateData(mesh,u,dims=2,mode="line",doplot=False):    
+def InterpolateData(mesh,u,dims=2,mode="line",doplot=False, res=100):    
     if dims==3: 
       raise RuntimeError("Only 2D support right now") 
 
@@ -18,7 +18,6 @@ def InterpolateData(mesh,u,dims=2,mode="line",doplot=False):
     #u = results.u_n.split()[0]
     #u = results.u_n
     up = project(u,FunctionSpace(mesh,"CG",1))
-    res = 100
     #(gx,gy,gz) = np.mgrid[0:dims[0]:(res*1j),
     #                      dims[1]/2.:dims[1]/2.:1j,
     #                      0:dims[2]:(res*1j)]
@@ -115,8 +114,8 @@ def ReadHdf(hdfFile,ssl=False,verbose=False):
     if verbose:
       print 'Retrieving time step:', attr['timestamp']
     hdf.read(u, dataset)
-    #print "Assemble %d/%f" % (i,assemble(u*dx))
-    concsCa[i] = assemble(u*dx)/volCyto
+    print "Assemble %d/%f" % (i,assemble(u*dx))
+    concsCa[i] = assemble(u*dx) # /volCyto
 
     # uCaSSL scalar
     if ssl:
