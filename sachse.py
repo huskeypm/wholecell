@@ -15,6 +15,9 @@ class Params():
   paraview = True
   verbose=False
 
+  T = 3.  # [ms]
+  dt = 1. # [ms] 
+
   D_SSLCyto = Constant(1.0) # [um^2/ms]
   D_CleftSSL = Constant(1.0)
   D_CleftCyto= Constant(1.0)
@@ -29,12 +32,39 @@ class Params():
   volSSL = 100. #Constant(2.) # [um^3] *float(volCyto))
   volCleft = 1. #  Constant(4.) # [um^3] *float(volSSL))
 
+  jTest = 0.1 # [uM/ms]
+
+def validation():
+  ## flux 
+  params = Params()
+  params.T = 10
+
+  params.D_SSLCyto = 0
+  params.D_CleftSSL = 0 
+  params.D_CleftCyto = 0
+  params.cCaInit = 11.
+
+  refConcChange = params.T*params.jTest # [uM]
+  cCaFinal = tsolve(doAssert="flux", params=params)    
+  
+  # assert 
+  concChange = cCaFinal - params.cCaInit
+  msg = "%f != %f " % ( concChange,refConcChange)
+  assert( abs(concChange - refConcChange) < 1e-5 ), msg
+  print "Passed flux test"
+  
+  
+
+
+  ## conservation 
+  tsolve(doAssert="conservation")
+  print "Passed conservation test"
 
 def tsolve(outName="output.pvd",\
            mode="2D_SSL", # sachse2TT, sachse4TT, ode, bcs \ 
            params = Params(),\
            hdfName = "out.h5",
-           doAssert = True,  
+           doAssert = None,  
            debug=False):
 
   #mesh = UnitCubeMesh(8,8,8)
@@ -94,13 +124,14 @@ def tsolve(outName="output.pvd",\
   dist = params.dist
   
   # iterator
-  dt = Constant(1.0)  # [ms]  
-  tstop = 1.  
+  dt = params.dt 
+  tstop = params.T
   
   # volume/area info 
+  print "PUT INTO BASE CLASS" 
   volCyto = params.volCyto
   #volCyto = Constant(assemble(Constant(1.0)*dx()))
-  #area_u = Constant(assemble(Constant(1.0)*ds(face_marker)))
+  areaCyto = Constant(assemble(Constant(1.0)*ds(face_marker)))
   volSSL = params.volSSL
   volCleft= params.volCleft
   volFrac_CytoSSL= volCyto/volSSL
@@ -156,11 +187,18 @@ def tsolve(outName="output.pvd",\
     F += volFrac_CytoCleft*jFlux*vCaCleft*ds(face_marker)
 
 
+  ### Fluxes
+  if doAssert=="flux":
+    j = params.jTest
+    RHS = j*(volCyto/areaCyto)*vCa*ds(face_marker)
+    F += - RHS
+
+
   
   # Init conditions
   U_0.interpolate(Constant((params.cCaInit, params.cCaSSLInit, params.cCaCleftInit)))
   
-  def conservation():
+  def conservation(t=0):
       ## PKH test
       acCaCleft_n = assemble(cCaCleft_n*volFrac_CleftCyto*dx())
       #ccCaCleft_n = assemble(cCaCleft_n*volFrac_CleftCyto/volCleft*dx())
@@ -174,6 +212,7 @@ def tsolve(outName="output.pvd",\
       conserved = acCaSSL_n+acCaCleft_n+acCa_n
     
       if MPI.rank(mpi_comm_world())==0:
+        print "############### ", t
         print "cCa_n " , acCa_n, "conc ", ccCa_n
         print "cCaSSL_n " , acCaSSL_n, "conc ", ccCaSSL_n
         print "cCaCleft_n " , acCaCleft_n, "conc ", ccCaCleft_n
@@ -211,8 +250,7 @@ def tsolve(outName="output.pvd",\
       solve(F==0, U_n)
 
       # report 
-      print "############### ", t
-      conserved_ti = conservation()
+      conserved_ti = conservation(t=t)
 
       ## store 
       file << (U_n.sub(idxCa),t)
@@ -245,13 +283,16 @@ def tsolve(outName="output.pvd",\
   
   
   # Check that the gods of transport are happy 
-  if doAssert:
+  if doAssert == "conservation":
     message = "%f | %f " % (conserved_ti , conserved_t0)
     assert( abs(conserved_ti - conserved_t0) < 1e-3 ), message
     #assert( abs(acCaSSL_n+acCaCleft_n+acCa_n - 60000) < 1e-5)
     print "PASS"
+
+  # returning for validaton
+  concCa = assemble(cCa_n/volCyto*dx())
+  return concCa 
   
-  #plot(U_plot, interactive=True, range_min=min_value, range_max=max_value)
 
 # In[19]:
 def whosalive():
@@ -338,6 +379,9 @@ if __name__ == "__main__":
     elif(arg=="-test4"):
       tag = "sachse4TT"
       doit(debug=False,params=params,hdfName=tag+".h5",mode=tag)
+      quit()
+    elif(arg=="-validation"):
+      validation()
       quit()
 
 
