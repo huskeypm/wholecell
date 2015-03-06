@@ -1,8 +1,43 @@
-"""
-"""
+#
+# Time dependent solver, single species 
+# 
+# TODO 
+# - get correct SAs, volumes for all compartments
+# - check that Ca is conserved between compartments 
+# - get concentrations of buffs, etc correct
+# - add diffusivity/buffer as D' = D B/(1+KD)
+# Merge in sachse_temp, sachse_REPLACEMENT?
+# - buffers
+#- meaningful iRyr
+#- defining SSL region within cyto #
+# Check README/Fields for SIAM models section for details on implementation 
+#
+# Validations
+# - Ca flows between compartments, both ways 
+#
+# Standard units
+# time [ms]
+# volume fluxes [uM/ms]
+# currents [A/F]?
+
+from dolfin import *
+import numpy as np
+import matplotlib.pylab as plt
+class empty:pass 
 import sys
 sys.path.append("./siam/")
-from dolfin import *
+
+eps = 0.05
+
+## Units
+nm_to_um = 1.e-3
+ttRad = 0.25 # [um]
+
+
+# [CaB] = [Btot]/(KD/[Ca]+1)
+def buffered(totB,freeCa,kFwd,kback):
+    KD = kback/kFwd
+    return totB/(KD/freeCa + 1) 
 
 class Boundary(SubDomain):
   def inside(self,x,on_boundary):
@@ -24,15 +59,58 @@ class Params():
   dist = Constant(1.0) # distance between compartments [um] 
 
 
-  # Init conditions
-  cCaCleftInit = 0.1  # Initial Ca concentration in Cleft compartment [uM] 
-  cCaSSLInit = 1.0
-  cCaInit = 10.
+#  # Init conditions
+#  cCaCleftInit = 0.1  # Initial Ca concentration in Cleft compartment [uM] 
+#  cCaSSLInit = 1.0
+#  cCaInit = 10.
 
+  # diffusion params 
+  #DAb   = Dbulk# [um^2/ms] Diff const within PDE (domain 1) 
+  DCa = 0.39  # [um^2/ms] verified
+  DBuff = Constant(0.) # TnC
+  DFluo = 0.1 # [um^2/ms] verified 
+  Ds = [DCa,DBuff,DFluo]
+  DCa_SSL = 0.6 * DCa
+
+  # geom 
   volSSL = 100. # Volume of SSL domain [um^3]
   volCleft = 1. # [um^3] 
 
+  # buffer (mostly TnC) 
+  alphabuff=0.04 # kon verified [1/uMms] 
+  Btot = 70. # [TnC] [uM] verified 
+  betabuff = 0.04 # koff verfied [1/ms]
+ 
+  # buffer (imaginary for SSL) 
+  alphabuff_SSL=0.04 # kon verified [1/uMms] 
+  Btot_SSL = 70. # [TnC] [uM] verified 
+  betabuff_SSL = 0.04 # koff verfied [1/ms]
+    
+
+  # fluo
+  alphafluo=0.23 # kon fluo  [1/uMms] verified 
+  Ftot = 50. # [Fluo] [uM] verified  
+  betafluo = 0.17 # koff fluo [1/ms] verified
+
+  # RyR
+  ryrAmp = 9.5 # [pA/pF] 
+  ryrOffset = 5 # [ms]
+  ryrTau = -50/np.log(1/2.) # half-max amp at 50 ms 
+  ryrKm = 0.2 # uM (made this up)  
+
+  # init concs 
+  cCaInit =0.1  # Initial Ca concentration in Cleft compartment [uM] 
+  cBuffInit = buffered(Btot,cCaInit,alphabuff,betabuff)  # TnC unverified [uM]
+  cFluoInit = buffered(Ftot,cCaInit,alphafluo,betafluo)  # [uM]
+  cCaSSLInit = 0.5
+  cCaCleftInit = 1.0
+  cInits = [cCaInit,cBuffInit,cFluoInit,cCaCleftInit,cCaSSLInit]  # cCaCleft=cCainit, cCaSSL=cCainit at start 
+
+
   jTest = 0.1 # Generic flux applied to cytosolic domain [uM/ms]
+
+
+
 
 def validation():
   ## flux 
@@ -65,6 +143,7 @@ def tsolve(outName="output.pvd",\
            params = Params(),\
            hdfName = "out.h5",
            doAssert = None,  
+           fluxes = None,
            debug=False):
 
   #mesh = UnitCubeMesh(8,8,8)
@@ -72,10 +151,21 @@ def tsolve(outName="output.pvd",\
   if "2D" in mode:
     import sarcomere2DSSL
     cm = sarcomere2DSSL.Sarcomere2DSSL(params=params)
+    if "noSSL" in mode:
+      ssl=False
 
-  if "noSSL" in mode:
-    ssl=False
+  elif "sachse" in mode: 
+    if mode=="sachse4TT":
+      import sarcomere4TT
+      cm = sarcomere4TT.sarcomere4TT(params=params)
+    else: 
+      import sarcomere2TT
+      cm = sarcomere2TT.sarcomere2TT(params=params)
 
+  elif "satin" in mode:
+    import sarcomereSatin
+    cm = sarcomereSatin.sarcomereSatin(params=params)
+    
   cm.params.nDOF = cm.nDOF # goes in master class 
   mesh = cm.GetMesh()
   dims =mesh.ufl_cell().geometric_dimension()
@@ -92,10 +182,11 @@ def tsolve(outName="output.pvd",\
 
 
   # Boundaries and measures 
+  # problem specific          
   subdomains = MeshFunction("size_t",mesh,dims-1)
-  face_marker = 10
-  boundary = Boundary()
-  boundary.mark(subdomains,face_marker)
+  subdomains.set_all(0)
+  lMarker,rMarker,slMarker = cm.Boundaries(subdomains)
+
   ds = Measure("ds")[subdomains]
   dx = Measure("dx")
   ds = ds(domain=mesh,subdomain_data=subdomains)
@@ -104,14 +195,14 @@ def tsolve(outName="output.pvd",\
   # FiniteElements
   V = FunctionSpace(mesh, "CG", 1)
   R = FunctionSpace(mesh, "R", 0)
-  ME = MixedFunctionSpace([V,R,R])
+  ME = MixedFunctionSpace([V,V,V,R,R])
   
-  vCa, vCaSSL, vCaCleft = TestFunctions(ME)
+  vCa, vCaBuff, vCaFluo, vCaSSL, vCaCleft = TestFunctions(ME)
   
   U_n = Function(ME)
   U_0 = Function(ME)
-  cCa_n, cCaSSL_n, cCaCleft_n = split(U_n)
-  cCa_0, cCaSSL_0, cCaCleft_0 = split(U_0)
+  cCa_n, cCaBuff_n, cCaFluo_n, cCaSSL_n, cCaCleft_n = split(U_n)
+  cCa_0, cCaBuff_0, cCaFluo_0, cCaSSL_0, cCaCleft_0 = split(U_0)
   
   # Params
   mode = "boundaryFlux" 
@@ -130,7 +221,7 @@ def tsolve(outName="output.pvd",\
   # volume/area info 
   volCyto = params.volCyto
   #volCyto = Constant(assemble(Constant(1.0)*dx()))
-  areaCyto = Constant(assemble(Constant(1.0)*ds(face_marker)))
+  areaCyto = Constant(assemble(Constant(1.0)*ds(lMarker)))
   volSSL = params.volSSL
   volCleft= params.volCleft
   volFrac_CytoSSL= volCyto/volSSL
@@ -145,16 +236,26 @@ def tsolve(outName="output.pvd",\
   ## PDE 
   # Time derivative and diffusion of field species
   F = ((cCa_n-cCa_0)*vCa/dt + Du*inner(grad(cCa_n), grad(vCa)))*dx()
+  #Ds  = params.Ds
+  #RHSis=[]
+  #for i in range(cm.nDOF_Fields):
+  # #RHSi= -inner(Ds[i]*grad(cns[i]), grad(vs[i]))*dx
+  #  RHSi= -inner(Ds[i]*grad(u_n[i]), grad(vs[i]))*dx
+  #  RHSis.append(RHSi)
+  F+= ((cCaFluo_n-cCaFluo_0)*vCaFluo/dt + Du*inner(grad(cCaFluo_n), grad(vCaFluo)))*dx()
+  F+= ((cCaBuff_n-cCaBuff_0)*vCaBuff/dt + Du*inner(grad(cCaBuff_n), grad(vCaBuff)))*dx()
+
+
   
   if ssl:
     # Flux to mesh domain from scalar domain s 
-    jFlux_SSLCyto = D_SSLCyto*(cCaSSL_n-cCa_n)/dist # note that this is multiplied by ds(face_marker) below
-    F += -jFlux_SSLCyto*vCa*ds(face_marker)
+    jFlux_SSLCyto = D_SSLCyto*(cCaSSL_n-cCa_n)/dist # note that this is multiplied by ds(lMarker) below
+    F += -jFlux_SSLCyto*vCa*ds(lMarker)
   else: 
     # Flux to mesh domain from scalar domain s 
     jFlux = D_CleftCyto*(cCaCleft_n-cCa_n)/dist
 
-    F += -jFlux*vCa*ds(face_marker)
+    F += -jFlux*vCa*ds(lMarker)
 
 
   
@@ -163,7 +264,7 @@ def tsolve(outName="output.pvd",\
   
   if ssl:
     # flux from scalar domain s to mesh 
-    F += jFlux_SSLCyto*volFrac_CytoSSL*vCaSSL*ds(face_marker)
+    F += jFlux_SSLCyto*volFrac_CytoSSL*vCaSSL*ds(lMarker)
   
     # flux to scalar domain r to s
     jFlux_CleftSSL =D_CleftSSL*(cCaCleft_n-cCaSSL_n)/dist 
@@ -179,19 +280,39 @@ def tsolve(outName="output.pvd",\
     F +=  jFlux_CleftSSL*volFrac_CytoCleft*vCaCleft*dx()
   else: 
     # flux between SSL/cleft
-    F += volFrac_CytoCleft*jFlux*vCaCleft*ds(face_marker)
+    F += volFrac_CytoCleft*jFlux*vCaCleft*ds(lMarker)
 
 
   ### Fluxes
+  RHS = 0
   if doAssert=="flux":
     j = params.jTest
-    RHS = j*(volCyto/areaCyto)*vCa*ds(face_marker)
-    F += - RHS
+    RHS = j*(volCyto/areaCyto)*vCa*ds(lMarker)
+
+  # adding in fluxes from Torres paper  
+  RHSs = [0,0,0]
+  reactions = None
+  if fluxes=="torres":
+    import torres
+    reactions = torres.Torres()
+    reactions.Init(params)
+    print "Need to renormalize to agree w whole cell"
+    print "Put into module?"
+    #RHS = reactions.iryr*(volCleft/areaCleft)*vCaCleft*dx()
+    rescaleFactor = 0.1
+    RHS = reactions.iryr*(rescaleFactor)*vCaCleft*dx()
+    
+  # apply
+  F += - RHS
+    
+    
+
+    
 
 
   
   # Init conditions
-  U_0.interpolate(Constant((params.cCaInit, params.cCaSSLInit, params.cCaCleftInit)))
+  U_0.interpolate(Constant((params.cCaInit, 1,1,params.cCaSSLInit, params.cCaCleftInit)))
   
   def conservation(t=0):
       ## PKH test
@@ -272,6 +393,25 @@ def tsolve(outName="output.pvd",\
       ctr+=1
       U_0.assign(U_n)
       t += float(dt)
+      ## update
+      if reactions!=None:
+        reactions.Update(t) 
+      if 0: # mode=="sachse":
+        1
+        #iryr.t = t 
+        
+        #caTT= assemble(u_n[idxCa]*ds(rMarker,domain=mesh))
+        #vol = assemble(Constant(1.)*ds(rMarker,domain=mesh))
+        #caTT = caTT/vol 
+        #print "TT %f" % caTT
+        #iryrDefect.ca = caTT
+
+      if mode=="ode":
+        # TODO run ODE model 
+        # aggregate state variables
+        # need to assemble concs over entire vol 
+        #def UpdateBeardVals(nC,bM,mgatpi_uM,fadpi_uM ,fmgi_uM ):
+        jCa.r  = 0. # TODO update with ode 
 
   # close 
   hdf.close()
@@ -293,8 +433,10 @@ def tsolve(outName="output.pvd",\
 def whosalive():
   print "I'm alive!"
 
-def doit(debug=True,mode="",params=Params(),hdfName="a.h5"):  
-  tsolve(debug=debug,mode=mode,params=params,hdfName=hdfName)
+def doit(debug=True,mode="",params=Params(),hdfName="a.h5",\
+         fluxes=None):  
+  tsolve(debug=debug,mode=mode,params=params,hdfName=hdfName,
+         fluxes=fluxes)
 #!/usr/bin/env python
 import sys
 ##################################
@@ -354,6 +496,10 @@ if __name__ == "__main__":
     elif(arg=="-test1"):
       tag = "ode"
       doit(debug=False,params=params,hdfName=tag+".h5",mode=tag)
+      quit()
+    elif(arg=="-test2D_torres"):
+      tag = "2D_SSL_torres"
+      doit(debug=False,params=params,hdfName=tag+".h5",mode=tag,fluxes="torres")
       quit()
     elif(arg=="-test2D"):
       tag = "2D_SSL"
