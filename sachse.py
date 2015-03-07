@@ -70,8 +70,8 @@ class Params():
   DCa_SSL = 0.6 * DCa
 
   # geom 
-  volSSL = 100. # Volume of SSL domain [um^3]
-  volCleft = 1. # [um^3] 
+  volSSL = 1. # Volume of SSL domain [um^3]
+  volCleft = 0.1 # [um^3] 
 
   # buffer (mostly TnC) 
   alphabuff=0.04 # kon verified [1/uMms] 
@@ -308,9 +308,18 @@ def tsolve(pvdName="output.pvd",\
       print "Need to renormalize to agree w whole cell"
       print "Put into module?"
       #RHS = reactions.iryr*(volCleft/areaCleft)*vCaCleft*dx()
-      rescaleFactor = 0.1
+      rescaleFactor = 1.
       RHS = reactions.iryr*(rescaleFactor)*vCaCleft*dx()
-    
+
+    if reactions == "simple":
+      import simple
+      reactions = simple.Simple()
+      reactions.Init(params)
+      rescaleFactor = 1.
+      RHS = reactions.iryr*(rescaleFactor)*vCaCleft*dx()
+      rescaleFactor = 1.
+      RHS+= reactions.jSERCA*(rescaleFactor)*vCa*dx()
+       
     # apply
     F += - RHS
 
@@ -380,8 +389,8 @@ def tsolve(pvdName="output.pvd",\
   ## File IO
   t=0.
   ctr=0
-  file = File("output.pvd", "compressed")
-  file << (U_n.sub(idxCa),t)     
+  pvdFile = File(pvdName,"compressed")
+  pvdFile << (U_n.sub(idxCa),t)     
   hdf=HDF5File(mesh.mpi_comm(), hdfName, "w")
   hdf.write(mesh, "mesh")
   # temp hack for storing volume 
@@ -404,7 +413,7 @@ def tsolve(pvdName="output.pvd",\
       conserved_ti = conservation(t=t)
 
       ## store 
-      file << (U_n.sub(idxCa),t)
+      pvdFile << (U_n.sub(idxCa),t)
       # store hdf 
       #if compartmentSSL:
       if 1: 
@@ -484,10 +493,12 @@ def mytest2():
   params.dt = 5 
 
 
-  tag = "2D_noSSL_torres"
-  tsolve(debug=False,params=params,pvdName = "noSSL.pvd", hdfName=tag+".h5",mode=tag,reactions="torres")
-  tag = "2D_SSL_torres"
-  tsolve(debug=False,params=params,pvdName = "SSL.pvd", hdfName=tag+".h5",mode=tag,reactions="torres")
+  tag = "2D_noSSL_simple" 
+  tsolve(debug=False,params=params,pvdName = "noSSL.pvd", hdfName=tag+".h5",\
+    mode=tag,reactions="simple",buffers=True)
+  tag = "2D_SSL_simple" 
+  tsolve(debug=False,params=params,pvdName = "SSL.pvd", hdfName=tag+".h5",\
+    mode=tag,reactions="simple",buffers=True)
 
 
   

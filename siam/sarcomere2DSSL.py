@@ -45,6 +45,11 @@ class Sarcomere2DSSL(SarcomereBase):
   def Init(self): 
     ## Get mesh 
     mesh = UnitSquareMesh(16,16)
+    c = mesh.coordinates()[:]
+    c[:,1]*= 6. # TT height [um]
+    mesh.coordinates()[:] = c 
+
+
     self.mesh = mesh 
     self.mmin = np.min(mesh.coordinates(),axis=0)
     self.mmax = np.max(mesh.coordinates(),axis=0)
