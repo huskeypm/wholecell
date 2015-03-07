@@ -2,18 +2,15 @@
 # Time dependent solver, single species 
 # 
 # TODO 
-# - get correct SAs, volumes for all compartments
-# - check that Ca is conserved between compartments 
 # - get concentrations of buffs, etc correct
 # - add diffusivity/buffer as D' = D B/(1+KD)
 # Merge in sachse_temp, sachse_REPLACEMENT?
-# - buffers
 #- meaningful iRyr
 #- defining SSL region within cyto #
 # Check README/Fields for SIAM models section for details on implementation 
 #
 # Validations
-# - Ca flows between compartments, both ways 
+# - see validations function 
 #
 # Standard units
 # time [ms]
@@ -102,8 +99,8 @@ class Params():
   cCaInit =0.1  # Initial Ca concentration in Cleft compartment [uM] 
   cBuffInit = buffered(Btot,cCaInit,alphabuff,betabuff)  # TnC unverified [uM]
   cFluoInit = buffered(Ftot,cCaInit,alphafluo,betafluo)  # [uM]
-  cCaSSLInit = 0.5
-  cCaCleftInit = 1.0
+  cCaSSLInit = cCaInit
+  cCaCleftInit = cCaInit
   cInits = [cCaInit,cBuffInit,cFluoInit,cCaCleftInit,cCaSSLInit]  # cCaCleft=cCainit, cCaSSL=cCainit at start 
 
 
@@ -113,6 +110,16 @@ class Params():
 
 
 def validation():
+  ## Reactions
+  params = Params()
+  params.D_SSLCyto = 0
+  params.D_CleftSSL = 0 
+  params.D_CleftCyto = 0
+  tsolve(doAssert="conservation",params=params, buffers = True)
+  print "WARNING: NOT FULLY VALIDATED"
+
+  quit()
+
   ## flux 
   params = Params()
   params.T = 10
@@ -132,8 +139,6 @@ def validation():
   print "Passed flux test"
   
   
-
-
   ## conservation 
   tsolve(doAssert="conservation")
   print "Passed conservation test"
@@ -143,7 +148,8 @@ def tsolve(outName="output.pvd",\
            params = Params(),\
            hdfName = "out.h5",
            doAssert = None,  
-           fluxes = None,
+           reactions = None,
+           buffers = None,
            debug=False):
 
   #mesh = UnitCubeMesh(8,8,8)
@@ -235,17 +241,19 @@ def tsolve(outName="output.pvd",\
   
   ## PDE 
   # Time derivative and diffusion of field species
-  F = ((cCa_n-cCa_0)*vCa/dt + Du*inner(grad(cCa_n), grad(vCa)))*dx()
+  F = ((cCa_n-cCa_0)*vCa/dt + params.DCa*inner(grad(cCa_n), grad(vCa)))*dx()
   #Ds  = params.Ds
   #RHSis=[]
   #for i in range(cm.nDOF_Fields):
   # #RHSi= -inner(Ds[i]*grad(cns[i]), grad(vs[i]))*dx
   #  RHSi= -inner(Ds[i]*grad(u_n[i]), grad(vs[i]))*dx
   #  RHSis.append(RHSi)
-  F+= ((cCaFluo_n-cCaFluo_0)*vCaFluo/dt + Du*inner(grad(cCaFluo_n), grad(vCaFluo)))*dx()
-  F+= ((cCaBuff_n-cCaBuff_0)*vCaBuff/dt + Du*inner(grad(cCaBuff_n), grad(vCaBuff)))*dx()
+  F+= ((cCaBuff_n-cCaBuff_0)*vCaBuff/dt + params.DBuff*inner(grad(cCaBuff_n), grad(vCaBuff)))*dx()
+  F+= ((cCaFluo_n-cCaFluo_0)*vCaFluo/dt + params.DFluo*inner(grad(cCaFluo_n), grad(vCaFluo)))*dx()
 
 
+  #add in SSL region 
+  #what is minimal example Ican get in place for caitlin 
   
   if ssl:
     # Flux to mesh domain from scalar domain s 
@@ -290,21 +298,32 @@ def tsolve(outName="output.pvd",\
     RHS = j*(volCyto/areaCyto)*vCa*ds(lMarker)
 
   # adding in fluxes from Torres paper  
-  RHSs = [0,0,0]
-  reactions = None
-  if fluxes=="torres":
-    import torres
-    reactions = torres.Torres()
-    reactions.Init(params)
-    print "Need to renormalize to agree w whole cell"
-    print "Put into module?"
-    #RHS = reactions.iryr*(volCleft/areaCleft)*vCaCleft*dx()
-    rescaleFactor = 0.1
-    RHS = reactions.iryr*(rescaleFactor)*vCaCleft*dx()
+  if reactions !=None:
+    if reactions =="torres":
+      import torres
+      reactions = torres.Torres()
+      reactions.Init(params)
+      print "Need to renormalize to agree w whole cell"
+      print "Put into module?"
+      #RHS = reactions.iryr*(volCleft/areaCleft)*vCaCleft*dx()
+      rescaleFactor = 0.1
+      RHS = reactions.iryr*(rescaleFactor)*vCaCleft*dx()
     
-  # apply
-  F += - RHS
+    # apply
+    F += - RHS
+
+  ## Reactions
+  if buffers !=None:
+    RHS = 0 
+    RCaBuff = -params.alphabuff*(params.Btot - cCaBuff_n)*cCa_n + params.betabuff*cCaBuff_n 
+    RHS+=  RCaBuff*vCa*dx()
+    RHS+= -RCaBuff*vCaBuff*dx()
+
+    RCaFluo = -params.alphafluo*(params.Ftot - cCaFluo_n)*cCa_n + params.betafluo*cCaFluo_n 
+    RHS+=  RCaFluo*vCa*dx()
+    RHS+= -RCaFluo*vCaFluo*dx()
     
+    F += -RHS
     
 
     
@@ -315,23 +334,37 @@ def tsolve(outName="output.pvd",\
   U_0.interpolate(Constant((params.cCaInit, 1,1,params.cCaSSLInit, params.cCaCleftInit)))
   
   def conservation(t=0):
-      ## PKH test
+      ## scalars     
       acCaCleft_n = assemble(cCaCleft_n*volFrac_CleftCyto*dx())
       #ccCaCleft_n = assemble(cCaCleft_n*volFrac_CleftCyto/volCleft*dx())
       # below is shorthand, but i left comment above so its clear where it originated 
       ccCaCleft_n = assemble(cCaCleft_n*volCyto*dx())
+
       acCaSSL_n = assemble(cCaSSL_n*volFrac_SSLCyto*dx())
       #ccCaSSL_n = assemble(cCaSSL_n*volFrac_SSLCyto/volSSL*dx())
       ccCaSSL_n = assemble(cCaSSL_n*volCyto*dx())
+
+      ## cyto
       acCa_n = assemble(cCa_n*dx())
       ccCa_n = assemble(cCa_n/volCyto*dx())
+
+      acCaBuff_n = assemble(cCaBuff_n*dx())
+      ccCaBuff_n = assemble(cCaBuff_n/volCyto*dx())
+
+      acCaFluo_n = assemble(cCaFluo_n*dx())
+      ccCaFluo_n = assemble(cCaFluo_n/volCyto*dx())
+
+
       conserved = acCaSSL_n+acCaCleft_n+acCa_n
+      conserved+= acCaBuff_n+acCaFluo_n 
     
       if MPI.rank(mpi_comm_world())==0:
         print "############### ", t
         print "cCa_n " , acCa_n, "conc ", ccCa_n
         print "cCaSSL_n " , acCaSSL_n, "conc ", ccCaSSL_n
         print "cCaCleft_n " , acCaCleft_n, "conc ", ccCaCleft_n
+        print "cCaBuff_n " , acCaBuff_n, "conc ", ccCaBuff_n
+        print "cCaFluo_n " , acCaFluo_n, "conc ", ccCaFluo_n
         print "CONSERVATION:", conserved
 
       return conserved
@@ -427,6 +460,23 @@ def tsolve(outName="output.pvd",\
   # returning for validaton
   concCa = assemble(cCa_n/volCyto*dx())
   return concCa 
+
+
+# This case examines the effect of delaying diffusion through the SSL domain 
+def mytest():
+  params.T = 1000
+  params.dt = 5 
+
+  tag = "2D_SSL_torres"
+  doit(debug=False,params=params,hdfName=tag+".h5",mode=tag,reactions="torres")
+
+  tag = "2D_SSL_torres_slowSSL"
+  params.D_SSLCyto = Constant(0.3) # Diffusion rate between SSL/Cyto compartments (if SSL exists) [um^2/ms]
+  params.D_CleftSSL = Constant(0.3 ) #  Diffusion rate between Cleft/SSL compartments (if SSL exists)
+  params.D_CleftCyto= Constant(0.3)
+  doit(debug=False,params=params,hdfName=tag+".h5",mode=tag,reactions="torres")
+
+
   
 
 # In[19]:
@@ -434,9 +484,9 @@ def whosalive():
   print "I'm alive!"
 
 def doit(debug=True,mode="",params=Params(),hdfName="a.h5",\
-         fluxes=None):  
+         reactions=None):  
   tsolve(debug=debug,mode=mode,params=params,hdfName=hdfName,
-         fluxes=fluxes)
+         reactions=reactions)
 #!/usr/bin/env python
 import sys
 ##################################
@@ -499,7 +549,9 @@ if __name__ == "__main__":
       quit()
     elif(arg=="-test2D_torres"):
       tag = "2D_SSL_torres"
-      doit(debug=False,params=params,hdfName=tag+".h5",mode=tag,fluxes="torres")
+      params.T = 1000
+      params.dt = 5 
+      doit(debug=False,params=params,hdfName=tag+".h5",mode=tag,reactions="torres")
       quit()
     elif(arg=="-test2D"):
       tag = "2D_SSL"
@@ -521,6 +573,9 @@ if __name__ == "__main__":
       tag = "sachse4TT"
       doit(debug=False,params=params,hdfName=tag+".h5",mode=tag)
       quit()
+    elif(arg=="-mytest"):
+      mytest()
+      quit() 
     elif(arg=="-validation"):
       validation()
       quit()
