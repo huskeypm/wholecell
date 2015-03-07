@@ -57,9 +57,6 @@ class sarcomere4TT(SarcomereBase):
     SarcomereBase.__init__(self)
     self.mode = mode
     self.fileName = "siam/sarcomere4TT.xml"
-    self.nDOF_Fields= 3
-    self.nDOF_Scalars= 1 # cleft
-    self.nDOF = self.nDOF_Fields + self.nDOF_Scalars
     self.params = params 
     self.distributions()
 
@@ -105,15 +102,6 @@ class sarcomere4TT(SarcomereBase):
     return lMarker,rMarker,slMarker
 
   
-  # Need to manually put in DOF for now  
-  class InitialConditions(Expression):
-    def eval(self, values, x):
-      for i in range(self.params.nDOF):
-              #print i 
-              values[i] = self.params.cInits[i]
-    def value_shape(self):
-      #print self.nDOF
-      return (4,)             
     
     
   

@@ -143,7 +143,7 @@ def validation():
   tsolve(doAssert="conservation")
   print "Passed conservation test"
 
-def tsolve(outName="output.pvd",\
+def tsolve(pvdName="output.pvd",\
            mode="2D_SSL", # sachse2TT, sachse4TT, ode, bcs \ 
            params = Params(),\
            hdfName = "out.h5",
@@ -158,6 +158,7 @@ def tsolve(outName="output.pvd",\
     import sarcomere2DSSL
     cm = sarcomere2DSSL.Sarcomere2DSSL(params=params)
     if "noSSL" in mode:
+      cm.ssl = True
       ssl=False
 
   elif "sachse" in mode: 
@@ -172,6 +173,7 @@ def tsolve(outName="output.pvd",\
     import sarcomereSatin
     cm = sarcomereSatin.sarcomereSatin(params=params)
     
+  cm.Init()
   cm.params.nDOF = cm.nDOF # goes in master class 
   mesh = cm.GetMesh()
   dims =mesh.ufl_cell().geometric_dimension()
@@ -467,14 +469,25 @@ def mytest():
   params.T = 1000
   params.dt = 5 
 
+
   tag = "2D_SSL_torres"
-  doit(debug=False,params=params,hdfName=tag+".h5",mode=tag,reactions="torres")
+  tsolve(debug=False,params=params,hdfName=tag+".h5",mode=tag,reactions="torres")
 
   tag = "2D_SSL_torres_slowSSL"
   params.D_SSLCyto = Constant(0.3) # Diffusion rate between SSL/Cyto compartments (if SSL exists) [um^2/ms]
   params.D_CleftSSL = Constant(0.3 ) #  Diffusion rate between Cleft/SSL compartments (if SSL exists)
   params.D_CleftCyto= Constant(0.3)
-  doit(debug=False,params=params,hdfName=tag+".h5",mode=tag,reactions="torres")
+  tsolve(debug=False,params=params,hdfName=tag+".h5",mode=tag,reactions="torres")
+
+def mytest2():
+  params.T = 1000
+  params.dt = 5 
+
+
+  tag = "2D_noSSL_torres"
+  tsolve(debug=False,params=params,pvdName = "noSSL.pvd", hdfName=tag+".h5",mode=tag,reactions="torres")
+  tag = "2D_SSL_torres"
+  tsolve(debug=False,params=params,pvdName = "SSL.pvd", hdfName=tag+".h5",mode=tag,reactions="torres")
 
 
   
@@ -483,10 +496,6 @@ def mytest():
 def whosalive():
   print "I'm alive!"
 
-def doit(debug=True,mode="",params=Params(),hdfName="a.h5",\
-         reactions=None):  
-  tsolve(debug=debug,mode=mode,params=params,hdfName=hdfName,
-         reactions=reactions)
 #!/usr/bin/env python
 import sys
 ##################################
@@ -536,45 +545,48 @@ if __name__ == "__main__":
   params = Params()
   params.T = 10 
   for i,arg in enumerate(sys.argv):
-    # calls 'doit' with the next argument following the argument '-validation'
+    # calls 'tsolve' with the next argument following the argument '-validation'
     if(arg=="-debug"):
       #arg1=sys.argv[i+1] 
-      doit(debug=True)     
+      tsolve(debug=True)     
     elif(arg=="-test0"):
-      doit(debug=False)    
+      tsolve(debug=False)    
       quit()
     elif(arg=="-test1"):
       tag = "ode"
-      doit(debug=False,params=params,hdfName=tag+".h5",mode=tag)
+      tsolve(debug=False,params=params,hdfName=tag+".h5",mode=tag)
       quit()
     elif(arg=="-test2D_torres"):
       tag = "2D_SSL_torres"
       params.T = 1000
       params.dt = 5 
-      doit(debug=False,params=params,hdfName=tag+".h5",mode=tag,reactions="torres")
+      tsolve(debug=False,params=params,hdfName=tag+".h5",mode=tag,reactions="torres",buffers=True)
       quit()
     elif(arg=="-test2D"):
       tag = "2D_SSL"
-      doit(debug=False,params=params,hdfName=tag+".h5",mode=tag)
+      tsolve(debug=False,params=params,hdfName=tag+".h5",mode=tag)
       quit()
     elif(arg=="-test2Dno"):
       tag = "2D_noSSL"
-      doit(debug=False,params=params,hdfName=tag+".h5",mode=tag)
+      tsolve(debug=False,params=params,hdfName=tag+".h5",mode=tag)
       quit()
     elif(arg=="-testsatin"):
       tag = "satin"
-      doit(debug=False,params=params,hdfName=tag+".h5",mode=tag)
+      tsolve(debug=False,params=params,hdfName=tag+".h5",mode=tag)
       quit()
     elif(arg=="-test2"):
       tag = "sachse2TT"
-      doit(debug=False,params=params,hdfName=tag+".h5",mode=tag)
+      tsolve(debug=False,params=params,hdfName=tag+".h5",mode=tag)
       quit()
     elif(arg=="-test4"):
       tag = "sachse4TT"
-      doit(debug=False,params=params,hdfName=tag+".h5",mode=tag)
+      tsolve(debug=False,params=params,hdfName=tag+".h5",mode=tag)
       quit()
     elif(arg=="-mytest"):
       mytest()
+      quit() 
+    elif(arg=="-mytest2"):
+      mytest2()
       quit() 
     elif(arg=="-validation"):
       validation()

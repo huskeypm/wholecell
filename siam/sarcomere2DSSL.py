@@ -30,48 +30,75 @@ class OuterSarcolemma(SubDomain):
 class Sarcomere2DSSL(SarcomereBase):             
   def __init__(self,params=""):
     SarcomereBase.__init__(self)
-    self.nDOF_Fields= 3
-    self.nDOF_Scalars= 2  # cleft, SSL 
-    self.nDOF = self.nDOF_Fields + self.nDOF_Scalars
     self.params = params 
+    self.TT = TT
+    self.OuterSarcolemma = OuterSarcolemma
+    self.ssl = False
 
   def GetMesh(self):
-    self.mesh = UnitSquareMesh(16,16)
     #V = FunctionSpace(self.mesh,"CG",1)
     #self.area = assemble(Constant(1.)*ds(domain=self.mesh))
     #self.volume  = assemble(Constant(1.)*dx(domain=self.mesh))
-
-
     return self.mesh 
+
+
+  def Init(self): 
+    ## Get mesh 
+    mesh = UnitSquareMesh(16,16)
+    self.mesh = mesh 
+    self.mmin = np.min(mesh.coordinates(),axis=0)
+    self.mmax = np.max(mesh.coordinates(),axis=0)
+
+
+    ## Define SSL region 
+    if self.ssl==False:
+      return 1 
+
+    # params 
+    xSSL= 0.25 # define ssl as x=0..xSSL [nm]
+
+
+    ## resize cyto domain to include SSL 
+    print "NEEDS to be made kosher with SSL compart volume"
+    xRange = self.mmax[0] - self.mmin[0]
+    xNew = xSSL+xRange
+    self.mesh.coordinates()[:]*=xNew/xRange
+
+    # replace Constant diffusion constant with expression 
+    sc = 0.01
+
+    # using a 'rescaled' dirac function to interpolate between 
+    # lower diffusion region and higher diffusion region 
+    # Deff = dirac*(DCa-DSSL) + DSSL
+    params = self.params
+    self.DCaBase = params.DCa
+    params.DCa = Expression("1/(1+exp((x[0]-xSSL)/sc))*(DCa-DCa_SSL) + DCa_SSL ",\
+          xSSL=xSSL,DCa = self.DCaBase, DCa_SSL=params.DCa_SSL,sc=sc)
+
+
+    # location of SSL region 
+    self.pSSL = Expression("1/(1+exp((x[0]-xSSL)/sc)) ",\
+          xSSL=xSSL,sc=sc)
 
   def Boundaries(self,subdomains):
     mesh = self.mesh
 
-    boundary = TT()
-    boundary.mmin = np.min(mesh.coordinates(),axis=0)
-    boundary.mmax = np.max(mesh.coordinates(),axis=0)
+    boundary = self.TT()
+    boundary.mmin = self.mmin
+    boundary.mmax = self.mmax
     lMarker = 2
     boundary.mark(subdomains,lMarker)
   
     rMarker = -1
   
-    boundary = OuterSarcolemma()
-    boundary.mmin = np.min(mesh.coordinates(),axis=0)
-    boundary.mmax = np.max(mesh.coordinates(),axis=0)
+    boundary = self.OuterSarcolemma()
+    boundary.mmin = self.mmin
+    boundary.mmax = self.mmax
     slMarker = 4
     boundary.mark(subdomains,slMarker)
 
     return lMarker,rMarker,slMarker
 
-  # Need to manually put in DOF for now  
-  class InitialConditions(Expression):
-    def eval(self, values, x):
-      for i in range(self.params.nDOF):
-              #print i 
-              values[i] = self.params.cInits[i]
-    def value_shape(self):
-      return (5,)             
-    
     
   
   

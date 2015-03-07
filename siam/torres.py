@@ -1,9 +1,10 @@
 
 from dolfin import *
+from reactionsBase import ReactionsBase
 
-
-class Torres(): 
+class Torres(ReactionsBase): 
   def __init__(self):
+    ReactionsBase.__init__(self)
     1
     
   def Init(self,params):
@@ -17,23 +18,6 @@ class Torres():
                              to=params.ryrOffset,\
                              tau=params.ryrTau,\
                              t=0)
-    #self.iryr = Expression("t*0", t=0)
-
-    # Action potential [mV]
-    self.V = Expression("0") 
-
-    print "Borrow NCX, SERCA, etc from Subcell" 
-    # NCX [A/F]???
-    self.NCX = Expression("0.")
-
-    # SERCA [uM/ms]
-    self.SERCA= Expression("0.")
-
   def Update(self,t):
     self.iryr.t = t 
-
-    # Need hooks for V, NCX, SERCA 
-
-    
-
 

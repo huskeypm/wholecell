@@ -8,6 +8,13 @@ class SarcomereBase(object):
     self.idxFluo = 2
     self.idxCaCleft = 3
     self.idxCaSSL = 4  # not always used
+    self.nDOF_Fields= 3
+    self.nDOF_Scalars= 2  # cleft, SSL 
+    self.nDOF = self.nDOF_Fields + self.nDOF_Scalars
+
+
+  def Init(self):
+    return 1 
 
   def GetMesh(self):
     return 1 
