@@ -42,69 +42,70 @@ class Boundary(SubDomain):
     #print left 
     return left and on_boundary
 
-class Params():
-  #useMPI = True
-  #paraview = True
-  verbose=False
-
-  T = 3.  # Total simulation time [ms]
-  dt = 1. # time-step size [ms] 
-
-  D_SSLCyto = Constant(1.0) # Diffusion rate between SSL/Cyto compartments (if SSL exists) [um^2/ms]
-  D_CleftSSL = Constant(1.0 ) #  Diffusion rate between Cleft/SSL compartments (if SSL exists)
-  D_CleftCyto= Constant(1.0) #  Diffusion rate between Cleft/Cyto compartments (if SSL does not exist)
-  dist = Constant(1.0) # distance between compartments [um] 
-
-
-#  # Init conditions
-#  cCaCleftInit = 0.1  # Initial Ca concentration in Cleft compartment [uM] 
-#  cCaSSLInit = 1.0
-#  cCaInit = 10.
-
-  # diffusion params 
-  #DAb   = Dbulk# [um^2/ms] Diff const within PDE (domain 1) 
-  DCa = 0.39  # [um^2/ms] verified
-  DBuff = Constant(0.) # TnC
-  DFluo = 0.1 # [um^2/ms] verified 
-  Ds = [DCa,DBuff,DFluo]
-  DCa_SSL = 0.6 * DCa
-
-  # geom 
-  volSSL = 1. # Volume of SSL domain [um^3]
-  volCleft = 0.1 # [um^3] 
-
-  # buffer (mostly TnC) 
-  alphabuff=0.04 # kon verified [1/uMms] 
-  Btot = 70. # [TnC] [uM] verified 
-  betabuff = 0.04 # koff verfied [1/ms]
- 
-  # buffer (imaginary for SSL) 
-  alphabuff_SSL=0.04 # kon verified [1/uMms] 
-  Btot_SSL = 70. # [TnC] [uM] verified 
-  betabuff_SSL = 0.04 # koff verfied [1/ms]
-    
-
-  # fluo
-  alphafluo=0.23 # kon fluo  [1/uMms] verified 
-  Ftot = 50. # [Fluo] [uM] verified  
-  betafluo = 0.17 # koff fluo [1/ms] verified
-
-  # RyR
-  ryrAmp = 9.5 # [pA/pF] 
-  ryrOffset = 5 # [ms]
-  ryrTau = -50/np.log(1/2.) # half-max amp at 50 ms 
-  ryrKm = 0.2 # uM (made this up)  
-
-  # init concs 
-  cCaInit =0.1  # Initial Ca concentration in Cleft compartment [uM] 
-  cBuffInit = buffered(Btot,cCaInit,alphabuff,betabuff)  # TnC unverified [uM]
-  cFluoInit = buffered(Ftot,cCaInit,alphafluo,betafluo)  # [uM]
-  cCaSSLInit = cCaInit
-  cCaCleftInit = cCaInit
-  cInits = [cCaInit,cBuffInit,cFluoInit,cCaCleftInit,cCaSSLInit]  # cCaCleft=cCainit, cCaSSL=cCainit at start 
-
-
-  jTest = 0.1 # Generic flux applied to cytosolic domain [uM/ms]
+class Params(object):
+  def __init__(self): 
+    #useMPI = True
+    #paraview = True
+    self.verbose=False
+  
+    self.T = 3.  # Total simulation time [ms]
+    self.dt = 1. # time-step size [ms] 
+  
+    self.D_SSLCyto = Constant(1.0) # Diffusion rate between SSL/Cyto compartments (if SSL exists) [um^2/ms]
+    self.D_CleftSSL = Constant(1.0 ) #  Diffusion rate between Cleft/SSL compartments (if SSL exists)
+    self.D_CleftCyto= Constant(1.0) #  Diffusion rate between Cleft/Cyto compartments (if SSL does not exist)
+    self.dist = Constant(1.0) # distance between compartments [um] 
+  
+  
+  #  # Init conditions
+  #  cCaCleftInit = 0.1  # Initial Ca concentration in Cleft compartment [uM] 
+  #  cCaSSLInit = 1.0
+  #  cCaInit = 10.
+  
+    # diffusion params 
+    #DAb   = Dbulk# [um^2/ms] Diff const within PDE (domain 1) 
+    self.DCa = 0.39  # [um^2/ms] verified
+    self.DBuff = Constant(0.) # TnC
+    self.DFluo = 0.1 # [um^2/ms] verified 
+    #Ds = [DCa,DBuff,DFluo]
+    self.DCa_SSL = 0.6 * self.DCa
+  
+    # geom 
+    self.volSSL = 1. # Volume of SSL domain [um^3]
+    self.volCleft = 0.1 # [um^3] 
+  
+    # buffer (mostly TnC) 
+    self.alphabuff=0.04 # kon verified [1/uMms] 
+    self.Btot = 70. # [TnC] [uM] verified 
+    self.betabuff = 0.04 # koff verfied [1/ms]
+   
+    # buffer (imaginary for SSL) 
+    self.alphabuff_SSL=0.04 # kon verified [1/uMms] 
+    self.Btot_SSL = 70. # [TnC] [uM] verified 
+    self.betabuff_SSL = 0.04 # koff verfied [1/ms]
+      
+  
+    # fluo
+    self.alphafluo=0.23 # kon fluo  [1/uMms] verified 
+    self.Ftot = 50. # [Fluo] [uM] verified  
+    self.betafluo = 0.17 # koff fluo [1/ms] verified
+  
+    # RyR
+    self.ryrAmp = 9.5 # [pA/pF] 
+    self.ryrOffset = 5 # [ms]
+    self.ryrTau = -50/np.log(1/2.) # half-max amp at 50 ms 
+    self.ryrKm = 0.2 # uM (made this up)  
+  
+    # init concs 
+    self.cCaInit =0.1  # Initial Ca concentration in Cleft compartment [uM] 
+    self.cBuffInit = buffered(self.Btot,self.cCaInit,self.alphabuff,self.betabuff)  # TnC unverified [uM]
+    self.cFluoInit = buffered(self.Ftot,self.cCaInit,self.alphafluo,self.betafluo)  # [uM]
+    self.cCaSSLInit = self.cCaInit
+    self.cCaCleftInit = self.cCaInit
+    self.cInits = np.array([self.cCaInit,self.cBuffInit,self.cFluoInit,self.cCaCleftInit,self.cCaSSLInit])
+  
+  
+    self.jTest = 0.1 # Generic flux applied to cytosolic domain [uM/ms]
 
 
 # J [uM/ms] --> j[uM*um/ms]
@@ -142,9 +143,20 @@ def validation_Conversions():
   idxCa = 0
   idxCaCleft = 4 # NEED TO NOT HARDCODE
 
+  ## Validate wholecell flux test 
+  params = Params()
+  params.T = 10
+  params.D_SSLCyto = 0
+  params.D_CleftSSL = 0 
+  params.D_CleftCyto = 0
+  params.cCaInit = 0.1
+
+  concsFinal = tsolve(doAssert="fluxTest_jSurfCyto", params=params)    
+  dotest(concsFinal[idxCa],params.cCaInit) 
+
+
   ## Validate A/F conversion 
   # apply flux to cytosol domain 
-  print "WARNING: need to enable" 
   iFlux = 1 # [A/F]
   params = Params()
   params.jTest = wholeCellI_to_j(iFlux) 
@@ -154,12 +166,9 @@ def validation_Conversions():
   params.D_CleftSSL = 0
   params.D_CleftCyto = 0
   concsFinal = tsolve(doAssert="fluxTest_jSurfCyto", params=params)    
-  cCaFinal = concsFinal[idxCa] # for cCa
-  dotest(cCaFinal,params.cCaInit) 
+  dotest(concsFinal[idxCa],params.cCaInit) 
 
-  volCyto = params.volCyto # store here so dont have to load model
-
-  ## apply to cleft
+  ## Test scaling of fluxes for cleft 
   # goal here is to find a 10 ms flux that raises the -entire-
   # cell concentration by 1.0 uM
   # 1) We first pump up the cleft for 10 ms, 
@@ -190,44 +199,45 @@ def validation_Conversions():
   # check that the change in conc. we anticipated is reflected
   # in cytosol
   assert(abs((params.cCaInit + chgConc) - concsFinal[idxCa]) < 1e-4)
-  print "Pass!"
-  quit()
-  #params.jTest = wholeCellI_to_j(iFlux) 
-  
-  concsFinal= tsolve(doAssert="fluxTest_jSurfAllCompartments", params=params)    
-  cCaCleftFinal = concsFinal[4] # for cCaCleft
-  dotest(cCaCleftFinal) 
-  assert(1==0), "Not done" 
+  print "Passed cleft rescalign test" 
 
 
-  ##Validate Phi conversion
-  params = Params()
-  params.T = 10
-  params.D_SSLCyto = 0
-  params.D_CleftSSL = 0 
-  params.D_CleftCyto = 0
-  params.cCaInit = 11.
-
-  cCaFinal = tsolve(doAssert="fluxTest_jSurfCyto", params=params)    
-  dotest(cCaFinal) 
   
 def validation():
+  ## flux conversions 
   validation_Conversions()
+
+  ## conservation 
+  params = Params()
+  tsolve(doAssert="conservation",params=params)
+  print "Passed conservation test"
 
   ## Reactions
   params = Params()
+  params.dt =10
+  params.T = 100 
   params.D_SSLCyto = 0
   params.D_CleftSSL = 0 
   params.D_CleftCyto = 0
-  tsolve(doAssert="conservation",params=params, buffers = True)
-  
-  assert(1==0), "WARNING: NOT FULLY VALIDATED"
+  # add Ca normally buffered by Buff
+  freeCa = 0.1 
+  buffedCa = 6.36363636364
+  idxCa = 0
+  idxCaBuff = 1
+  idxCaFluo = 2
+  params.cInits[idxCa] = freeCa + buffedCa
+  # kill Fluo
+  params.Ftot = 0.
+  params.cInits[idxCaFluo] = 0. 
+  # reset Buff 
+  params.cInits[idxCaBuff] = 0. 
+  concsFinal=tsolve(doAssert="conservation",params=params, buffers = True)
+  eps = 1e-4
+  assert(abs(concsFinal[idxCa] - freeCa) < eps) 
+  assert(abs(concsFinal[idxCaBuff] - buffedCa) < eps) 
+  print "Passed buffering test"
 
-  quit()
   
-  ## conservation 
-  tsolve(doAssert="conservation")
-  print "Passed conservation test"
 
 def tsolve(pvdName="output.pvd",\
            mode="2D_SSL", # sachse2TT, sachse4TT, ode, bcs \ 
