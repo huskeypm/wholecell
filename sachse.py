@@ -107,37 +107,85 @@ class Params():
   jTest = 0.1 # Generic flux applied to cytosolic domain [uM/ms]
 
 
+# J [uM/ms] --> j[uM*um/ms]
+# volDomain - domain in which flux is applied
+# areaDomainFlux - area over which flux is applied 
+def wholeCellJ_to_jSurf(wholeCellJ,volDomain,areaDomainFlux):
+  return wholeCellJ*volDomain/areaDomainFlux
+
+# Converts whole cell current I [A/F] into surface flux 
+# For rabbit (C/V=4.5), 1 [A/F]  --> ~0.02 [uM/ms]
+def wholeCellI_to_j(wholeCellI):
+  # from flux notes on sharelatex
+  nIons = 2 # number of ions per atom (2 for Ca, +/- 1 for NaCa2+ exchange)
+  Fc = 9.6e-2 # Faraday [umol/C]
+  Cm_o_Vm = 4.5 # Capacitance over cell volume [Farad/Liter]
+  s_to_ms = 1e3
+  
+  jWholeCell = 1/(nIons*Fc) * Cm_o_Vm * wholeCellI * (1/s_to_ms)
+  return jWholeCell
+  
 
 
+def validation_Conversions():
+  def dotest(cCaFinal):
+    refConcChange = params.T*params.jTest # [uM]
+    concChange = cCaFinal - params.cCaInit
+    msg = "%f != %f " % ( concChange,refConcChange)
+    assert( abs(concChange - refConcChange) < 1e-5 ), msg
+    print "Passed flux test"
+
+  ## Validate A/F conversion 
+  # apply to whole cytosol domain 
+  print "WARNING: need to enable" 
+  iFlux = 1 # [A/F]
+  if 0:
+   params = Params()
+   params.jTest = wholeCellI_to_j(iFlux) 
+   params.jTest*=4  # to make about 0.1 uM/ms
+   params.T = 10
+   params.D_SSLCyto = 0
+   params.D_CleftSSL = 0
+   params.D_CleftCyto = 0
+   cCaFinal = tsolve(doAssert="fluxTest_jSurfSingleCompartment", params=params)    
+   dotest(cCaFinal) 
+
+  # apply t0 cleft, check cyto 
+  params = Params()
+  params.jTest = wholeCellI_to_j(iFlux) 
+  params.jTest = 0.0
+  params.D_SSLCyto = 0
+  params.D_CleftSSL = 0
+  params.D_CleftCyto = 0
+  cCaFinal = tsolve(doAssert="fluxTest_jSurfAllCompartments", params=params)    
+  dotest(cCaFinal) 
+  assert(1==0), "Not done" 
+
+
+  ##Validate Phi conversion
+  params = Params()
+  params.T = 10
+  params.D_SSLCyto = 0
+  params.D_CleftSSL = 0 
+  params.D_CleftCyto = 0
+  params.cCaInit = 11.
+
+  cCaFinal = tsolve(doAssert="fluxTest_jSurfSingleCompartment", params=params)    
+  dotest(cCaFinal) 
+  
 def validation():
+  validation_Conversions()
+
   ## Reactions
   params = Params()
   params.D_SSLCyto = 0
   params.D_CleftSSL = 0 
   params.D_CleftCyto = 0
   tsolve(doAssert="conservation",params=params, buffers = True)
-  print "WARNING: NOT FULLY VALIDATED"
+  
+  assert(1==0), "WARNING: NOT FULLY VALIDATED"
 
   quit()
-
-  ## flux 
-  params = Params()
-  params.T = 10
-
-  params.D_SSLCyto = 0
-  params.D_CleftSSL = 0 
-  params.D_CleftCyto = 0
-  params.cCaInit = 11.
-
-  refConcChange = params.T*params.jTest # [uM]
-  cCaFinal = tsolve(doAssert="flux", params=params)    
-  
-  # assert 
-  concChange = cCaFinal - params.cCaInit
-  msg = "%f != %f " % ( concChange,refConcChange)
-  assert( abs(concChange - refConcChange) < 1e-5 ), msg
-  print "Passed flux test"
-  
   
   ## conservation 
   tsolve(doAssert="conservation")
@@ -295,11 +343,22 @@ def tsolve(pvdName="output.pvd",\
 
   ### Fluxes
   RHS = 0
-  if doAssert=="flux":
-    j = params.jTest
-    RHS = j*(volCyto/areaCyto)*vCa*ds(lMarker)
+  if doAssert=="fluxTest_jSurfSingleCompartment":
+    jSurf = wholeCellJ_to_jSurf(params.jTest,volCyto,areaCyto)
+    print assemble(jSurf*ds(lMarker))
+    RHS = jSurf*vCa*ds(lMarker)
+  if doAssert=="fluxTest_jSurfAllCompartments":
+    totVol = volCyto + volCleft + volSSL # total of open comparmtnets
+    areaCleft= 1.  # use 1 for scalar compartment ?
+    #jSurf = wholeCellJ_to_jSurf(params.jTest,volCleft,areaCleft)
+    jSurf = params.jTest # since applied to a sclaar? 
+    #jSurf = Expression("conditional( And( lt(u, 0.5), gt(u, -0.5) ), 1.0, 0.0 )",u=1)
+    RHS = jSurf*vCaCleft*dx()
+  F += -RHS 
+
 
   # adding in fluxes from Torres paper  
+  RHS = 0
   if reactions !=None:
     if reactions =="torres":
       import torres
@@ -342,18 +401,21 @@ def tsolve(pvdName="output.pvd",\
 
   
   # Init conditions
-  U_0.interpolate(Constant((params.cCaInit, 1,1,params.cCaSSLInit, params.cCaCleftInit)))
+  #U_0.interpolate(Constant((params.cCaInit,params.cCaSSLInit, params.cCaCleftInit)))
+  print params.cInits
+  print "WARNING: concentrations aren't correct for scalar domainsw"
+  U_0.interpolate(Constant(params.cInits))
   
   def conservation(t=0):
       ## scalars     
       acCaCleft_n = assemble(cCaCleft_n*volFrac_CleftCyto*dx())
       #ccCaCleft_n = assemble(cCaCleft_n*volFrac_CleftCyto/volCleft*dx())
       # below is shorthand, but i left comment above so its clear where it originated 
-      ccCaCleft_n = assemble(cCaCleft_n*volCyto*dx())
+      ccCaCleft_n = assemble(cCaCleft_n/volCyto*dx())
 
       acCaSSL_n = assemble(cCaSSL_n*volFrac_SSLCyto*dx())
       #ccCaSSL_n = assemble(cCaSSL_n*volFrac_SSLCyto/volSSL*dx())
-      ccCaSSL_n = assemble(cCaSSL_n*volCyto*dx())
+      ccCaSSL_n = assemble(cCaSSL_n/volCyto*dx())
 
       ## cyto
       acCa_n = assemble(cCa_n*dx())
