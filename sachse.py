@@ -126,39 +126,77 @@ def wholeCellI_to_j(wholeCellI):
   return jWholeCell
   
 
+def wholeCellJ_to_jCleft(wholeCellJ, params):
+  cleftRescale = (params.volCleft + params.volSSL + params.volCyto)
+  cleftRescale/=params.volCleft
+  return wholeCellJ*cleftRescale # [uM/ms]
 
 def validation_Conversions():
-  def dotest(cCaFinal):
+  def dotest(cCaFinal,cCaInit):
     refConcChange = params.T*params.jTest # [uM]
-    concChange = cCaFinal - params.cCaInit
+    concChange = cCaFinal - cCaInit
     msg = "%f != %f " % ( concChange,refConcChange)
     assert( abs(concChange - refConcChange) < 1e-5 ), msg
     print "Passed flux test"
 
+  idxCa = 0
+  idxCaCleft = 4 # NEED TO NOT HARDCODE
+
   ## Validate A/F conversion 
-  # apply to whole cytosol domain 
+  # apply flux to cytosol domain 
   print "WARNING: need to enable" 
   iFlux = 1 # [A/F]
-  if 0:
-   params = Params()
-   params.jTest = wholeCellI_to_j(iFlux) 
-   params.jTest*=4  # to make about 0.1 uM/ms
-   params.T = 10
-   params.D_SSLCyto = 0
-   params.D_CleftSSL = 0
-   params.D_CleftCyto = 0
-   cCaFinal = tsolve(doAssert="fluxTest_jSurfSingleCompartment", params=params)    
-   dotest(cCaFinal) 
-
-  # apply t0 cleft, check cyto 
   params = Params()
   params.jTest = wholeCellI_to_j(iFlux) 
-  params.jTest = 0.0
+  params.jTest*=4  # to make about 0.1 uM/ms
+  params.T = 10
   params.D_SSLCyto = 0
   params.D_CleftSSL = 0
   params.D_CleftCyto = 0
-  cCaFinal = tsolve(doAssert="fluxTest_jSurfAllCompartments", params=params)    
-  dotest(cCaFinal) 
+  concsFinal = tsolve(doAssert="fluxTest_jSurfCyto", params=params)    
+  cCaFinal = concsFinal[idxCa] # for cCa
+  dotest(cCaFinal,params.cCaInit) 
+
+  volCyto = params.volCyto # store here so dont have to load model
+
+  ## apply to cleft
+  # goal here is to find a 10 ms flux that raises the -entire-
+  # cell concentration by 1.0 uM
+  # 1) We first pump up the cleft for 10 ms, 
+  # 2) We use the elevated CaCleft as an init conc, then show the total conc is correct in all compartments 
+  ## 1) 
+  params = Params()
+  params.T = 10
+  params.dt = 1 # ms 
+  params.D_SSLCyto = 0. 
+  params.D_CleftSSL = 0. 
+  params.D_CleftCyto = 0. 
+  chgConc = 0.5 # [uM] 
+  params.jTest = chgConc/(params.dt*params.T) # [uM/ms]
+  concsFinal= tsolve(doAssert="fluxTest_jCleft", params=params)    
+  
+  caCleftInit = concsFinal[idxCaCleft]
+ 
+  ## 2) 
+  params.T = 100
+  params.dt = 10
+  params.cInits[idxCaCleft] = caCleftInit
+  #params.jTest = 0.
+  params.D_SSLCyto = 1e2
+  params.D_CleftSSL = 1e2
+  params.D_CleftCyto = 1e2
+  concsFinal= tsolve(doAssert="conservation", params=params)    
+ 
+  # check that the change in conc. we anticipated is reflected
+  # in cytosol
+  assert(abs((params.cCaInit + chgConc) - concsFinal[idxCa]) < 1e-4)
+  print "Pass!"
+  quit()
+  #params.jTest = wholeCellI_to_j(iFlux) 
+  
+  concsFinal= tsolve(doAssert="fluxTest_jSurfAllCompartments", params=params)    
+  cCaCleftFinal = concsFinal[4] # for cCaCleft
+  dotest(cCaCleftFinal) 
   assert(1==0), "Not done" 
 
 
@@ -170,7 +208,7 @@ def validation_Conversions():
   params.D_CleftCyto = 0
   params.cCaInit = 11.
 
-  cCaFinal = tsolve(doAssert="fluxTest_jSurfSingleCompartment", params=params)    
+  cCaFinal = tsolve(doAssert="fluxTest_jSurfCyto", params=params)    
   dotest(cCaFinal) 
   
 def validation():
@@ -220,6 +258,9 @@ def tsolve(pvdName="output.pvd",\
   elif "satin" in mode:
     import sarcomereSatin
     cm = sarcomereSatin.sarcomereSatin(params=params)
+
+  if ssl!=True:
+    params.volSSL = 0.   # needed for validaton stuff
     
   cm.Init()
   cm.params.nDOF = cm.nDOF # goes in master class 
@@ -343,17 +384,18 @@ def tsolve(pvdName="output.pvd",\
 
   ### Fluxes
   RHS = 0
-  if doAssert=="fluxTest_jSurfSingleCompartment":
+  if doAssert=="fluxTest_jSurfCyto":
     jSurf = wholeCellJ_to_jSurf(params.jTest,volCyto,areaCyto)
     print assemble(jSurf*ds(lMarker))
     RHS = jSurf*vCa*ds(lMarker)
-  if doAssert=="fluxTest_jSurfAllCompartments":
-    totVol = volCyto + volCleft + volSSL # total of open comparmtnets
-    areaCleft= 1.  # use 1 for scalar compartment ?
-    #jSurf = wholeCellJ_to_jSurf(params.jTest,volCleft,areaCleft)
-    jSurf = params.jTest # since applied to a sclaar? 
-    #jSurf = Expression("conditional( And( lt(u, 0.5), gt(u, -0.5) ), 1.0, 0.0 )",u=1)
-    RHS = jSurf*vCaCleft*dx()
+  if doAssert=="fluxTest_jCleft":
+  #  totVol = volCyto + volCleft + volSSL # total of open comparmtnets
+  #  areaCleft= 1.  # use 1 for scalar compartment ?
+  #  #jSurf = wholeCellJ_to_jSurf(params.jTest,volCleft,areaCleft)
+  #  jSurf = params.jTest # since applied to a sclaar? 
+  #  #jSurf = Expression("conditional( And( lt(u, 0.5), gt(u, -0.5) ), 1.0, 0.0 )",u=1)
+    jCleft = wholeCellJ_to_jCleft(params.jTest,params)
+    RHS = jCleft*vCaCleft*dx()
   F += -RHS 
 
 
@@ -428,7 +470,8 @@ def tsolve(pvdName="output.pvd",\
       ccCaFluo_n = assemble(cCaFluo_n/volCyto*dx())
 
 
-      conserved = acCaSSL_n+acCaCleft_n+acCa_n
+      caconserved= acCaSSL_n+acCaCleft_n+acCa_n
+      conserved=caconserved
       conserved+= acCaBuff_n+acCaFluo_n 
     
       if MPI.rank(mpi_comm_world())==0:
@@ -436,6 +479,7 @@ def tsolve(pvdName="output.pvd",\
         print "cCa_n " , acCa_n, "conc ", ccCa_n
         print "cCaSSL_n " , acCaSSL_n, "conc ", ccCaSSL_n
         print "cCaCleft_n " , acCaCleft_n, "conc ", ccCaCleft_n
+        print "caconserved " , caconserved
         print "cCaBuff_n " , acCaBuff_n, "conc ", ccCaBuff_n
         print "cCaFluo_n " , acCaFluo_n, "conc ", ccCaFluo_n
         print "CONSERVATION:", conserved
@@ -531,8 +575,11 @@ def tsolve(pvdName="output.pvd",\
     print "PASS"
 
   # returning for validaton
-  concCa = assemble(cCa_n/volCyto*dx())
-  return concCa 
+  concsFinal = np.zeros(cm.nDOF) 
+  for i in range(cm.nDOF):
+    concsFinal[i] = assemble(U_n[i]/volCyto*dx())
+  print concsFinal 
+  return concsFinal 
 
 
 # This case examines the effect of delaying diffusion through the SSL domain 
