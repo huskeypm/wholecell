@@ -4,8 +4,9 @@ import numpy as np
 
 hdfName = "i.h5" # where data will be stored
 params = sachse.Params() # where parameters can be modified
-params.T = 10.
-mode="2D_SSL"; ssl = True;
+params.T = 1000.
+params.dt = 2.5
+mode="2D_SSL_simple"; ssl = True;
 #mode ="2D_noSSL"; ssl = False;
 
 concsCaClefts=[]
@@ -18,24 +19,72 @@ import copy
 
 
 # range of diffusion constants we want to consider
-iters = 4
+iters = 3 
 vs = np.linspace(-2,1,iters)
 #print vs
 Ds = 10.**vs
-
+phis=np.linspace(0.1,1.0,iters) 
+Kds=np.linspace(-6,-4,iters) 
+Kds=10**Kds
+buff=10.**-6
 
 def runit(arg="test"): 
-  print arg 
-  for i,Di in enumerate(Ds):
-    parms = copy.deepcopy(params)  
+#  phis = [1.]
+#  Kds = [1.]
+  #for i,Di in enumerate(Ds):
+  if 0:  
+    #parms = copy.deepcopy(params)  
+    parms = sachse.Params()
+    parms.T = 1000 
+    parms.dt = 2.5 
     hdfName="job_D_%3.1f.h5"%Di    
   
     # apply diff const   
     parms.D_CleftCyto = Di
     parms.D_CleftSSL = Di 
     parms.D_SSLCyto = Di 
-  
+    
     sachse.tsolve(mode=mode,hdfName=hdfName,params=parms) 
+  
+#  for i,Kdi in enumerate(Kds):
+#    for j,phij in enumerate(phis):
+#      print "i ", i," j ",j
+#      print "Kdi ",Kdi, " phij ",phij
+#      params = sachse.Params()
+#      print "params.DCa ",params.DCa
+#      Des1=params.DCa/(1+buff/Kdi)
+#      Des2=2*phij/(3-phij)
+
+#      Des=Des1*Des2
+#      params.DCa_SSL=Des
+#      print "Des1 ", Des1, " Des2 ", Des2, " DES ", Des
+#      #mode = "2D_noSSL" 
+#      hdfName = "Des_DCa_SSL_Kd%3.1f_%3.1f.h5"%(i,phij)
+#      print "hdfName  ",hdfName
+#      sachse.tsolve(mode=mode,hdfName=hdfName,params=params)
+
+  for i,Kdi in enumerate(Kds):
+    for j,phij in enumerate(phis):
+      print "i ", i," j ",j
+      print "Kdi ",Kdi, " phij ",phij
+      params = sachse.Params()
+      Des1=params.DCa/(1+buff/Kdi)
+      Des2=2*phij/(3-phij)
+      print "params.DCa ", params.DCa
+
+      Des=Des1*Des2
+      params.D_CleftCyto=Des
+      params.D_CleftSSL=Des
+      params.D_SSLCyto=Des
+      print "Des1 ", Des1, " Des2 ", Des2, " DES ", Des
+      #mode = "2D_noSSL" 
+      fileName = "Des_otherDs_Kd%3.1f_%3.1f"%(i,phij)
+      print "hdfName  ",fileName
+      tag = "2D_SSL_simple"
+ #     sachse.tsolve(mode=mode,hdfName=hdfName,params=params)
+      sachse.tsolve(debug=False,params=params,pvdName = "SSL.pvd", hdfName=fileName+".h5",\
+        mode=tag,reactions="simple",buffers=True)
+
 
 def readit():
   concsCaClefts=[]
