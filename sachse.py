@@ -1,12 +1,15 @@
 #
-# Time dependent solver, single species 
+# Time dependent solver, multiple species 
 # 
 # TODO 
-# - get concentrations of buffs, etc correct
-# - add diffusivity/buffer as D' = D B/(1+KD)
-# Merge in sachse_temp, sachse_REPLACEMENT?
-#- meaningful iRyr
+# rescale simple.iRyR correctly 
+# add real SERCA model to simple  
 #- defining SSL region within cyto #
+# - add diffusivity/buffer as D' = D B/(1+KD)
+# DONE - get concentrations of buffs, etc correct
+# DONE Merge in sachse_temp, sachse_REPLACEMENT?
+# DONE  meaningful iRyr
+#
 # Check README/Fields for SIAM models section for details on implementation 
 #
 # Validations
@@ -56,19 +59,12 @@ class Params(object):
     self.D_CleftCyto= Constant(1.0) #  Diffusion rate between Cleft/Cyto compartments (if SSL does not exist)
     self.dist = Constant(1.0) # distance between compartments [um] 
   
-  
-  #  # Init conditions
-  #  cCaCleftInit = 0.1  # Initial Ca concentration in Cleft compartment [uM] 
-  #  cCaSSLInit = 1.0
-  #  cCaInit = 10.
-  
     # diffusion params 
-    #DAb   = Dbulk# [um^2/ms] Diff const within PDE (domain 1) 
-    self.DCa = 0.39  # [um^2/ms] verified
+    self.DCa = 0.39  # Diff const. within cytosol [um^2/ms] verified
     self.DBuff = Constant(0.) # TnC
     self.DFluo = 0.1 # [um^2/ms] verified 
     #Ds = [DCa,DBuff,DFluo]
-    self.DCa_SSL = 0.6 * self.DCa
+    self.DCa_SSL = 0.6 * self.DCa # Diff const within SSL region (of cytosol) 
   
     # geom 
     self.volSSL = 1. # Volume of SSL domain [um^3]
@@ -91,6 +87,7 @@ class Params(object):
     self.betafluo = 0.17 # koff fluo [1/ms] verified
   
     # RyR
+    # from Torres
     self.ryrAmp = 9.5 # [pA/pF] 
     self.ryrOffset = 5 # [ms]
     self.ryrTau = -50/np.log(1/2.) # half-max amp at 50 ms 
@@ -111,12 +108,14 @@ class Params(object):
 # J [uM/ms] --> j[uM*um/ms]
 # volDomain - domain in which flux is applied
 # areaDomainFlux - area over which flux is applied 
-def wholeCellJ_to_jSurf(wholeCellJ,volDomain,areaDomainFlux):
-  return wholeCellJ*volDomain/areaDomainFlux
+def wholeCellJ_to_jSurf(wholeCellJ,params,volDomain,areaDomainFlux):
+  jCyto = wholeCellJ_to_jCyto(wholeCellJ,params)
+  return jCyto*volDomain/areaDomainFlux
 
-# Converts whole cell current I [A/F] into surface flux 
+
+# Converts whole cell current I [A/F] into volume flux 
 # For rabbit (C/V=4.5), 1 [A/F]  --> ~0.02 [uM/ms]
-def wholeCellI_to_j(wholeCellI):
+def wholeCellI_to_wholeCellJ(wholeCellI):
   # from flux notes on sharelatex
   nIons = 2 # number of ions per atom (2 for Ca, +/- 1 for NaCa2+ exchange)
   Fc = 9.6e-2 # Faraday [umol/C]
@@ -126,6 +125,11 @@ def wholeCellI_to_j(wholeCellI):
   jWholeCell = 1/(nIons*Fc) * Cm_o_Vm * wholeCellI * (1/s_to_ms)
   return jWholeCell
   
+# assumes all compartments are open
+def wholeCellJ_to_jCyto(wholeCellJ, params):
+  cytoRescale = (params.volCleft + params.volSSL + params.volCyto)
+  cytoRescale/=params.volCyto 
+  return wholeCellJ*cytoRescale # [uM/ms]
 
 def wholeCellJ_to_jCleft(wholeCellJ, params):
   cleftRescale = (params.volCleft + params.volSSL + params.volCyto)
@@ -133,33 +137,41 @@ def wholeCellJ_to_jCleft(wholeCellJ, params):
   return wholeCellJ*cleftRescale # [uM/ms]
 
 def validation_Conversions():
-  def dotest(cCaFinal,cCaInit):
+  def dotest(cCaFinal,cCaInit,name=""):
     refConcChange = params.T*params.jTest # [uM]
     concChange = cCaFinal - cCaInit
     msg = "%f != %f " % ( concChange,refConcChange)
     assert( abs(concChange - refConcChange) < 1e-5 ), msg
-    print "Passed flux test"
+    print "Passed flux test " + name
 
   idxCa = 0
   idxCaCleft = 4 # NEED TO NOT HARDCODE
 
+  ## validate wholecell->cyto flux test
+  params = Params()
+  params.T = 10
+  params.D_SSLCyto = 0; params.volSSL = 0.
+  params.D_CleftSSL = 0; params.volCleft = 0.
+  concsFinal = tsolve(doAssert="fluxTest_jVolCyto", params=params)    
+  dotest(concsFinal[idxCa],params.cCaInit,name="jVolCyto") 
+
   ## Validate wholecell flux test 
   params = Params()
   params.T = 10
-  params.D_SSLCyto = 0
-  params.D_CleftSSL = 0 
+  params.D_SSLCyto = 0; params.volSSL = 0.
+  params.D_CleftSSL = 0; params.volCleft = 0.
   params.D_CleftCyto = 0
   params.cCaInit = 0.1
 
   concsFinal = tsolve(doAssert="fluxTest_jSurfCyto", params=params)    
-  dotest(concsFinal[idxCa],params.cCaInit) 
+  dotest(concsFinal[idxCa],params.cCaInit,name="jSurfCyto") 
 
 
   ## Validate A/F conversion 
   # apply flux to cytosol domain 
   iFlux = 1 # [A/F]
   params = Params()
-  params.jTest = wholeCellI_to_j(iFlux) 
+  params.jTest = wholeCellI_to_wholeCellJ(iFlux) 
   params.jTest*=4  # to make about 0.1 uM/ms
   params.T = 10
   params.D_SSLCyto = 0
@@ -237,6 +249,8 @@ def validation():
   assert(abs(concsFinal[idxCaBuff] - buffedCa) < eps) 
   print "Passed buffering test"
 
+
+  print "ALL ROUTINES PASSED!"
   
 
 def tsolve(pvdName="output.pvd",\
@@ -331,12 +345,12 @@ def tsolve(pvdName="output.pvd",\
   areaCyto = Constant(assemble(Constant(1.0)*ds(lMarker)))
   volSSL = params.volSSL
   volCleft= params.volCleft
-  volFrac_CytoSSL= volCyto/volSSL
+  volFrac_CytoSSL= volCyto/np.max([1e-9,volSSL])
   volFrac_SSLCyto= 1/volFrac_CytoSSL
-  volFrac_SSLCleft= volSSL/volCleft
+  volFrac_SSLCleft= volSSL/np.max([1e-9,volCleft])
   volFrac_CleftSSL= 1/volFrac_SSLCleft
   volFrac_CleftCyto= volCleft/volCyto
-  volFrac_CytoCleft= 1/volFrac_CleftCyto           
+  volFrac_CytoCleft= 1/np.max([1e-9,volFrac_CleftCyto])
 
   # System
   
@@ -395,17 +409,15 @@ def tsolve(pvdName="output.pvd",\
   ### Fluxes
   RHS = 0
   if doAssert=="fluxTest_jSurfCyto":
-    jSurf = wholeCellJ_to_jSurf(params.jTest,volCyto,areaCyto)
-    print assemble(jSurf*ds(lMarker))
+    jSurf = wholeCellJ_to_jSurf(params.jTest,params,volCyto,areaCyto)
     RHS = jSurf*vCa*ds(lMarker)
-  if doAssert=="fluxTest_jCleft":
-  #  totVol = volCyto + volCleft + volSSL # total of open comparmtnets
-  #  areaCleft= 1.  # use 1 for scalar compartment ?
-  #  #jSurf = wholeCellJ_to_jSurf(params.jTest,volCleft,areaCleft)
-  #  jSurf = params.jTest # since applied to a sclaar? 
-  #  #jSurf = Expression("conditional( And( lt(u, 0.5), gt(u, -0.5) ), 1.0, 0.0 )",u=1)
+  elif doAssert=="fluxTest_jCleft":
     jCleft = wholeCellJ_to_jCleft(params.jTest,params)
     RHS = jCleft*vCaCleft*dx()
+  elif doAssert=="fluxTest_jVolCyto":
+    jVol = wholeCellJ_to_jCyto(params.jTest,params)
+    RHS = jVol*vCa*ds(lMarker)
+
   F += -RHS 
 
 
@@ -425,11 +437,13 @@ def tsolve(pvdName="output.pvd",\
     if reactions == "simple":
       import simple
       reactions = simple.Simple()
+      #reactions = simple.Simple(noSERCA=True)
       reactions.Init(params)
-      rescaleFactor = 1.
-      RHS = reactions.iryr*(rescaleFactor)*vCaCleft*dx()
-      rescaleFactor = 1.
-      RHS+= reactions.jSERCA*(rescaleFactor)*vCa*dx()
+      itoJ = wholeCellI_to_wholeCellJ(1.) # rescale 1 [A/F] --> [uM/ms]
+      itoj = wholeCellJ_to_jCleft(itoJ,params) 
+      RHS += reactions.iryr*itoj*vCaCleft*dx()
+      Jtoj = wholeCellJ_to_jCyto(itoJ,params) 
+      RHS+= reactions.jSERCA*(Jtoj)*vCa*dx()
        
     # apply
     F += - RHS
@@ -534,6 +548,7 @@ def tsolve(pvdName="output.pvd",\
       #if compartmentSSL:
       if 1: 
         uCa = project(cCa_n,V)
+        uCa.vector()[:]/=volCyto
         hdf.write(uCa,"uCa",ctr)
 
         # see conservation routine above for why we multiply by volCyto 
@@ -555,7 +570,8 @@ def tsolve(pvdName="output.pvd",\
       t += float(dt)
       ## update
       if reactions!=None:
-        reactions.Update(t) 
+        caiAvg = assemble(cCa_n*dx())/volCyto
+        reactions.Update(t,caiAvg)  
       if 0: # mode=="sachse":
         1
         #iryr.t = t 
@@ -695,6 +711,13 @@ if __name__ == "__main__":
     elif(arg=="-test2D"):
       tag = "2D_SSL"
       tsolve(debug=False,params=params,hdfName=tag+".h5",mode=tag)
+      quit()
+    elif(arg=="-testSimple"): 
+      params.T = 1000
+      params.dt = 5 
+      tag = "2D_SSL_simple" 
+      tsolve(debug=False,params=params,pvdName = "SSL.pvd", hdfName=tag+".h5",\
+        mode=tag,reactions="simple",buffers=True)
       quit()
     elif(arg=="-test2Dno"):
       tag = "2D_noSSL"
