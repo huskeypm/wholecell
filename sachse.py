@@ -51,7 +51,7 @@ class Params(object):
     #paraview = True
     self.verbose=False
   
-    self.T = 3.  # Total simulation time [ms]
+    self.T = 200.  # Total simulation time [ms]
     self.dt = 1. # time-step size [ms] 
   
     self.D_SSLCyto = Constant(1.0) # Diffusion rate between SSL/Cyto compartments (if SSL exists) [um^2/ms]

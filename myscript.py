@@ -23,15 +23,17 @@ iters = 3
 vs = np.linspace(-2,1,iters)
 #print vs
 Ds = 10.**vs
-phis=np.linspace(0.1,1.0,iters) 
-Kds=np.linspace(-6,-4,iters) 
-Kds=10**Kds
+#phis=np.linspace(0.1,1.0,iters) 
+#Kds=np.linspace(-6,-4,iters) 
+#Kds=10**Kds
 buff=10.**-6
 
-def runit(arg="test"): 
-#  phis = [1.]
-#  Kds = [1.]
-  #for i,Di in enumerate(Ds):
+def runit(arg="test",Kdi=1.,phij=1.): 
+
+#  phis = [1.0]
+#  Kds = [0.0001]
+ Kdi=10**Kdi
+ for i,Di in enumerate(Ds):
   if 0:  
     #parms = copy.deepcopy(params)  
     parms = sachse.Params()
@@ -63,41 +65,40 @@ def runit(arg="test"):
 #      print "hdfName  ",hdfName
 #      sachse.tsolve(mode=mode,hdfName=hdfName,params=params)
 
-  for i,Kdi in enumerate(Kds):
-    for j,phij in enumerate(phis):
-      print "i ", i," j ",j
-      print "Kdi ",Kdi, " phij ",phij
-      params = sachse.Params()
-      Des1=params.DCa/(1+buff/Kdi)
-      Des2=2*phij/(3-phij)
-      print "params.DCa ", params.DCa
+#  for i,Kdi in enumerate(Kds):
+#    for j,phij in enumerate(phis):
+#      print "i ", i," j ",j
+ print "Kdi ",Kdi, " phij ",phij
+ params = sachse.Params()
+ Des1=params.DCa/(1+buff/Kdi)
+ Des2=2*phij/(3-phij)
+#    print "params.DCa ", params.DCa
 
-      Des=Des1*Des2
-      params.D_CleftCyto=Des
-      params.D_CleftSSL=Des
-      params.D_SSLCyto=Des
-      print "Des1 ", Des1, " Des2 ", Des2, " DES ", Des
-      #mode = "2D_noSSL" 
-      fileName = "Des_otherDs_Kd%3.1f_%3.1f"%(i,phij)
-      print "hdfName  ",fileName
-      tag = "2D_SSL_simple"
- #     sachse.tsolve(mode=mode,hdfName=hdfName,params=params)
-      sachse.tsolve(debug=False,params=params,pvdName = "SSL.pvd", hdfName=fileName+".h5",\
-        mode=tag,reactions="simple",buffers=True)
-
+ Des=Des1*Des2
+ params.D_CleftCyto=Des
+ params.D_CleftSSL=Des
+ params.D_SSLCyto=Des
+ print "Des1 ", Des1, " Des2 ", Des2, " DES ", Des
+  #mode = "2D_noSSL" 
+ fileName = "Des_otherDs_%3.7f_%3.1f"%(Kdi,phij)
+ print "hdfName  ",fileName
+ tag = "2D_SSL_simple"
+#     sachse.tsolve(mode=mode,hdfName=hdfName,params=params)
+ sachse.tsolve(debug=False,params=params,pvdName = "SSL.pvd", hdfName=fileName+".h5",\
+ mode=tag,reactions="simple",buffers=True)
 
 def readit():
   concsCaClefts=[]
   concsCas=[]
   concsCaSSLs=[]
   tsi=0
-  for i,Di in enumerate(Ds):
-    hdfName="job_D_%3.1f.h5"%Di    
-    print "I will read this ", hdfName 
-    tsi,concsCaClefti,concsCaSSLi,concsCai=analyze.ReadHdf(hdfFile=hdfName,ssl=ssl)
-    concsCaClefts.append(concsCaClefti)
-    concsCas.append(concsCai)
-    concsCaSSLs.append(concsCaSSLi)
+ # for i,Di in enumerate(Ds):
+  hdfName="job_D_%3.1f.h5"%Di    
+  print "I will read this ", hdfName 
+  tsi,concsCaClefti,concsCaSSLi,concsCai=analyze.ReadHdf(hdfFile=hdfName,ssl=ssl)
+  concsCaClefts.append(concsCaClefti)
+  concsCas.append(concsCai)
+  concsCaSSLs.append(concsCaSSLi)
   concsCaClefts = np.array(concsCaClefts)
   concsCas = np.array(concsCas)
   concsCaSSLs = np.array(concsCaSSLs)
@@ -143,11 +144,17 @@ if __name__ == "__main__":
   #  #print "arg"
 
   # Loops over each argument in the command line 
+  Kdi = 1.
+  phij = 1.
   for i,arg in enumerate(sys.argv):
     # myscript -runMPI <arg>
+    if(arg=="-Kdi"):
+      Kdi = np.float(sys.argv[i+1])
+    if(arg=="-phij"):
+      phij = np.float(sys.argv[i+2])
     if(arg=="-runMPI"):
-      arg = sys.argv[i+1] 
-      runit(arg=arg)   
+      runit(Kdi=Kdi)
+      runit(phij=phij)
       quit()
     if(arg=="-readSingle"):
       readit()   
