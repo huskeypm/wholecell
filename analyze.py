@@ -114,7 +114,7 @@ def ReadHdf(hdfFile,ssl=False,verbose=False):
     if verbose:
       print 'Retrieving time step:', attr['timestamp']
     hdf.read(u, dataset)
-#    print "Assemble %d/%f" % (i,assemble(u*dx))
+    #print "Assemble %d/%f" % (i,assemble(u*dx))
     concsCa[i] = assemble(u*dx) # /volCyto
 
     # uCaSSL scalar

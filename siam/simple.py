@@ -54,9 +54,10 @@ def SERCAExpression(cai=0.1, casr=500):
 
 
 class Simple(ReactionsBase): 
-  def __init__(self,noSERCA=False):
+  def __init__(self,noSERCA=False,ryrOnlySwitch=False):
     ReactionsBase.__init__(self)
     self.noSERCA=noSERCA
+    self.ryrOnlySwitch=ryrOnlySwitch
     
   def Init(self,params):
     self.params = params
@@ -64,14 +65,16 @@ class Simple(ReactionsBase):
     # term 'before' a is the dirac function, which turns on the ryr term
     # continuously after time to. The term 'after' a is the ryr term 
     dirac = "1/(1+exp(-(t-to)/v))*"
-    print params.ryrAmp
     self.iryr = Expression(dirac+"a*exp(-(t-to)/tau)",
                              v = 0.05,\
                              a=params.ryrAmp,\
                              to=params.ryrOffset,\
                              tau=params.ryrTau,\
                              t=0)
-    #self.iryr = Expression("t*0", t=0)
+
+    # shuts off after time interval (see Update) 
+    if self.ryrOnlySwitch:
+      self.iryr = Expression("a*0.1+t*0",a=1,t=0)
 
     # Action potential [mV]
     self.V = Expression("0") 
@@ -88,6 +91,11 @@ class Simple(ReactionsBase):
 
   def Update(self,t,cai):
     self.iryr.t = t 
+
+    # apply  10 ms pulse 
+    if self.ryrOnlySwitch:
+      if t>10: 
+        self.iryr.a= 0.
 
     # Need hooks for V, NCX, SERCA 
     self.jSERCA.t = t 

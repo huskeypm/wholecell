@@ -54,10 +54,11 @@ class Params(object):
     self.T = 200.  # Total simulation time [ms]
     self.dt = 1. # time-step size [ms] 
   
-    self.D_SSLCyto = Constant(1.0) # Diffusion rate between SSL/Cyto compartments (if SSL exists) [um^2/ms]
-    self.D_CleftSSL = Constant(1.0 ) #  Diffusion rate between Cleft/SSL compartments (if SSL exists)
-    self.D_CleftCyto= Constant(1.0) #  Diffusion rate between Cleft/Cyto compartments (if SSL does not exist)
-    self.dist = Constant(1.0) # distance between compartments [um] 
+    self.DCompart = 1 # [um/ms]
+    self.D_SSLCyto = self.DCompart # Diffusion rate between SSL/Cyto compartments (if SSL exists) [um/ms]
+    self.D_CleftSSL = self.DCompart #  Diffusion rate between Cleft/SSL compartments (if SSL exists)
+    self.D_CleftCyto= self.DCompart #  Diffusion rate between Cleft/Cyto compartments (if SSL does not exist)
+    self.dist = 0.1 # distance between compartments [um] 
   
     # diffusion params 
     self.DCa = 0.39  # Diff const. within cytosol [um^2/ms] verified
@@ -148,37 +149,39 @@ def validation_Conversions():
   idxCaCleft = 4 # NEED TO NOT HARDCODE
 
   ## validate wholecell->cyto flux test
-  params = Params()
-  params.T = 10
-  params.D_SSLCyto = 0; params.volSSL = 0.
-  params.D_CleftSSL = 0; params.volCleft = 0.
-  concsFinal = tsolve(doAssert="fluxTest_jVolCyto", params=params)    
-  dotest(concsFinal[idxCa],params.cCaInit,name="jVolCyto") 
-
+  if 1:
+   params = Params()
+   params.T = 10
+   concsFinal = tsolve(doAssert="fluxTest_jVolCyto",\
+                      mode="2D_noSSL",
+                      params=params,reactions=None,buffers=False, 
+                      existsCleft=False,existsSSL=False) 
+   dotest(concsFinal[idxCa],params.cCaInit,name="jVolCyto")
   ## Validate wholecell flux test 
-  params = Params()
-  params.T = 10
-  params.D_SSLCyto = 0; params.volSSL = 0.
-  params.D_CleftSSL = 0; params.volCleft = 0.
-  params.D_CleftCyto = 0
-  params.cCaInit = 0.1
-
-  concsFinal = tsolve(doAssert="fluxTest_jSurfCyto", params=params)    
-  dotest(concsFinal[idxCa],params.cCaInit,name="jSurfCyto") 
+  if 1: 
+   params = Params()
+   params.T = 10
+   params.cCaInit = 0.1
+   concsFinal = tsolve(doAssert="fluxTest_jSurfCyto",\
+                      mode="2D_noSSL",
+                       params=params,reactions=None,buffers=False,
+		       existsCleft=False,existsSSL=False) 
+   dotest(concsFinal[idxCa],params.cCaInit,name="jSurfCyto") 
 
 
   ## Validate A/F conversion 
   # apply flux to cytosol domain 
-  iFlux = 1 # [A/F]
-  params = Params()
-  params.jTest = wholeCellI_to_wholeCellJ(iFlux) 
-  params.jTest*=4  # to make about 0.1 uM/ms
-  params.T = 10
-  params.D_SSLCyto = 0
-  params.D_CleftSSL = 0
-  params.D_CleftCyto = 0
-  concsFinal = tsolve(doAssert="fluxTest_jSurfCyto", params=params)    
-  dotest(concsFinal[idxCa],params.cCaInit) 
+  if 1: 
+   iFlux = 1 # [A/F]
+   params = Params()
+   params.jTest = wholeCellI_to_wholeCellJ(iFlux) 
+   params.jTest*=4  # to make about 0.1 uM/ms
+   params.T = 10
+   concsFinal = tsolve(doAssert="fluxTest_jSurfCyto",\
+		       mode="2D_noSSL",
+                       params=params,reactions=None,buffers=False,
+                       existsCleft=False,existsSSL=False) 
+   dotest(concsFinal[idxCa],params.cCaInit,name="fluxTest_jSurfCytoA/F") 
 
   ## Test scaling of fluxes for cleft 
   # goal here is to find a 10 ms flux that raises the -entire-
@@ -194,34 +197,104 @@ def validation_Conversions():
   params.D_CleftCyto = 0. 
   chgConc = 0.5 # [uM] 
   params.jTest = chgConc/(params.dt*params.T) # [uM/ms]
-  concsFinal= tsolve(doAssert="fluxTest_jCleft", params=params)    
+  concsFinal= tsolve(doAssert="fluxTest_jCleft",\
+                       params=params,reactions=None,buffers=False)  
   
   caCleftInit = concsFinal[idxCaCleft]
- 
+
   ## 2) 
   params.T = 100
   params.dt = 10
   params.cInits[idxCaCleft] = caCleftInit
   #params.jTest = 0.
-  params.D_SSLCyto = 1e2
-  params.D_CleftSSL = 1e2
-  params.D_CleftCyto = 1e2
-  concsFinal= tsolve(doAssert="conservation", params=params)    
+  params.D_SSLCyto = 1
+  params.D_CleftSSL = 1
+  params.D_CleftCyto = 1
+  concsFinal= tsolve(doAssert="conservation",\
+                       params=params,reactions=None,buffers=False)  
  
   # check that the change in conc. we anticipated is reflected
   # in cytosol
   assert(abs((params.cCaInit + chgConc) - concsFinal[idxCa]) < 1e-4)
   print "Passed cleft rescalign test" 
 
+# show that in the presence of rapid diffusion, the two and three compartment 
+# models are equivalent
+def validationRapidDiffusion():
+  params = Params()
+  reactions = "ryrOnly"
+
+
+  # Check that compartments equal one another quickly given brief flux 
+  if 0: 
+    # NOTE: two cases won't exactly agree, since I havent decided on the best
+    # way to merge the 'deleted' ssl volume into the cytosol  
+    reactions = "ryrOnlySwitch"
+    # NOTE: Couldn't avoid having the cleft present a much higher concentration in 
+    # the -ssl mode relative to +ssl, since D could not be increased above 1e3
+    params.T = 50
+    params.dt = 1
+    params.D_SSLCyto = 1e2 # Can't go much faster than this   
+    params.D_CleftSSL= 1e2  
+    params.D_CleftCyto = 1e2  
+    params.dist = 1.
+    params.Btot = 0.
+    params.Ftot = 0.
+    params.cInits[1]=0.
+    params.cInits[2]=0.
+
+    idxCa = 0
+    mode = "2D_SSL"
+    threeComps = tsolve(mode=mode,params=params,hdfName=mode+"_rapid.h5",\
+    		reactions = reactions,buffers=False)
+
+    mode = "2D_noSSL"
+    twoComps = tsolve(mode=mode,params=params,hdfName=mode+"_rapid.h5",
+    			reactions = reactions,buffers=False)
+    msg = "%f != %f " %( threeComps[idxCa] ,twoComps[idxCa])
+    assert(abs(threeComps[idxCa] - twoComps[idxCa]) < 1e-4), msg
+    print "Passes compartment compare"
+
+  # reduce D/Kd in subregion in cyto to reprodiuce normal lag
+  if 1: 
+    reactions = "ryrOnlySwitch"
+    # NOTE: Couldn't avoid having the cleft present a much higher concentration in 
+    # the -ssl mode relative to +ssl, since D could not be increased above 1e3
+    params.T = 100 
+    params.dt = 1.
+    params.D_SSLCyto = 1e-3
+    params.D_CleftSSL= 1e-3
+    params.D_CleftCyto = 1e-3
+    params.Btot = 0.
+    params.Ftot = 0.
+    params.cInits[1]=0.
+    params.cInits[2]=0.
+
+    idxCa = 0
+    mode = "2D_SSL"
+    threeComps = tsolve(mode=mode,params=params,hdfName=mode+"_normal.h5",reactions = reactions,\
+           buffers=False)
+
+    mode = "2D_noSSL"
+    twoComps = tsolve(mode=mode,params=params,hdfName=mode+"_normal.h5",reactions = reactions,\
+           buffers=False)
+    msg = "%f != %f " %( threeComps[idxCa] ,twoComps[idxCa])
+    assert(abs(threeComps[idxCa] - twoComps[idxCa]) < 1e-4), msg
+    print "Passes compartment compare"
 
   
 def validation():
+  validationRapidDiffusion()
+  #quit()
+
   ## flux conversions 
   validation_Conversions()
 
   ## conservation 
   params = Params()
-  tsolve(doAssert="conservation",params=params)
+  idxCa=0
+  params.cInits[idxCa]=0.4
+  tsolve(doAssert="conservation",reactions=None,buffers=False,params=params)
   print "Passed conservation test"
 
   ## Reactions
@@ -243,7 +316,7 @@ def validation():
   params.cInits[idxCaFluo] = 0. 
   # reset Buff 
   params.cInits[idxCaBuff] = 0. 
-  concsFinal=tsolve(doAssert="conservation",params=params, buffers = True)
+  concsFinal=tsolve(doAssert="conservation",params=params, reactions=None,buffers = True)
   eps = 1e-4
   assert(abs(concsFinal[idxCa] - freeCa) < eps) 
   assert(abs(concsFinal[idxCaBuff] - buffedCa) < eps) 
@@ -258,8 +331,10 @@ def tsolve(pvdName="output.pvd",\
            params = Params(),\
            hdfName = "out.h5",
            doAssert = None,  
-           reactions = None,
-           buffers = None,
+           reactions = "simple", #None,
+           existsCleft = True,
+           existsSSL = True,
+           buffers = True, # buffers = False,
            debug=False):
 
   #mesh = UnitCubeMesh(8,8,8)
@@ -268,7 +343,7 @@ def tsolve(pvdName="output.pvd",\
     import sarcomere2DSSL
     cm = sarcomere2DSSL.Sarcomere2DSSL(params=params)
     if "noSSL" in mode:
-      cm.ssl = True
+      cm.ssl = False
       ssl=False
 
   elif "sachse" in mode: 
@@ -283,9 +358,9 @@ def tsolve(pvdName="output.pvd",\
     import sarcomereSatin
     cm = sarcomereSatin.sarcomereSatin(params=params)
 
-  if ssl!=True:
-    params.volSSL = 0.   # needed for validaton stuff
-    
+  if ssl==False:
+    existsSSL=False
+
   cm.Init()
   cm.params.nDOF = cm.nDOF # goes in master class 
   mesh = cm.GetMesh()
@@ -329,11 +404,6 @@ def tsolve(pvdName="output.pvd",\
   mode = "boundaryFlux" 
   Du = Constant(1.0)
   
-  # intercompartment transport 
-  D_SSLCyto = params.D_SSLCyto
-  D_CleftSSL = params.D_CleftSSL
-  D_CleftCyto = params.D_CleftCyto
-  dist = params.dist
   
   # iterator
   dt = params.dt 
@@ -351,6 +421,29 @@ def tsolve(pvdName="output.pvd",\
   volFrac_CleftSSL= 1/volFrac_SSLCleft
   volFrac_CleftCyto= volCleft/volCyto
   volFrac_CytoCleft= 1/np.max([1e-9,volFrac_CleftCyto])
+  if existsCleft==False:
+    params.D_CleftCyto=0.
+    volFrac_CleftCyto= 0.
+    volFrac_CytoCleft= 0.
+    params.volCleft = 1e-9
+  if existsSSL==False:
+    volFrac_CytoSSL= 0.
+    volFrac_SSLCyto= 0.
+    volFrac_SSLCleft= 0.
+    volFrac_CleftSSL= 0.
+    params.volSSL = 1e-9
+    params.D_SSLCyto = 0.
+    params.D_CleftSSL = 0.
+
+  if ssl!=True:
+    params.volSSL = 1e-9   # needed for validaton stuff
+
+
+  # intercompartment transport 
+  D_SSLCyto = params.D_SSLCyto
+  D_CleftSSL = params.D_CleftSSL
+  D_CleftCyto = params.D_CleftCyto
+  dist = params.dist
 
   # System
   
@@ -377,7 +470,6 @@ def tsolve(pvdName="output.pvd",\
   else: 
     # Flux to mesh domain from scalar domain s 
     jFlux = D_CleftCyto*(cCaCleft_n-cCa_n)/dist
-
     F += -jFlux*vCa*ds(lMarker)
 
 
@@ -416,6 +508,8 @@ def tsolve(pvdName="output.pvd",\
     RHS = jCleft*vCaCleft*dx()
   elif doAssert=="fluxTest_jVolCyto":
     jVol = wholeCellJ_to_jCyto(params.jTest,params)
+    print params.jTest
+    print jVol
     RHS = jVol*vCa*ds(lMarker)
 
   F += -RHS 
@@ -442,14 +536,26 @@ def tsolve(pvdName="output.pvd",\
       itoJ = wholeCellI_to_wholeCellJ(1.) # rescale 1 [A/F] --> [uM/ms]
       itoj = wholeCellJ_to_jCleft(itoJ,params) 
       RHS += reactions.iryr*itoj*vCaCleft*dx()
+      # SERCA
       Jtoj = wholeCellJ_to_jCyto(itoJ,params) 
       RHS+= reactions.jSERCA*(Jtoj)*vCa*dx()
-       
+
+
+    if "ryrOnly" in reactions:
+      import simple
+      if reactions=="ryrOnlySwitch":
+        reactions = simple.Simple(ryrOnlySwitch=True)
+      else:
+        reactions = simple.Simple()
+      reactions.Init(params)
+      itoJ = wholeCellI_to_wholeCellJ(1.) # rescale 1 [A/F] --> [uM/ms]
+      itoj = wholeCellJ_to_jCleft(itoJ,params) 
+      RHS += reactions.iryr*itoj*vCaCleft*dx()
     # apply
     F += - RHS
 
   ## Reactions
-  if buffers !=None:
+  if buffers !=False: 
     RHS = 0 
     RCaBuff = -params.alphabuff*(params.Btot - cCaBuff_n)*cCa_n + params.betabuff*cCaBuff_n 
     RHS+=  RCaBuff*vCa*dx()
@@ -545,21 +651,22 @@ def tsolve(pvdName="output.pvd",\
       ## store 
       pvdFile << (U_n.sub(idxCa),t)
       # store hdf 
-      #if compartmentSSL:
+
       if 1: 
         uCa = project(cCa_n,V)
         uCa.vector()[:]/=volCyto
+        print assemble(uCa*dx())
         hdf.write(uCa,"uCa",ctr)
-
+      
         # see conservation routine above for why we multiply by volCyto 
         uCaSSL = project(cCaSSL_n,R)      
-        uCaSSL.vector()[:]*=volCyto
+        uCaSSL.vector()[:]/=volCyto
         #print assemble(uCaSSL*dx())
         hdf.write(uCaSSL,"uCaSSL",ctr)
 
         uCaCleft = project(cCaCleft_n,R)         
-        uCaCleft.vector()[:]*=volCyto
-        #print assemble(uCaCleft*dx())
+        uCaCleft.vector()[:]/=volCyto
+        print assemble(uCaCleft*dx())
         hdf.write(uCaCleft,"uCaCleft",ctr)
 
 
