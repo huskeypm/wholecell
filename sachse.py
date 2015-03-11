@@ -58,7 +58,7 @@ class Params(object):
     self.D_SSLCyto = self.DCompart # Diffusion rate between SSL/Cyto compartments (if SSL exists) [um/ms]
     self.D_CleftSSL = self.DCompart #  Diffusion rate between Cleft/SSL compartments (if SSL exists)
     self.D_CleftCyto= self.DCompart #  Diffusion rate between Cleft/Cyto compartments (if SSL does not exist)
-    self.dist = 0.1 # distance between compartments [um] 
+    self.dist = 0.05 # distance between compartments [um] 
   
     # diffusion params 
     self.DCa = 0.39  # Diff const. within cytosol [um^2/ms] verified
@@ -221,12 +221,9 @@ def validation_Conversions():
 # show that in the presence of rapid diffusion, the two and three compartment 
 # models are equivalent
 def validationRapidDiffusion():
-  params = Params()
-  reactions = "ryrOnly"
-
-
   # Check that compartments equal one another quickly given brief flux 
-  if 0: 
+  if 1: 
+    params = Params()
     # NOTE: two cases won't exactly agree, since I havent decided on the best
     # way to merge the 'deleted' ssl volume into the cytosol  
     reactions = "ryrOnlySwitch"
@@ -237,7 +234,38 @@ def validationRapidDiffusion():
     params.D_SSLCyto = 1e2 # Can't go much faster than this   
     params.D_CleftSSL= 1e2  
     params.D_CleftCyto = 1e2  
-    params.dist = 1.
+    params.dist = 0.15
+    params.Btot = 0.
+    params.Ftot = 0.
+    params.cInits[1]=0.
+    params.cInits[2]=0.
+
+    idxCa = 0
+    mode = "2D_SSL"
+    threeComps = tsolve(mode=mode,params=params,hdfName=mode+"_rapid.h5",\
+    		reactions = reactions,buffers=False)
+
+    mode = "2D_noSSL"
+    twoComps = tsolve(mode=mode,params=params,hdfName=mode+"_rapid.h5",
+    			reactions = reactions,buffers=False)
+    msg = "%f != %f " %( threeComps[idxCa] ,twoComps[idxCa])
+    assert(abs(threeComps[idxCa] - twoComps[idxCa]) < 1e-4), msg
+    print "Passes compartment compare"
+  # Check that compartments equal one another quickly given brief flux 
+  if 1: 
+    params = Params()
+    # NOTE: two cases won't exactly agree, since I havent decided on the best
+    # way to merge the 'deleted' ssl volume into the cytosol  
+    reactions = "ryrOnlySwitch"
+    # NOTE: Couldn't avoid having the cleft present a much higher concentration in 
+    # the -ssl mode relative to +ssl, since D could not be increased above 1e3
+    params.T = 75
+    params.dt = 1
+    red = 1e-2
+    params.D_SSLCyto = red # Can't go much faster than this   
+    params.D_CleftSSL= red  
+    params.D_CleftCyto = red  
+    params.dist = 0.15
     params.Btot = 0.
     params.Ftot = 0.
     params.cInits[1]=0.
@@ -255,40 +283,16 @@ def validationRapidDiffusion():
     assert(abs(threeComps[idxCa] - twoComps[idxCa]) < 1e-4), msg
     print "Passes compartment compare"
 
-  # reduce D/Kd in subregion in cyto to reprodiuce normal lag
-  if 1: 
-    reactions = "ryrOnlySwitch"
-    # NOTE: Couldn't avoid having the cleft present a much higher concentration in 
-    # the -ssl mode relative to +ssl, since D could not be increased above 1e3
-    params.T = 100 
-    params.dt = 1.
-    params.D_SSLCyto = 1e-3
-    params.D_CleftSSL= 1e-3
-    params.D_CleftCyto = 1e-3
-    params.Btot = 0.
-    params.Ftot = 0.
-    params.cInits[1]=0.
-    params.cInits[2]=0.
 
-    idxCa = 0
-    mode = "2D_SSL"
-    threeComps = tsolve(mode=mode,params=params,hdfName=mode+"_normal.h5",reactions = reactions,\
-           buffers=False)
-
-    mode = "2D_noSSL"
-    twoComps = tsolve(mode=mode,params=params,hdfName=mode+"_normal.h5",reactions = reactions,\
-           buffers=False)
-    msg = "%f != %f " %( threeComps[idxCa] ,twoComps[idxCa])
-    assert(abs(threeComps[idxCa] - twoComps[idxCa]) < 1e-4), msg
-    print "Passes compartment compare"
-
-  
 def validation():
-  validationRapidDiffusion()
   #quit()
+
+  ## validate fast/slow diffusion
+  validationRapidDiffusion()
 
   ## flux conversions 
   validation_Conversions()
+
 
   ## conservation 
   params = Params()
@@ -326,7 +330,7 @@ def validation():
   print "ALL ROUTINES PASSED!"
   
 
-def tsolve(pvdName="output.pvd",\
+def tsolve(pvdName=None,\
            mode="2D_SSL", # sachse2TT, sachse4TT, ode, bcs \ 
            params = Params(),\
            hdfName = "out.h5",
@@ -541,7 +545,7 @@ def tsolve(pvdName="output.pvd",\
       RHS+= reactions.jSERCA*(Jtoj)*vCa*dx()
 
 
-    if "ryrOnly" in reactions:
+    elif "ryrOnly" in reactions:
       import simple
       if reactions=="ryrOnlySwitch":
         reactions = simple.Simple(ryrOnlySwitch=True)
@@ -555,6 +559,7 @@ def tsolve(pvdName="output.pvd",\
     F += - RHS
 
   ## Reactions
+  print buffers
   if buffers !=False: 
     RHS = 0 
     RCaBuff = -params.alphabuff*(params.Btot - cCaBuff_n)*cCa_n + params.betabuff*cCaBuff_n 
@@ -566,7 +571,6 @@ def tsolve(pvdName="output.pvd",\
     RHS+= -RCaFluo*vCaFluo*dx()
     
     F += -RHS
-    
 
     
 
@@ -625,8 +629,9 @@ def tsolve(pvdName="output.pvd",\
   ## File IO
   t=0.
   ctr=0
-  pvdFile = File(pvdName,"compressed")
-  pvdFile << (U_n.sub(idxCa),t)     
+  if pvdName!=None:
+    pvdFile = File(pvdName,"compressed")
+    pvdFile << (U_n.sub(idxCa),t)     
   hdf=HDF5File(mesh.mpi_comm(), hdfName, "w")
   hdf.write(mesh, "mesh")
   # temp hack for storing volume 
@@ -649,10 +654,12 @@ def tsolve(pvdName="output.pvd",\
       conserved_ti = conservation(t=t)
 
       ## store 
-      pvdFile << (U_n.sub(idxCa),t)
+      if pvdName != None:
+        pvdFile << (U_n.sub(idxCa),t)
       # store hdf 
 
-      if 1: 
+      writeHdf=True
+      if writeHdf:
         uCa = project(cCa_n,V)
         uCa.vector()[:]/=volCyto
         print assemble(uCa*dx())
@@ -730,16 +737,55 @@ def mytest():
   params.D_CleftCyto= Constant(0.3)
   tsolve(debug=False,params=params,hdfName=tag+".h5",mode=tag,reactions="torres")
 
-def mytest2():
+def simpleCompare():
+  params = Params()
   params.T = 1000
   params.dt = 5 
 
 
+  reactions = "ryrOnlySwitch"
+  reactions = "ryrOnly"
+  reactions = "simple"
+     # NOTE: Couldn't avoid having the cleft present a much higher concentration in 
+     # the -ssl mode relative to +ssl, since D could not be increased above 1e3
+  params.D_SSLCyto = 1e-1 # Can't go much faster than this   
+  params.D_CleftSSL= 1e-1
+  params.D_CleftCyto = 1e-1
+  params.dist = 0.01
+  params.Btot = 0.
+  params.Ftot = 0.
+  #params.cInits[1]=0.
+  #params.cInits[2]=0.
+  buffers = False
+ 
+  idxCa = 0
+  mode = "2D_SSL"
+  case = "new"
+  threeComps = tsolve(mode=mode,params=params,hdfName="%s_%s.h5"%(mode,case),
+    reactions = reactions,buffers=buffers) 
+ 
+  mode = "2D_noSSL"
+  twoComps = tsolve(mode=mode,params=params,hdfName="%s_%s.h5"%(mode,case),
+    reactions = reactions,buffers=buffers) 
+  msg = "%f != %f " %( threeComps[idxCa] ,twoComps[idxCa])
+  assert(abs(threeComps[idxCa] - twoComps[idxCa]) < 1e-4), msg
+
+  quit()
+
   tag = "2D_noSSL_simple" 
-  tsolve(debug=False,params=params,pvdName = "noSSL.pvd", hdfName=tag+".h5",\
+  tsolve(debug=False,params=params,#pvdName = "noSSL.pvd", 
+    hdfName=tag+".h5",\
     mode=tag,reactions="simple",buffers=True)
+
+
+  
+  params = Params()
+  params.T = 1000
+  params.dt = 5 
+
   tag = "2D_SSL_simple" 
-  tsolve(debug=False,params=params,pvdName = "SSL.pvd", hdfName=tag+".h5",\
+  tsolve(debug=False,params=params,#pvdName = "SSL.pvd", 
+    hdfName=tag+".h5",\
     mode=tag,reactions="simple",buffers=True)
 
 
@@ -845,8 +891,8 @@ if __name__ == "__main__":
     elif(arg=="-mytest"):
       mytest()
       quit() 
-    elif(arg=="-mytest2"):
-      mytest2()
+    elif(arg=="-simpleCompare"):
+      simpleCompare()
       quit() 
     elif(arg=="-validation"):
       validation()

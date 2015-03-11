@@ -24,7 +24,7 @@ def SERCAExpression(cai=0.1, casr=500):
 
   # PKH params 
   #Vmax=320. # uM/s (by setting Vmax to zero and rescaling so that maxcai/mincasr gives J=205 uM/s)
-  Vmax = 3000 
+  Vmax = 300
   Kmf = 0.100 # uM # if set to the normal value, the pump goes in reverse
   Kmr = 0.55e3 # uM (this is my adjusted value based on free Ca)
   H = 1.0
@@ -49,6 +49,9 @@ def SERCAExpression(cai=0.1, casr=500):
   is_to_ims= 1e-3 # 1/s --> 1/ms 
   J = Expression(str,Q10=Q10,Vmax=Vmax,casrK=casrK,Kmf =Kmf,H=H,\
     cai=cai,is_to_ims = is_to_ims)
+
+
+  #J = Expression("-0.00+t*0", t=0)
   return J
 
 

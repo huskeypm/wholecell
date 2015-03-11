@@ -54,7 +54,7 @@ class Sarcomere2DSSL(SarcomereBase):
     c = mesh.coordinates()[:]
 
     # if in no ssl mode, rescale cytosol to subsume SSL compartment 
-    c[:,1]*= 6. # TT height [um]
+    #c[:,1]*= 6. # TT height [um]
 
     #if self.ssl:
     #  c[:,0]*= self.TTHeight #  [um]
