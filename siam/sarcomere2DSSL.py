@@ -38,7 +38,7 @@ class Sarcomere2DSSL(SarcomereBase):
     self.TTHeight = 6. # TT height [um]
     self.sarcWidth = 1. # sarcomere witdth [um]
     self.SSLWidth= 0.25 # define ssl as x=0..xSSL [nm]
-    #self.params.volSSL = self.TTHeight*self.sarcWidth*self.SSLWidth
+    self.params.volSSL = self.TTHeight*self.sarcWidth*self.SSLWidth
     
 
   def GetMesh(self):
@@ -53,15 +53,15 @@ class Sarcomere2DSSL(SarcomereBase):
     mesh = UnitSquareMesh(16,16)
     c = mesh.coordinates()[:]
 
-    # if in no ssl mode, rescale cytosol to subsume SSL compartment 
     #c[:,1]*= 6. # TT height [um]
 
-    #if self.ssl:
-    #  c[:,0]*= self.TTHeight #  [um]
-    #  c[:,1]*= self.sarcWidth #  [um]
-    #else:
-    #  c[:,0]*= self.TTHeight #  [um]
-    #  c[:,1]*= self.SSLWidth + self.sarcWidth #  [um]
+    # if in no ssl mode, rescale cytosol to subsume SSL compartment 
+    if self.ssl:
+      c[:,0]*= self.TTHeight #  [um]
+      c[:,1]*= self.sarcWidth #  [um]
+    else:
+      c[:,0]*= self.TTHeight #  [um]
+      c[:,1]*= self.SSLWidth + self.sarcWidth #  [um]
 
     mesh.coordinates()[:] = c 
 

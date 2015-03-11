@@ -229,7 +229,7 @@ def validationRapidDiffusion():
     reactions = "ryrOnlySwitch"
     # NOTE: Couldn't avoid having the cleft present a much higher concentration in 
     # the -ssl mode relative to +ssl, since D could not be increased above 1e3
-    params.T = 50
+    params.T = 75
     params.dt = 1
     params.D_SSLCyto = 1e2 # Can't go much faster than this   
     params.D_CleftSSL= 1e2  
@@ -259,8 +259,8 @@ def validationRapidDiffusion():
     reactions = "ryrOnlySwitch"
     # NOTE: Couldn't avoid having the cleft present a much higher concentration in 
     # the -ssl mode relative to +ssl, since D could not be increased above 1e3
-    params.T = 75
-    params.dt = 1
+    params.T = 150
+    params.dt = 2.5
     red = 1e-2
     params.D_SSLCyto = red # Can't go much faster than this   
     params.D_CleftSSL= red  
@@ -289,6 +289,7 @@ def validation():
 
   ## validate fast/slow diffusion
   validationRapidDiffusion()
+  quit()
 
   ## flux conversions 
   validation_Conversions()
@@ -739,24 +740,24 @@ def mytest():
 
 def simpleCompare():
   params = Params()
-  params.T = 1000
+  params.T = 10     
   params.dt = 5 
 
 
+  params.cInits[0]=0.5
   reactions = "ryrOnlySwitch"
   reactions = "ryrOnly"
-  reactions = "simple"
+  reactions = None     
      # NOTE: Couldn't avoid having the cleft present a much higher concentration in 
      # the -ssl mode relative to +ssl, since D could not be increased above 1e3
   params.D_SSLCyto = 1e-1 # Can't go much faster than this   
   params.D_CleftSSL= 1e-1
   params.D_CleftCyto = 1e-1
   params.dist = 0.01
-  params.Btot = 0.
-  params.Ftot = 0.
-  #params.cInits[1]=0.
-  #params.cInits[2]=0.
-  buffers = False
+  buffers = True  
+  if buffers==False:
+    params.Btot = 0.
+    params.Ftot = 0.
  
   idxCa = 0
   mode = "2D_SSL"
@@ -769,6 +770,7 @@ def simpleCompare():
     reactions = reactions,buffers=buffers) 
   msg = "%f != %f " %( threeComps[idxCa] ,twoComps[idxCa])
   assert(abs(threeComps[idxCa] - twoComps[idxCa]) < 1e-4), msg
+  print msg
 
   quit()
 
