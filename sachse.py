@@ -157,6 +157,7 @@ def validation_Conversions():
                       params=params,reactions=None,buffers=False, 
                       existsCleft=False,existsSSL=False) 
    dotest(concsFinal[idxCa],params.cCaInit,name="jVolCyto")
+
   ## Validate wholecell flux test 
   if 1: 
    params = Params()
@@ -289,7 +290,6 @@ def validation():
 
   ## validate fast/slow diffusion
   validationRapidDiffusion()
-  quit()
 
   ## flux conversions 
   validation_Conversions()
@@ -348,7 +348,6 @@ def tsolve(pvdName=None,\
     import sarcomere2DSSL
     cm = sarcomere2DSSL.Sarcomere2DSSL(params=params)
     if "noSSL" in mode:
-      cm.ssl = False
       ssl=False
 
   elif "sachse" in mode: 
@@ -363,6 +362,7 @@ def tsolve(pvdName=None,\
     import sarcomereSatin
     cm = sarcomereSatin.sarcomereSatin(params=params)
 
+  cm.ssl = ssl
   if ssl==False:
     existsSSL=False
 
@@ -370,7 +370,9 @@ def tsolve(pvdName=None,\
   cm.params.nDOF = cm.nDOF # goes in master class 
   mesh = cm.GetMesh()
   dims =mesh.ufl_cell().geometric_dimension()
+  #print cm.volume
   cm.CalcGeomAttributes()
+  print cm.volume
   params.volCyto= cm.volume
 
   ## 
@@ -423,7 +425,7 @@ def tsolve(pvdName=None,\
   volFrac_CytoSSL= volCyto/np.max([1e-9,volSSL])
   volFrac_SSLCyto= 1/volFrac_CytoSSL
   volFrac_SSLCleft= volSSL/np.max([1e-9,volCleft])
-  volFrac_CleftSSL= 1/volFrac_SSLCleft
+  volFrac_CleftSSL= 1/np.max([1e-9,volFrac_SSLCleft])
   volFrac_CleftCyto= volCleft/volCyto
   volFrac_CytoCleft= 1/np.max([1e-9,volFrac_CleftCyto])
   if existsCleft==False:
@@ -513,9 +515,7 @@ def tsolve(pvdName=None,\
     RHS = jCleft*vCaCleft*dx()
   elif doAssert=="fluxTest_jVolCyto":
     jVol = wholeCellJ_to_jCyto(params.jTest,params)
-    print params.jTest
-    print jVol
-    RHS = jVol*vCa*ds(lMarker)
+    RHS = jVol*vCa*dx()
 
   F += -RHS 
 
@@ -740,11 +740,11 @@ def mytest():
 
 def simpleCompare():
   params = Params()
-  params.T = 10     
+  params.T = 0      
   params.dt = 5 
 
 
-  params.cInits[0]=0.5
+  params.cInits[4]=0.5
   reactions = "ryrOnlySwitch"
   reactions = "ryrOnly"
   reactions = None     
@@ -759,20 +759,19 @@ def simpleCompare():
     params.Btot = 0.
     params.Ftot = 0.
  
-  idxCa = 0
-  mode = "2D_SSL"
   case = "new"
-  threeComps = tsolve(mode=mode,params=params,hdfName="%s_%s.h5"%(mode,case),
-    reactions = reactions,buffers=buffers) 
+  if 1: 
+    idxCa = 0
+    mode = "2D_SSL"
+    threeComps = tsolve(mode=mode,params=params,hdfName="%s_%s.h5"%(mode,case),
+      reactions = reactions,buffers=buffers) 
  
   mode = "2D_noSSL"
   twoComps = tsolve(mode=mode,params=params,hdfName="%s_%s.h5"%(mode,case),
     reactions = reactions,buffers=buffers) 
   msg = "%f != %f " %( threeComps[idxCa] ,twoComps[idxCa])
   assert(abs(threeComps[idxCa] - twoComps[idxCa]) < 1e-4), msg
-  print msg
 
-  quit()
 
   tag = "2D_noSSL_simple" 
   tsolve(debug=False,params=params,#pvdName = "noSSL.pvd", 

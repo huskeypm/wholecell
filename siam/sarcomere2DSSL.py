@@ -33,7 +33,7 @@ class Sarcomere2DSSL(SarcomereBase):
     self.params = params 
     self.TT = TT
     self.OuterSarcolemma = OuterSarcolemma
-    self.ssl = False
+    self.ssl = True   
 
     self.TTHeight = 6. # TT height [um]
     self.sarcWidth = 1. # sarcomere witdth [um]
@@ -57,13 +57,18 @@ class Sarcomere2DSSL(SarcomereBase):
 
     # if in no ssl mode, rescale cytosol to subsume SSL compartment 
     if self.ssl:
-      c[:,0]*= self.TTHeight #  [um]
-      c[:,1]*= self.sarcWidth #  [um]
+      c[:,0]*= self.sarcWidth #  [um]
+      c[:,1]*= self.TTHeight #  [um]
     else:
-      c[:,0]*= self.TTHeight #  [um]
-      c[:,1]*= self.SSLWidth + self.sarcWidth #  [um]
+      c[:,0]*= self.SSLWidth + self.sarcWidth #  [um]
+      c[:,1]*= self.TTHeight #  [um]
+      self.params.volSSL = 0. 
 
+    
     mesh.coordinates()[:] = c 
+
+    #self.volume = assemble(Constant(1.) * dx(domain=mesh))
+    #print self.volume  
 
 
     self.mesh = mesh 
@@ -77,17 +82,6 @@ class Sarcomere2DSSL(SarcomereBase):
 
     # below-listing things are broken for now 
     # rigorously unit-test before checking in 
-    return 1
-
-    # params 
-    xSSL= 0.25 # define ssl as x=0..xSSL [nm]
-
-
-    ## resize cyto domain to include SSL 
-    print "NEEDS to be made kosher with SSL compart volume"
-    xRange = self.mmax[0] - self.mmin[0]
-    xNew = xSSL+xRange
-    self.mesh.coordinates()[:]*=xNew/xRange
 
     # replace Constant diffusion constant with expression 
     sc = 0.01
@@ -95,15 +89,16 @@ class Sarcomere2DSSL(SarcomereBase):
     # using a 'rescaled' dirac function to interpolate between 
     # lower diffusion region and higher diffusion region 
     # Deff = dirac*(DCa-DSSL) + DSSL
-    params = self.params
-    self.DCaBase = params.DCa
-    params.DCa = Expression("1/(1+exp((x[0]-xSSL)/sc))*(DCa-DCa_SSL) + DCa_SSL ",\
-          xSSL=xSSL,DCa = self.DCaBase, DCa_SSL=params.DCa_SSL,sc=sc)
+    #params = self.params
+    #self.DCaBase = params.DCa
+    #params.DCa = Expression("1/(1+exp((x[0]-xSSL)/sc))*(DCa-DCa_SSL) + DCa_SSL ",\
+    #      xSSL=self.SSLWidth,DCa = self.DCaBase, DCa_SSL=params.DCa_SSL,sc=sc)
 
 
     # location of SSL region 
-    self.pSSL = Expression("1/(1+exp((x[0]-xSSL)/sc)) ",\
-          xSSL=xSSL,sc=sc)
+    self.pSSL= Expression("1/(1+exp((x[0]-xSSL)/sc)) ",\
+          xSSL=self.SSLWidth,sc=sc)
+    return 1
 
   def Boundaries(self,subdomains):
     mesh = self.mesh
