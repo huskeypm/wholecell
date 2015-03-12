@@ -5,6 +5,61 @@ NOTE: successful unit checking is don through validation.py
 """
 from sachse import * 
 
+def validationSERCA():
+  # just spot checks on fluxes
+  
+  import simple 
+  mpi=True
+  if mpi==False:
+    jSERCA  = simple.SERCAExpression()
+    mesh = UnitIntervalMesh(200)
+    V = FunctionSpace(mesh,"CG",1)
+    f = Function(V)
+
+    # at cai 
+    #mystr = "vPump * pow(cai,m) / (KmPump + pow(cai,m))"
+    def expr(cai,vPump=200,KmPump=0.184,m=4):
+       return -vPump * pow(cai,m) / (KmPump + pow(cai,m))
+
+    cai = 0.2
+ 
+    jSERCA.cai = cai # uM
+    f.interpolate(jSERCA)
+    evaled = np.asarray(f.vector())[0]
+    assert( (expr(cai) - evaled ) < 1e-4 ), "SERCA failed"
+
+
+  # verify that constant flux ok rthrough SERCA pexression  
+  # m=0 
+  # Km = 0 
+  # Vma = 0.1 
+  #########
+  params = Params()
+  idxCa = 0
+  params.T = 10
+  params.dt = 1.0 # ms
+  params.ryrOffset = 500
+  params.sercaVmax = 0.1 # uM/ms
+  params.sercaKmf = 0.000 # uM
+  params.sercaH = 0.  # Hill coeff 
+  # for these params, jSERCA = -0.1 [uM/ms]
+  jSERCA = -0.1  # [uM/ms[
+  dCa = params.T  * jSERCA  
+  
+
+  params.cInits[idxCa] = 2.0
+  refFinal = params.cInits[idxCa] + dCa
+  params.D_SSLCyto = 0.
+  params.D_CleftSSL = 0.
+  params.D_CleftCyto = 0.
+  reactions = "simple" 
+  concsFinal= tsolve(mode="2D_noSSL",
+                     params=params,reactions=reactions,buffers=False, 
+                     existsCleft=False,existsSSL=False) 
+
+  assert( (concsFinal[idxCa] - refFinal) < 1e-4 ),  "SERCA test failed" 
+  print "PASS SERCA test"
+
 
 def validationRyR():
 
@@ -42,7 +97,7 @@ def validationRyR():
   dCas = js*dt
   totDCa = np.cumsum(dCas)
   finaldCa  = totDCa[-1]
-  print "Tot expected ", finaldCa
+  #print "Tot expected ", finaldCa
 
   #########
   params.dt = dt # ms
@@ -125,7 +180,7 @@ def validationMergingSSLCyto():
       reactions = reactions,buffers=buffers) 
  
   # merged compartments 
-  print "###\n###\n####\n"
+  #print "###\n###\n####\n"
   mode = "2D_noSSL"
   params.T = 76     
   params.dt = 0.5
@@ -309,6 +364,8 @@ def validation(test=1):
   if test==5:
     validationsMisc()
 
+  if test==6:
+    validationSERCA()
 
 
 def validationsMisc():

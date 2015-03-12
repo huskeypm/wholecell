@@ -93,6 +93,11 @@ class Params(object):
     self.ryrOffset = 5 # [ms]
     self.ryrTau = -50/np.log(1/2.) # half-max amp at 50 ms 
     self.ryrKm = 0.2 # uM (made this up)  
+
+    # from Soeller
+    self.sercaVmax = 200 # uM/ms
+    self.sercaKmf = 0.184 # uM
+    self.sercaH = 4.  # Hill coeff 
   
     # init concs 
     self.cCaInit =0.1  # Initial Ca concentration in Cleft compartment [uM] 
@@ -362,8 +367,9 @@ def tsolve(pvdName=None,\
       itoj = wholeCellJ_to_jCleft(itoJ,params) 
       RHS += reactions.iryr*itoj*vCaCleft*dx()
       # SERCA
-      Jtoj = wholeCellJ_to_jCyto(itoJ,params) 
+      Jtoj = wholeCellJ_to_jCyto(1.0,params) # 1 [uM/ms] --> [uM um /ms]
       RHS+= reactions.jSERCA*(Jtoj)*vCa*dx()
+      #RHS+= -0.1*(Jtoj)*vCa*dx()
 
 
     elif "ryrOnly" in reactions:

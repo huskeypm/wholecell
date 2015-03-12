@@ -5,17 +5,25 @@ from reactionsBase import ReactionsBase
 
 # TODO implmenet me 
 
-# from SIAM notebook
-if 0: 
-    print "WARNING: need to rewrite as A/F"
-    self.ryrAmp = 0.82 # [uM/ms] 
-    self.ryrOffset = 5 # [ms]
-    self.ryrTau = 50 # [ms]  
+# based on Soeller 
+# [1]	C. Soeller, I. D. Jayasinghe, P. Li, A. V. Holden, and M. B. Cannell, 2009
+def SERCAExpression(cai=0.1,   
+  Vmax = 200,# uM/Hs
+  Kmf = 0.184,# uM
+  H = 4.  # Hill coeff 
+  ):
+  mystr = "-Vmax * pow(cai,H) / (Kmf + pow(cai,H))"
+  #mystr = "-0.1+0*cai"
+  expr = Expression(mystr,
+    Vmax=Vmax,
+    Kmf=Kmf,
+    cai=cai,
+    H = H)
+  return expr
 
-
-
-# uM
-def SERCAExpression(cai=0.1, casr=500):
+# uM/mso
+# cai [uM]
+def SERCAShannonExpression(cai=0.1, casr=500):
   Vmax=286. # uM/s
   Kmf = 0.246 # uM
   Kmr = 1.7e3 # mu (note: Shannon uses 1.7 mM, which I believe is for total Ca. However, free SR Ca seems to track exactly with total Ca)
@@ -87,7 +95,7 @@ class Simple(ReactionsBase):
     self.iNCX = Expression("0.")
 
     # SERCA [uM/ms]
-    self.jSERCA= SERCAExpression()
+    self.jSERCA= SERCAExpression(Vmax=params.sercaVmax,H=params.sercaH,Kmf=params.sercaKmf)
     
     if self.noSERCA:
       self.jSERCA = Expression("t*0",t=0)
@@ -101,7 +109,7 @@ class Simple(ReactionsBase):
         self.iryr.a= 0.
 
     # Need hooks for V, NCX, SERCA 
-    self.jSERCA.t = t 
+    #self.jSERCA.t = t 
     self.jSERCA.cai=cai
 
     

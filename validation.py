@@ -1,17 +1,18 @@
 #
-#mpirun -np  8 python validations.py 1
-#mpirun -np  8 python validations.py 2
-#mpirun -np  8 python validations.py 3
-#mpirun -np  8 python validations.py 4
-#mpirun -np  8 python validations.py 4
+#mpirun -np  8 python validationRoutines.py 1
+#mpirun -np  8 python validationRoutines.py 2
+#mpirun -np  8 python validationRoutines.py 3
+#mpirun -np  8 python validationRoutines.py 4
+#mpirun -np  8 python validationRoutines.py 4
 #
 
-import validations
-validations.validation(1)
-validations.validation(2)
-validations.validation(3)
-validations.validation(4)
-validations.validation(5)
+import validationRoutines
+validationRoutines.validation(1)
+validationRoutines.validation(2)
+validationRoutines.validation(3)
+validationRoutines.validation(4)
+validationRoutines.validation(5)
+validationRoutines.validation(6)
 
 
-print "All Validations passed"
+print "All ValidationRoutines passed"
