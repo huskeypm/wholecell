@@ -9,6 +9,7 @@ class SarcomereBase(object):
     self.idxCaCleft = 3
     self.idxCaSSL = 4  # not always used
     self.pSSL= Constant(0.) # defines where SSL region is within cytosol (0 for none, P(x<Val)=1 otherwise)  
+    self.pCyto= Constant(1.) # defines where SSL region is within cytosol (0 for none, P(x<Val)=1 otherwise)  
     self.nDOF_Fields= 3
     self.nDOF_Scalars= 2  # cleft, SSL 
     self.nDOF = self.nDOF_Fields + self.nDOF_Scalars

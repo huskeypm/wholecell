@@ -37,8 +37,10 @@ class Sarcomere2DSSL(SarcomereBase):
 
     self.TTHeight = 6. # TT height [um]
     self.sarcWidth = 1. # sarcomere witdth [um]
-    self.SSLWidth= 0.25 # define ssl as x=0..xSSL [nm]
+    #print "WARNING: Need to change"
+    self.SSLWidth= 0.20 # define ssl as x=0..xSSL [nm]
     self.params.volSSL = self.TTHeight*self.sarcWidth*self.SSLWidth
+    self.volFracCyto=1.0
     
 
   def GetMesh(self):
@@ -50,7 +52,7 @@ class Sarcomere2DSSL(SarcomereBase):
 
   def Init(self): 
     ## Get mesh 
-    mesh = UnitSquareMesh(16,16)
+    mesh = UnitSquareMesh(32,32)
     c = mesh.coordinates()[:]
 
     #c[:,1]*= 6. # TT height [um]
@@ -75,9 +77,8 @@ class Sarcomere2DSSL(SarcomereBase):
     self.mmin = np.min(mesh.coordinates(),axis=0)
     self.mmax = np.max(mesh.coordinates(),axis=0)
 
-
     ## Define SSL region 
-    if self.ssl==False:
+    if self.ssl:
       return 1 
 
     # below-listing things are broken for now 
@@ -96,7 +97,25 @@ class Sarcomere2DSSL(SarcomereBase):
 
 
     # location of SSL region 
-    self.pSSL= Expression("1/(1+exp((x[0]-xSSL)/sc)) ",\
+    strSSL = "m * (  1/(1+exp((x[0]-xSSL)/sc)))"
+    strCyto= "m * (1-1/(1+exp((x[0]-xSSL)/sc)))"
+
+    # here we compute the pct of cytosol relative to entire domain,
+    # when SSL is defined 
+    # PKH: I'm fairly sure this is correct, since 
+    # [CaB]cyto = [B]cyto*Vcyto/Vtot / (1 + Kd/[Ca]tot)
+    # However, I have some numerical error..
+    divs = 500.
+    xs = np.linspace(self.mmin[0],self.mmax[0],divs)
+    y = 1-1/(1+np.exp((xs-self.SSLWidth)/sc)) # needs to agree w strCyto 
+    self.volFracCyto = (np.cumsum(y) / ( divs ))[-1]          
+
+    self.pSSL= Expression(strSSL,\
+          m=1, # mutlplier
+          xSSL=self.SSLWidth,sc=sc)
+    self.pCyto= Expression(strCyto,\
+          m=1, # mutlplier
+          #xSSL=0.75,sc=sc)
           xSSL=self.SSLWidth,sc=sc)
     return 1
 
