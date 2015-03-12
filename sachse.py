@@ -163,9 +163,10 @@ def tsolve(pvdName=None,\
       ssl=False
 
   elif "sachse" in mode: 
-    if mode=="sachse4TT":
+    if "sachse4TT" in mode:
       import sarcomere4TT
-      cm = sarcomere4TT.sarcomere4TT(params=params)
+      cm = sarcomere4TT.sarcomere4TT(params=params,geom="2D")
+
     else: 
       import sarcomere2TT
       cm = sarcomere2TT.sarcomere2TT(params=params)
@@ -173,6 +174,7 @@ def tsolve(pvdName=None,\
   elif "satin" in mode:
     import sarcomereSatin
     cm = sarcomereSatin.sarcomereSatin(params=params)
+
 
 
   cm.ssl = ssl
@@ -594,6 +596,37 @@ def mytest():
   params.D_CleftCyto= Constant(0.3)
   tsolve(debug=False,params=params,hdfName=tag+".h5",mode=tag,reactions="torres")
 
+def test4TT():
+  params = Params()
+  params.T = 500
+  params.dt = 5 
+
+  params.ryrAmp = 30 
+  params.sercaVmax = 0.5
+
+  reactions = "simple"
+
+  ## REAPID 
+  suffix = "_prod"
+  h5Tag = "_rapid"+suffix
+  rapid = 1e2
+  params.D_SSLCyto = rapid # Can't go much faster than this   
+  params.D_CleftSSL= rapid
+  params.D_CleftCyto = rapid
+
+  tag = "sachse4TT_SSL_%s" % reactions
+  tsolve(debug=False,params=params,pvdName=tag+h5Tag+".pvd",
+    hdfName=tag+h5Tag+".h5",\
+    mode=tag,reactions=reactions,buffers=True)
+
+  #tag = "2D_noSSL_%s" % reactions
+  #tsolve(debug=False,params=params,pvdName=tag+h5Tag+".pvd",
+  #  hdfName=tag+h5Tag+".h5",\
+  #  mode=tag,reactions=reactions,buffers=True)
+
+  ## REDUCED 
+  #h5Tag = "_red"+suffix
+
 def simpleCompare():
   params = Params()
   params.T = 1000
@@ -789,6 +822,9 @@ if __name__ == "__main__":
     elif(arg=="-test4"):
       tag = "sachse4TT"
       tsolve(debug=False,params=params,hdfName=tag+".h5",mode=tag)
+      quit()
+    elif(arg=="-test4TT"):
+      test4TT()
       quit()
     elif(arg=="-mytest"):
       mytest()

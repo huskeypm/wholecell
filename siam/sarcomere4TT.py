@@ -53,10 +53,15 @@ class OuterSarcolemma(SubDomain):
 
 
 class sarcomere4TT(SarcomereBase):
-  def __init__(self,params="",mode=""):
+  def __init__(self,params="",mode="",geom="2D"):
     SarcomereBase.__init__(self)
     self.mode = mode
-    self.fileName = "siam/sarcomere4TT.xml"
+    if geom=="2D":
+      self.fileName = "siam/sarcomere4TT_2D.xml"
+      self.dim = 2
+    else:
+      self.fileName = "siam/sarcomere4TT.xml"
+      self.dim = 3
     self.params = params 
     self.distributions()
 
@@ -78,7 +83,7 @@ class sarcomere4TT(SarcomereBase):
     self.cytosol = Expression("(1-1/(1+exp((x[0]-xl)/sc)))*(1/(1+exp((x[0]-xr)/sc)))", \
           xl=xl,xr=xr,sc=sc)
 
-  def Boundaries(self,subdomains):
+  def Boundaries(self,subdomains,ttMode="allfunctional"):
     mesh = self.mesh
 
     boundary = BottomTT()
@@ -92,12 +97,18 @@ class sarcomere4TT(SarcomereBase):
     boundary.mmin = np.min(mesh.coordinates(),axis=0)
     boundary.mmax = np.max(mesh.coordinates(),axis=0)
     rMarker = 3
-    boundary.mark(subdomains,rMarker)
+
+    if ttMode=="allfunctional":
+      boundary.mark(subdomains,lMarker)
+    else:
+      boundary.mark(subdomains,rMarker)
+  
   
     boundary = OuterSarcolemma()
     boundary.mmax = np.max(mesh.coordinates(),axis=0)
     slMarker = 4
-    boundary.mark(subdomains,slMarker)
+    if self.dim==3:
+      boundary.mark(subdomains,slMarker)
   
     return lMarker,rMarker,slMarker
 
