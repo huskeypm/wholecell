@@ -41,6 +41,10 @@ dolfin-convert sarcomere.msh sarcomere.xml
 
 More instructions are included in the individual notebooks 
 
+\subsection{Developmenmt}
+ALWAYS unit test before checking in code (by running python validation.py) 
+ mpirun -np 8 python validation.py
+
 
 \subsection{MPI} 
 source dolfin.bash

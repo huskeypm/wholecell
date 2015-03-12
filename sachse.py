@@ -596,61 +596,50 @@ def mytest():
 
 def simpleCompare():
   params = Params()
-  params.T = 10     
-  params.dt = 5 
-
-  idxFluo= 2 # s.b. generalized 
-  idxCaCleft = 4 # s.b. generalized 
-  #params.cInits[idxCaCleft]=0.5
-  reactions = "ryrOnlySwitch"
-  reactions = "ryrOnly"
-  reactions = None     
-     # NOTE: Couldn't avoid having the cleft present a much higher concentration in 
-     # the -ssl mode relative to +ssl, since D could not be increased above 1e3
-  params.D_SSLCyto = 1e-1 # Can't go much faster than this   
-  params.D_CleftSSL= 1e-1
-  params.D_CleftCyto = 0.#1e-1
-  params.dist = 0.01
-  # kill Fluo
-  params.Ftot = 0.
-  params.cInits[idxFluo] = 0. 
-
-  buffers = True  
-  if buffers==False:
-    params.Btot = 0.
-    params.Ftot = 0.
- 
-  case = "new"
-  if 1: 
-    idxCa = 0
-    mode = "2D_SSL"
-    threeComps = tsolve(mode=mode,params=params,hdfName="%s_%s.h5"%(mode,case),
-      reactions = reactions,buffers=buffers) 
- 
-  print "###\n###\n####\n"
-  mode = "2D_noSSL"
-  twoComps = tsolve(pvdName="test.pvd",mode=mode,params=params,hdfName="%s_%s.h5"%(mode,case),
-    reactions = reactions,buffers=buffers) 
-  msg = "%f != %f " %( threeComps[idxCa] ,twoComps[idxCa])
-  # NOTE: more generous with this error 
-  assert(abs(threeComps[idxCa] - twoComps[idxCa]) < 1e-2), msg
-
-
-  tag = "2D_noSSL_simple" 
-  tsolve(debug=False,params=params,#pvdName = "noSSL.pvd", 
-    hdfName=tag+".h5",\
-    mode=tag,reactions="simple",buffers=True)
-
-
-  
-  params = Params()
   params.T = 1000
   params.dt = 5 
 
-  tag = "2D_SSL_simple" 
-  tsolve(debug=False,params=params,#pvdName = "SSL.pvd", 
-    hdfName=tag+".h5",\
-    mode=tag,reactions="simple",buffers=True)
+  params.ryrAmp = 30 
+  params.sercaVmax = 0.5
+
+  reactions = "ryrOnly" 
+  reactions = "simple"
+
+  ## REAPID 
+  suffix = "_prod"
+  h5Tag = "_rapid"+suffix
+  rapid = 1e2
+  params.D_SSLCyto = rapid # Can't go much faster than this   
+  params.D_CleftSSL= rapid
+  params.D_CleftCyto = rapid
+
+  tag = "2D_SSL_%s" % reactions
+  tsolve(debug=False,params=params,pvdName=tag+h5Tag+".pvd",
+    hdfName=tag+h5Tag+".h5",\
+    mode=tag,reactions=reactions,buffers=True)
+
+  tag = "2D_noSSL_%s" % reactions
+  tsolve(debug=False,params=params,pvdName=tag+h5Tag+".pvd",
+    hdfName=tag+h5Tag+".h5",\
+    mode=tag,reactions=reactions,buffers=True)
+
+  ## REDUCED 
+  h5Tag = "_red"+suffix
+  red   = 1e-1
+  params.D_SSLCyto = red   # Can't go much faster than this   
+  params.D_CleftSSL= red  
+  params.D_CleftCyto = red  
+
+  tag = "2D_SSL_%s" % reactions
+  tsolve(debug=False,params=params,pvdName=tag+h5Tag+".pvd",
+    hdfName=tag+h5Tag+".h5",\
+    mode=tag,reactions=reactions,buffers=True)
+
+  tag = "2D_noSSL_%s" % reactions
+  tsolve(debug=False,params=params,pvdName=tag+h5Tag+".pvd",
+    hdfName=tag+h5Tag+".h5",\
+    mode=tag,reactions=reactions,buffers=True)
+
 
 
   
