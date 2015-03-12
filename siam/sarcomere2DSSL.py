@@ -52,7 +52,7 @@ class Sarcomere2DSSL(SarcomereBase):
 
   def Init(self): 
     ## Get mesh 
-    mesh = UnitSquareMesh(32,32)
+    mesh = UnitSquareMesh(32,16)    
     c = mesh.coordinates()[:]
 
     #c[:,1]*= 6. # TT height [um]

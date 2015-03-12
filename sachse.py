@@ -181,19 +181,26 @@ def tsolve(pvdName=None,\
   cm.CalcGeomAttributes()
   params.volCyto= cm.volume
 
+  ## 
+  print 'WARNING: will need to updated these'
+  idxCa = 0 # PDE 
+  idxBuff = 1
+  idxFluo = 2
+  idxCaSSL = 1
+  idxCaCleft = 2  # not always used
+
+
   # rescale the IMMOBILE buffer by volumeFrac cyto (when SSL/cyto are compiled) 
+  if buffers==False:
+    params.Btot = 0.
+    params.cInits[idxBuff] = 0.
+    params.Ftot = 0.
+    params.cInits[idxFluo] = 0.
+
   if ssl==False:
     params.Btot = params.Btot*cm.volFracCyto
     if "2D" not in mode:
       raise RuntimeError("Have not written support for this yet") 
-
-  ## 
-  print 'WARNING: will need to updated these'
-  idxCa = 0 # PDE 
-  #idxBuff = 1
-  #idxFluo = 2
-  idxCaSSL = 1
-  idxCaCleft = 2  # not always used
 
 
   # Boundaries and measures 

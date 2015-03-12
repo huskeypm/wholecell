@@ -3,6 +3,77 @@ Validation routines for sachse.py
 """
 from sachse import * 
 
+
+def validationRyRSERCA():
+  params = Params()
+  params.T = 3      
+  params.dt = 1   
+
+  # this expression is taken from simple.py
+  #self.iryr = Expression(dirac+"a*exp(-(t-to)/tau)",
+  #                           v = 0.05,\
+  #                           a=params.ryrAmp,\
+  #                           to=params.ryrOffset,\
+  #                           tau=params.ryrTau,\
+  #                           t=0)
+  
+  si=0; fi=25; st = 50;
+  dt = (fi-si)/float(st)
+  ts = np.linspace(0,25,50)
+  i = params.ryrAmp*np.exp(-t/tau)
+  j = wholeCellI_to_wholeCellJ(wholeCellI)
+  dCa = 
+  iTot = np.cumsum(j)
+  
+  
+  
+
+
+  quit()
+
+  idxCa = 0
+  idxBuff = 1
+  idxFluo= 2 # s.b. generalized 
+  idxCaCleft = 4 # s.b. generalized 
+
+  reactions = "ryrOnly"
+  #params.ryrAmp = 40.; eps = 5e-2
+  #reactions = None; eps = 1e-2
+
+  params.D_SSLCyto = 1e2 # Can't go much faster than this   
+  params.D_CleftSSL= 1e2
+  params.D_CleftCyto = 1e2 
+  params.dist = 0.01
+
+  # kill Fluo
+  params.Ftot = 0.
+  params.cInits[idxFluo] = 0. 
+
+  buffers = False 
+  if buffers==False:
+    params.Btot = 0.
+    params.cInits[idxBuff] = 0. 
+    params.Ftot = 0.
+ 
+  # separate SSL/Cyto compartments 
+  # probably not necesarru, since we test below 
+  case = "tot"
+  #if 1: 
+  #  mode = "2D_SSL"
+  #  threeComps = tsolve(mode=mode,params=params,hdfName="%s_%s.h5"%(mode,case),
+  #    reactions = reactions,buffers=buffers) 
+ 
+  # merged compartments 
+  print "###\n###\n####\n"
+  mode = "2D_noSSL"
+  twoComps = tsolve(pvdName="test.pvd",mode=mode,params=params,hdfName="%s_%s.h5"%(mode,case),
+    reactions = reactions,buffers=buffers) 
+  msg = "%f != %f " %( threeComps[idxCa] ,twoComps[idxCa])
+  # NOTE: more generous with this error 
+  assert(abs(threeComps[idxCa] - twoComps[idxCa]) < eps), msg
+
+  reactions = "ryrOnly"
+
 # Verifying that we get the correct free Calcium if we merege 
 # the SSL/Cyto into a single domain 
 # TODO understand why there is still some numerical error. Did this at 5 am 
@@ -10,20 +81,21 @@ from sachse import *
 # used for defining the SSL region 
 def validationMergingSSLCyto():
   params = Params()
-  params.T = 1000   
-  params.dt = 500
+  params.dt = 1.0 
 
   idxCa = 0
+  idxBuff = 1
   idxFluo= 2 # s.b. generalized 
   idxCaCleft = 4 # s.b. generalized 
 
   reactions = "ryrOnlySwitch"
-  reactions = "ryrOnly"
-  reactions = None     
+  params.ryrAmp = 20. ; eps = 5e-2
+  #reactions = "ryrOnly"
+  #reactions = None; eps = 1e-2
 
-  params.D_SSLCyto = 1e-1 # Can't go much faster than this   
-  params.D_CleftSSL= 1e-1
-  params.D_CleftCyto = 0.#1e-1
+  params.D_SSLCyto = 1e2 # Can't go much faster than this   
+  params.D_CleftSSL= 1e2
+  params.D_CleftCyto = 1e2 
   params.dist = 0.01
 
   # kill Fluo
@@ -33,11 +105,13 @@ def validationMergingSSLCyto():
   buffers = True  
   if buffers==False:
     params.Btot = 0.
+    params.cInits[idxBuff] = 0. 
     params.Ftot = 0.
  
   # separate SSL/Cyto compartments 
   case = "new"
   if 1: 
+    params.T = 25     
     mode = "2D_SSL"
     threeComps = tsolve(mode=mode,params=params,hdfName="%s_%s.h5"%(mode,case),
       reactions = reactions,buffers=buffers) 
@@ -45,11 +119,13 @@ def validationMergingSSLCyto():
   # merged compartments 
   print "###\n###\n####\n"
   mode = "2D_noSSL"
+  params.T = 76     
+  params.dt = 0.5
   twoComps = tsolve(pvdName="test.pvd",mode=mode,params=params,hdfName="%s_%s.h5"%(mode,case),
     reactions = reactions,buffers=buffers) 
   msg = "%f != %f " %( threeComps[idxCa] ,twoComps[idxCa])
   # NOTE: more generous with this error 
-  assert(abs(threeComps[idxCa] - twoComps[idxCa]) < 1e-2), msg
+  assert(abs(threeComps[idxCa] - twoComps[idxCa]) < eps), msg
   print "PASSED (but worth a couple check)" + msg 
 
 # In[19]:
@@ -144,6 +220,7 @@ def validationRapidDiffusion():
     # NOTE: two cases won't exactly agree, since I havent decided on the best
     # way to merge the 'deleted' ssl volume into the cytosol  
     reactions = "ryrOnlySwitch"
+    params.ryrAmp = 1.
     # NOTE: Couldn't avoid having the cleft present a much higher concentration in 
     # the -ssl mode relative to +ssl, since D could not be increased above 1e3
     params.T = 75
@@ -174,6 +251,7 @@ def validationRapidDiffusion():
     # NOTE: two cases won't exactly agree, since I havent decided on the best
     # way to merge the 'deleted' ssl volume into the cytosol  
     reactions = "ryrOnlySwitch"
+    params.ryrAmp = 1.
     # NOTE: Couldn't avoid having the cleft present a much higher concentration in 
     # the -ssl mode relative to +ssl, since D could not be increased above 1e3
     params.T = 150

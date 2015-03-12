@@ -77,7 +77,7 @@ class Simple(ReactionsBase):
 
     # shuts off after time interval (see Update) 
     if self.ryrOnlySwitch:
-      self.iryr = Expression("a*0.1+t*0",a=1,t=0)
+      self.iryr = Expression("a+t*0",a=params.ryrAmp,t=0)
 
     # Action potential [mV]
     self.V = Expression("0") 
