@@ -169,6 +169,7 @@ def tsolve(pvdName=None,\
     import sarcomereSatin
     cm = sarcomereSatin.sarcomereSatin(params=params)
 
+
   cm.ssl = ssl
   if ssl==False:
     existsSSL=False
@@ -352,7 +353,7 @@ def tsolve(pvdName=None,\
       rescaleFactor = 1.
       RHS = reactions.iryr*(rescaleFactor)*vCaCleft*dx()
 
-    if reactions == "simple":
+    elif reactions == "simple":
       import simple
       reactions = simple.Simple()
       #reactions = simple.Simple(noSERCA=True)

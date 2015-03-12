@@ -1,13 +1,12 @@
 """
 Validation routines for sachse.py
+
+NOTE: successful unit checking is don through validation.py
 """
 from sachse import * 
 
 
-def validationRyRSERCA():
-  params = Params()
-  params.T = 3      
-  params.dt = 1   
+def validationRyR():
 
   # this expression is taken from simple.py
   #self.iryr = Expression(dirac+"a*exp(-(t-to)/tau)",
@@ -16,63 +15,72 @@ def validationRyRSERCA():
   #                           to=params.ryrOffset,\
   #                           tau=params.ryrTau,\
   #                           t=0)
-  
-  si=0; fi=25; st = 50;
-  dt = (fi-si)/float(st)
-  ts = np.linspace(0,25,50)
-  i = params.ryrAmp*np.exp(-t/tau)
-  j = wholeCellI_to_wholeCellJ(wholeCellI)
-  dCa = 
-  iTot = np.cumsum(j)
-  
-  
-  
 
-
-  quit()
-
+  params = Params()
+  idxCaCleft = 4
   idxCa = 0
-  idxBuff = 1
-  idxFluo= 2 # s.b. generalized 
-  idxCaCleft = 4 # s.b. generalized 
+  #reactions = "ryrOnlySwitch" # validated 
+  reactions = "ryrOnly" # validated 
+  if reactions == "ryrOnlySwitch":
+    si=0; fi=10; st = fi
+    ts = np.linspace(si,fi,st+1)
+    ts = ts[1:]
+    iFlux = params.ryrAmp # A/F
+    i_s = np.ones(np.shape(ts)[0]) * iFlux # A/F
+    eps = 1e-2
+  if reactions == "ryrOnly":
+    si=0; fi=300; st = fi
+    ts = np.linspace(si,fi,st+1)
+    ts = ts[1:]
+    params.ryrOffset = 0.
+    i_s = params.ryrAmp*np.exp(-ts/params.ryrTau)
+    eps = 1e-1   # generous b.c. of use of dirac function and 
 
-  reactions = "ryrOnly"
-  #params.ryrAmp = 40.; eps = 5e-2
-  #reactions = None; eps = 1e-2
+  params.T = fi - si
+  js = wholeCellI_to_wholeCellJ(i_s)
+  dt = ts[1]-ts[0]
+  dCas = js*dt
+  totDCa = np.cumsum(dCas)
+  finaldCa  = totDCa[-1]
+  print "Tot expected ", finaldCa
 
-  params.D_SSLCyto = 1e2 # Can't go much faster than this   
-  params.D_CleftSSL= 1e2
-  params.D_CleftCyto = 1e2 
-  params.dist = 0.01
+  #########
+  params.dt = dt # ms
 
-  # kill Fluo
-  params.Ftot = 0.
-  params.cInits[idxFluo] = 0. 
+  params.D_SSLCyto = 0.
+  params.D_CleftSSL = 0.
+  params.D_CleftCyto = 0.
 
-  buffers = False 
-  if buffers==False:
-    params.Btot = 0.
-    params.cInits[idxBuff] = 0. 
-    params.Ftot = 0.
- 
-  # separate SSL/Cyto compartments 
-  # probably not necesarru, since we test below 
-  case = "tot"
-  #if 1: 
-  #  mode = "2D_SSL"
-  #  threeComps = tsolve(mode=mode,params=params,hdfName="%s_%s.h5"%(mode,case),
-  #    reactions = reactions,buffers=buffers) 
- 
-  # merged compartments 
-  print "###\n###\n####\n"
-  mode = "2D_noSSL"
-  twoComps = tsolve(pvdName="test.pvd",mode=mode,params=params,hdfName="%s_%s.h5"%(mode,case),
-    reactions = reactions,buffers=buffers) 
-  msg = "%f != %f " %( threeComps[idxCa] ,twoComps[idxCa])
-  # NOTE: more generous with this error 
-  assert(abs(threeComps[idxCa] - twoComps[idxCa]) < eps), msg
+  ## test using 'jTest'
+  # checked that jtest/ryrOnlySwitch agree PKH
+  #PKHparams.jTest = wholeCellI_to_wholeCellJ( iFlux ) # 1 A/F --> um/ms 
+  #PKHconcsFinal= tsolve(doAssert="fluxTest_jCleft",\
+  #PKH                     params=params,reactions=None,buffers=False)
+  #PKHcaCleftInit = concsFinal[idxCaCleft]
+  #quit()
 
-  reactions = "ryrOnly"
+  concsFinal= tsolve(
+                       params=params,reactions=reactions,buffers=False)
+  caCleftInit = concsFinal[idxCaCleft]
+
+
+  ## 2) 
+  params.T = 100
+  params.dt = 10
+  params.cInits[idxCaCleft] = caCleftInit
+  #params.jTest = 0.
+  params.D_SSLCyto = 1
+  params.D_CleftSSL = 1
+  params.D_CleftCyto = 1
+  concsFinal= tsolve(doAssert="conservation",\
+                       params=params,reactions=None,buffers=False)
+
+  # check that the change in conc. we anticipated is reflected
+  # in cytosol
+  tot = params.cCaInit + finaldCa
+  refFin = concsFinal[idxCa]
+  msg = "%f/%f > %f " %(tot,refFin, eps) 
+  assert(abs((tot-refFin) / refFin) < eps),msg
 
 # Verifying that we get the correct free Calcium if we merege 
 # the SSL/Cyto into a single domain 
@@ -279,18 +287,31 @@ def validationRapidDiffusion():
     print "Passes compartment compare"
 
 
-def validation():
-  #quit()
-  validationMergingSSLCyto()
+def validation(test=1):
+  test = int(test)
+  
+  if test==1:
+    validationRyR()
   #raise RuntimeError("NOT FINISHED VALID") 
 
+  #quit()
+  if test==2:
+    validationMergingSSLCyto()
+
   ## validate fast/slow diffusion
-  validationRapidDiffusion()
+  if test==3:
+    validationRapidDiffusion()
 
   ## flux conversions 
-  validation_Conversions()
+  if test==4:
+    validation_Conversions()
+
+  if test==5:
+    validationsMisc()
 
 
+
+def validationsMisc():
   ## conservation 
   params = Params()
   idxCa=0
@@ -324,7 +345,8 @@ def validation():
   print "Passed buffering test"
 
 
-  print "ALL ROUTINES PASSED!"
   
 
-validation()
+if __name__ == "__main__":
+  import sys
+  validation(sys.argv[1])
