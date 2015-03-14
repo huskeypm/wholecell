@@ -6,7 +6,7 @@ hdfName = "i.h5" # where data will be stored
 params = sachse.Params() # where parameters can be modified
 params.T = 1000.
 params.dt = 2.5
-mode="2D_SSL_simple"; ssl = True;
+mode="2D_noSSL_simple"; ssl = False;
 #mode ="2D_noSSL"; ssl = False;
 
 concsCaClefts=[]
@@ -19,20 +19,23 @@ import copy
 
 
 # range of diffusion constants we want to consider
-iters = 3 
+iters = 10 
+iters2 = 5 
 vs = np.linspace(-2,1,iters)
 #print vs
 Ds = 10.**vs
-#phis=np.linspace(0.1,1.0,iters) 
-#Kds=np.linspace(-6,-4,iters) 
-#Kds=10**Kds
+phis=np.linspace(0.1,1.0,iters) 
+Kds=np.linspace(-6,-4,iters) 
+Kds=10**Kds
 buff=10.**-6
+#Kds = [0.000001]
+#phis = [1.0]
 
-def runit(arg="test",Kdi=1.,phij=1.): 
+def runit(arg="test"): #,Kdi=1.,phij=1.): 
 
-#  phis = [1.0]
-#  Kds = [0.0001]
- Kdi=10**Kdi
+ #phij = [0.6]
+ #Kdi = [0.000001]
+# Kdi=10**Kdi
  for i,Di in enumerate(Ds):
   if 0:  
     #parms = copy.deepcopy(params)  
@@ -65,27 +68,29 @@ def runit(arg="test",Kdi=1.,phij=1.):
 #      print "hdfName  ",hdfName
 #      sachse.tsolve(mode=mode,hdfName=hdfName,params=params)
 
-#  for i,Kdi in enumerate(Kds):
-#    for j,phij in enumerate(phis):
-#      print "i ", i," j ",j
- print "Kdi ",Kdi, " phij ",phij
- params = sachse.Params()
- Des1=params.DCa/(1+buff/Kdi)
- Des2=2*phij/(3-phij)
+
+for i,Kdi in enumerate(Kds):
+  for j,phij in enumerate(phis):
+    if i > 7: 
+     print "i ", i," j ",j
+     print "Kdi ",Kdi, " phij ",phij
+     params = sachse.Params()
+     Des1=params.DCa/(1+buff/Kdi)
+     Des2=2*phij/(3-phij)
 #    print "params.DCa ", params.DCa
 
- Des=Des1*Des2
- params.D_CleftCyto=Des
- params.D_CleftSSL=Des
- params.D_SSLCyto=Des
- print "Des1 ", Des1, " Des2 ", Des2, " DES ", Des
+     Des=Des1*Des2
+     params.D_CleftCyto=Des
+     params.D_CleftSSL=Des
+     params.D_SSLCyto=Des
+     print "Des1 ", Des1, " Des2 ", Des2, " DES ", Des
   #mode = "2D_noSSL" 
- fileName = "Des_otherDs_%3.7f_%3.1f"%(Kdi,phij)
- print "hdfName  ",fileName
- tag = "2D_SSL_simple"
+     fileName = "Des_otherDs_noSSL_%3.7f_%3.1f"%(Kdi,phij)
+     print "hdfName  ",fileName
+     tag = "2D_noSSL_simple"
 #     sachse.tsolve(mode=mode,hdfName=hdfName,params=params)
- sachse.tsolve(debug=False,params=params,pvdName = "SSL.pvd", hdfName=fileName+".h5",\
- mode=tag,reactions="simple",buffers=True)
+     sachse.tsolve(debug=False,params=params,pvdName = "noSSL.pvd", hdfName=fileName+".h5",\
+     mode=tag,reactions="simple",buffers=True)
 
 def readit():
   concsCaClefts=[]
@@ -144,17 +149,17 @@ if __name__ == "__main__":
   #  #print "arg"
 
   # Loops over each argument in the command line 
-  Kdi = 1.
-  phij = 1.
+#  Kdi = 1.
+#  phij = 1.
   for i,arg in enumerate(sys.argv):
     # myscript -runMPI <arg>
-    if(arg=="-Kdi"):
-      Kdi = np.float(sys.argv[i+1])
-    if(arg=="-phij"):
-      phij = np.float(sys.argv[i+2])
+#    if(arg=="-Kdi"):
+#      Kdi = np.float(sys.argv[i+1])
+#    if(arg=="-phij"):
+#      phij = np.float(sys.argv[i+2])
     if(arg=="-runMPI"):
-      runit(Kdi=Kdi)
-      runit(phij=phij)
+#      runit(Kdi=Kdi)
+#      runit(phij=phij)
       quit()
     if(arg=="-readSingle"):
       readit()   
