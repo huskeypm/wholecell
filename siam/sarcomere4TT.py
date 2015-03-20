@@ -91,8 +91,10 @@ class sarcomere4TT(SarcomereBase):
     boundary.mmax = np.max(mesh.coordinates(),axis=0)
     lMarker = 2
     boundary.mark(subdomains,lMarker)
+    #aboundary = DirichletBC(FunctionSpace(mesh,"CG",1),Constant(1.),boundary)
   
     boundary = TopTT()
+    # validation aboundary = DirichletBC(FunctionSpace(mesh,"CG",1),Constant(1.),boundary)
   
     boundary.mmin = np.min(mesh.coordinates(),axis=0)
     boundary.mmax = np.max(mesh.coordinates(),axis=0)
@@ -102,6 +104,7 @@ class sarcomere4TT(SarcomereBase):
       boundary.mark(subdomains,lMarker)
     else:
       boundary.mark(subdomains,rMarker)
+
   
   
     boundary = OuterSarcolemma()
@@ -109,6 +112,13 @@ class sarcomere4TT(SarcomereBase):
     slMarker = 4
     if self.dim==3:
       boundary.mark(subdomains,slMarker)
+
+
+    # for debugging 
+    #f = Function(FunctionSpace(mesh,"CG",1))
+    #aboundary.apply(f.vector())
+    #File("boundary.pvd")<<f
+    #quit()
   
     return lMarker,rMarker,slMarker
 

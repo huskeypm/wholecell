@@ -50,10 +50,18 @@ def InterpolateData(mesh,u,dims=2,mode="line",doplot=False, res=100):
       #                      0:0:1j]
       #line = griddata(mesh.coordinates(),up.vector(),(gx,gy,gz))
 
+      #(gx,gy) = np.mgrid[mmin[0]:mmax[0]:(res*1j),
+      #                      yMid:yMid:1j]  
+      tol = 0.1
+      yMid = 0.1   
+      print mmin,mmax
       (gx,gy) = np.mgrid[mmin[0]:mmax[0]:(res*1j),
-                            yMid:yMid:1j]  
+                            (yMid):(yMid+tol):100j]  
       line = griddata(mesh.coordinates(),up.vector(),(gx,gy))
-      #print np.shape(line)
+      
+      print np.shape(line)
+      line = np.mean(line,axis=0)
+      print np.shape(line)
       #img0 = np.reshape(line[:,0,0],[res])
       line = np.ndarray.flatten(line)
       #print np.shape(line)

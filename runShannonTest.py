@@ -12,18 +12,21 @@ class empty:
 
 def doit(\
   name = "out",
-  rPCa=1,
-  rks=1,
+  rPCa=1, # for LCC
+  rks=1,  # for RyR 
+  rVmax=1,# for SERCA
   stim_period = 441,
   mxsteps = 1000,
   dt = 3000):
 
   # rescale params 
   pi = runner.model.p
-  PCa=pi[runner.model.param_indices("PCa")]
-  pi[runner.model.param_indices("PCa")]=PCa*np.float(rPCa)
-  ks=pi[runner.model.param_indices("ks")]
-  pi[runner.model.param_indices("ks")]=ks*np.float(rks)
+  PCa=pi[runner.model.parameter_indices("PCa")]
+  pi[runner.model.parameter_indices("PCa")]=PCa*np.float(rPCa)
+  ks=pi[runner.model.parameter_indices("ks")]
+  pi[runner.model.parameter_indices("ks")]=ks*np.float(rks)
+  V_max=pi[runner.model.parameter_indices("V_max_Jpump")]
+  pi[runner.model.parameter_indices("V_max_Jpump")]=V_max*np.float(rVmax)
 
   runner.model.p = pi
   (p,s,t,j)=runner.runner(dt=dt, stim_period=stim_period,mxsteps=mxsteps)
@@ -89,15 +92,24 @@ if __name__ == "__main__":
   pi = runner.model.p
   rPCa= 1.0
   rks= 1.0
+  rVmax= 1.0
+  stim = 441 
   name="out"
+  dt = 10000
   for i,arg in enumerate(sys.argv):
     # calls 'doit' with the next argument following the argument '-validation'
     if(arg=="-rpca"):
       rPCa=sys.argv[i+1] 
     if(arg=="-rks"):
       rks=sys.argv[i+1] 
+    if(arg=="-rvmax"):
+      rVmax=sys.argv[i+1] 
+    if(arg=="-dt"):
+      dt=np.int(sys.argv[i+1])
     if(arg=="-name"):
       name=sys.argv[i+1] 
+    if(arg=="-stim"):
+      stim=sys.argv[i+1] 
 
-  doit(rPCa=rPCa,rks=rks,name=name,dt=10000)
+  doit(rPCa=rPCa,rks=rks,rVmax=rVmax,name=name,dt=dt,stim_period = stim)
   

@@ -74,9 +74,10 @@ def GetMonitored(case,model,tsteps,mlabel="J_Ca_SL_myo"):
 ##
 import cPickle as pickle
 
-def WritePickle(states,params,fileName='data.pickle'):
-  data1={'states':states,'params':params}
+def WritePickle(tsteps,states,params,fileName='data.pickle'):
+  data1={'tsteps':tsteps,'states':states,'params':params}
   output = open(fileName, 'wb')
+  print "Writing ", fileName
   pickle.dump(data1, output)
   output.close()
 
@@ -86,8 +87,9 @@ def ReadPickle(fileName='data.pickle'):
   data1 = pickle.load(pkl_file)
   states = data1['states']
   params = data1['params']  
+  tsteps = data1['tsteps']  
   pkl_file.close()
-  return states, params
+  return tsteps,states, params
     
 
 
@@ -115,34 +117,34 @@ paramList=["h","j","m","Xr","Xs","X_tos","Y_tos","R_tos","X_tof","Y_tof","d","f"
 # parameters split for 'split' model 
 import shannon_splitcleft as msplit
 changedList = [
-"Fx_Na_jct1",
-"Fx_Na_jct2",
-"Fx_NaBk_jct1",
-"Fx_NaBk_jct2",
-"Fx_NaK_jct1",
-"Fx_NaK_jct2",
-"Fx_Ks_jct1",
-"Fx_Ks_jct2",
-"Fx_Cl_jct1",
-"Fx_Cl_jct2",
-"Fx_ICaL_jct1",
-"Fx_ICaL_jct2",
-"Fx_NCX_jct1",
-"Fx_NCX_jct2",
-"Fx_SLCaP_jct1",
-"Fx_SLCaP_jct2",
-"Fx_CaBk_jct1",
-"Fx_CaBk_jct2",
-"ks1",
-"ks2",
-"KSRleak1",
-"KSRleak2",
-"Bmax_SLB_jct1",
-"Bmax_SLB_jct2",
-"Bmax_SLHigh_jct1",
-"Bmax_SLHigh_jct2",
-"Bmax_jct1",
-"Bmax_jct2"]
+  "Fx_Na_jct1",
+  "Fx_Na_jct2",
+  "Fx_NaBk_jct1",
+  "Fx_NaBk_jct2",
+  "Fx_NaK_jct1",
+  "Fx_NaK_jct2",
+  "Fx_Ks_jct1",
+  "Fx_Ks_jct2",
+  "Fx_Cl_jct1",
+  "Fx_Cl_jct2",
+  "Fx_ICaL_jct1",
+  "Fx_ICaL_jct2",
+  "Fx_NCX_jct1",
+  "Fx_NCX_jct2",
+  "Fx_SLCaP_jct1",
+  "Fx_SLCaP_jct2",
+  "Fx_CaBk_jct1",
+  "Fx_CaBk_jct2",
+  "ks1",
+  "ks2",
+  "KSRleak1",
+  "KSRleak2",
+  "Bmax_SLB_jct1",
+  "Bmax_SLB_jct2",
+  "Bmax_SLHigh_jct1",
+  "Bmax_SLHigh_jct2",
+  "Bmax_jct1",
+  "Bmax_jct2"]
 
 # Split model 
 # Find parameters changed in split model and define lists specific to each junction 
@@ -163,7 +165,8 @@ paramsJct2only[::2] =paramsJct1only[1::2]
 # run parameters 
 stim_period = 400
 stim_start = 0 
-t=0; dt=1000; dtn=dt/1000.; tsteps = np.linspace(t, t+dt, (dt)/dtn+1)
+t=0; dt=5000; dtn=1; 
+tsteps = np.linspace(t, t+dt, (dt)/dtn+1)
 
 
 ##
@@ -181,7 +184,7 @@ def RunBaseline(pklName="ref.pkl"):
   p[model.parameter_indices("stim_start")] = stim_start
   ref.states = odeint(model.rhs,s,tsteps,(p,),mxstep=1000,hmax=.03,rtol=1e-12, atol=1e-12)
 
-  WritePickle(ref.states,p,pklName)
+  WritePickle(tsteps,ref.states,p,pklName)
 
   return ref
 
@@ -190,11 +193,12 @@ def RunBaseline(pklName="ref.pkl"):
 
 ## Apply parameters for each junction 
 
-def RunBaselineSplit(pklName=refSplitPickle):
+def RunBaselineSplit(
+  pklName=refSplitPickle, 
   w1 = 0.5 # equal weighting between 1 and 2 
+  ):
   msplit.w1 = w1
   wParams = paramsJct1only*w1 + paramsJct2only*(1-w1)
-  jct12 = empty()
 
   s=msplit.init_state_values()
   p=msplit.init_parameter_values()
@@ -205,28 +209,191 @@ def RunBaselineSplit(pklName=refSplitPickle):
   p[msplit.parameter_indices("stim_period")] = stim_period
   p[msplit.parameter_indices("stim_start")] = stim_start
 
+  RunSplit(tsteps,s,p,pklName=pklName)
+
+def ModulateFluxes(pklName="mod.pkl", fluxNames=["Fx_ICaL_jct2"],fluxValues=[0.]): 
+  w1 = 0.5
+  msplit.w1 = w1
+  wParams = paramsJct1only*w1 + paramsJct2only*(1-w1)
+  
+  
+  fluxList = [
+  "Fx_Na_jct1",
+  "Fx_Na_jct2",
+  "Fx_NaBk_jct1",
+  "Fx_NaBk_jct2",
+  "Fx_NaK_jct1",
+  "Fx_NaK_jct2",
+  "Fx_Ks_jct1",
+  "Fx_Ks_jct2",
+  "Fx_Cl_jct1",
+  "Fx_Cl_jct2",
+  "Fx_ICaL_jct1",
+  "Fx_ICaL_jct2",
+  "Fx_NCX_jct1",
+  "Fx_NCX_jct2",
+  "Fx_SLCaP_jct1",
+  "Fx_SLCaP_jct2",
+  "Fx_CaBk_jct1",
+  "Fx_CaBk_jct2",
+  "ks1",
+  "ks2",
+  "KSRleak1",
+  "KSRleak2"]
+  
+  #paramsReduced =0*0.2*wParams
+  paramsReduced =wParams
+  
+  
+  s=msplit.init_state_values()
+  p=msplit.init_parameter_values()
+  #for i,statei in enumerate(fluxList):
+  #  p[msplit.parameter_indices(statei)] = paramsReduced[i]
+  #  print wParams[i],paramsReduced[i]  
+  #  #print p[msplit.parameter_indices(statei)] 
+      
+  # Kill RyR
+  #p[msplit.parameter_indices("ks1")]=0
+  #p[msplit.parameter_indices("ks2")]=0
+  #p[msplit.parameter_indices("KSRleak1")]=0
+  #p[msplit.parameter_indices("KSRleak2")]=0
+  #p[msplit.parameter_indices("Fx_ICaL_jct2")]=0
+  for i, fluxName in enumerate(fluxNames):
+    print "Setting %s=%f"%(fluxName,fluxValues[i])
+    p[msplit.parameter_indices(fluxName)]=fluxValues[i]
+    
+      
+  stim_period_pIdx = msplit.parameter_indices("stim_period")
+  p[stim_period_pIdx]=stim_period
+
+  RunSplit(tsteps,s,p,pklName=pklName)
+
+  
+
+
+def RunSplit(tsteps,s,p,pklName="split.pkl"):
+
+  jct12 = empty()
   jct12.states = odeint(msplit.rhs,s,tsteps,(p,),mxstep=10000,hmax=.03,rtol=1e-12, atol=1e-12)
   jct12.p = p
 
-  WritePickle(jct12.states,jct12.p,pklName)
+  WritePickle(tsteps,jct12.states,jct12.p,pklName)
+
+
+def doit(fileIn):
+  # if run
+  doRun=0
+  if doRun:
+    ref = RunBaseline(pklName=refPickle)
+  else:
+    ref = empty()
+    ref.states, ref.p = ReadPickle(refPickle)
+
+
+  doRun=0
+  if doRun:
+    jct12 = RunBaselineSplit(pklName=refSplitPickle)
+  else:
+    jct12 = empty()
+    jct12.states, jct12.p = ReadPickle(refSplitPickle)
+
+  validatePlots(model,ref.states,msplit,jct12.states,tsteps,plotRoot="bothactive_splitXX")
+
+#!/usr/bin/env python
+import sys
+##################################
+#
+# Revisions
+#       10.08.10 inception
+#
+##################################
+
+#
+# ROUTINE  
+#
+
+
+#
+# Message printed when program run without arguments 
+#
+def helpmsg():
+  scriptName= sys.argv[0]
+  msg="""
+Purpose: 
+ 
+Usage:
+"""
+  msg+="  %s -validation" % (scriptName)
+  msg+="""
+  
+ 
+Notes:
+
+"""
+  return msg
+
+#
+# MAIN routine executed when launching this script from command line 
+#
+if __name__ == "__main__":
+  import sys
+  msg = helpmsg()
+  remap = "none"
+
+  if len(sys.argv) < 2:
+      raise RuntimeError(msg)
+
+  #fileIn= sys.argv[1]
+  #if(len(sys.argv)==3):
+  #  1
+  #  #print "arg"
+
+  # Loops over each argument in the command line 
+  for i,arg in enumerate(sys.argv):
+    # calls 'doit' with the next argument following the argument '-validation'
+    if(arg=="-validation"):
+      arg1=sys.argv[i+1] 
+    if(arg=="-test"):
+      doit()         
+      quit()
+    if (arg=="-test0"):
+      RunBaseline(pklName="ref.pkl")
+      quit()
+    if(arg=="-test1"):
+      RunBaselineSplit(pklName="w1.pkl",w1=1.)
+      quit()
+    if(arg=="-test2"):
+      RunBaselineSplit(pklName="w0.pkl",w1=0.)
+      quit()
+    if(arg=="-test3"):
+      RunBaselineSplit(pklName="w0p5.pkl",w1=0.5)
+      quit()
+    if(arg=="-test4"): 
+      ModulateFluxes(pklName="lcc2del.pkl", fluxNames=["Fx_ICaL_jct2"],fluxValues=[0.])
+      quit()
+    if(arg=="-test5"): 
+      ModulateFluxes(pklName="lcc1uplcc2del.pkl", 
+                     fluxNames=["Fx_ICaL_jct1","Fx_ICaL_jct2"],
+                     fluxValues=[0.90,0.])
+      quit()
+    if(arg=="-test6"): 
+      ModulateFluxes(pklName="lcc1uplcc2red.pkl", 
+                     fluxNames=["Fx_ICaL_jct1","Fx_ICaL_jct2"],
+                     fluxValues=[0.90,0.30])
+      quit()
+    if(arg=="-test7"): 
+      ModulateFluxes(pklName="lcc1up_lcc2del_sercaup.pkl", 
+                     fluxNames=["Fx_ICaL_jct1","Fx_ICaL_jct2","V_max"],
+                     fluxValues=[0.90,0.,0.0053114*2.])
+      quit()
+  
 
 
 
-# if run
-doRun=0
-if doRun:
-  ref = RunBaseline(pklName=refPickle)
-else:
-  ref = empty()
-  ref.states, ref.p = ReadPickle(refPickle)
 
 
-doRun=0
-if doRun:
-  jct12 = RunBaselineSplit(pklName=refSplitPickle)
-else:
-  jct12 = empty()
-  jct12.states, jct12.p = ReadPickle(refSplitPickle)
+  raise RuntimeError("Arguments not understood")
 
-validatePlots(model,ref.states,msplit,jct12.states,tsteps,plotRoot="bothactive_splitXX")
+
+
 

@@ -341,7 +341,7 @@ def validationRapidDiffusion():
     assert(abs(threeComps[idxCa] - twoComps[idxCa]) < 1e-4), msg
     print "Passes compartment compare"
 
-
+# Master validation function 
 def validation(test=1):
   test = int(test)
   

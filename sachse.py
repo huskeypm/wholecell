@@ -27,11 +27,6 @@ class empty:pass
 import sys
 sys.path.append("./siam/")
 
-eps = 0.05
-
-## Units
-nm_to_um = 1.e-3
-ttRad = 0.25 # [um]
 
 
 # [CaB] = [Btot]/(KD/[Ca]+1)
@@ -599,7 +594,10 @@ def mytest():
 def test4TT():
   params = Params()
   params.T = 500
-  params.dt = 5 
+  params.dt = 1.0
+  params.T = 150  
+  params.dt = 5.0  
+  params.ryrOffset = 0. # maybe why nonzero fluxes all over seen?
 
   params.ryrAmp = 30 
   params.sercaVmax = 0.5
@@ -631,6 +629,7 @@ def simpleCompare():
   params = Params()
   params.T = 1000
   params.dt = 5 
+
 
   params.ryrAmp = 30 
   params.sercaVmax = 0.5
