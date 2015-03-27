@@ -84,9 +84,11 @@ class Params(object):
   
     # RyR
     # from Torres
-    self.ryrAmp = 9.5 # [pA/pF] 
+    # self.ryrAmp = 9.5 # [pA/pF] #CES
+    self.ryrAmp = 4.5 # [pA/pF] #CES
     self.ryrOffset = 5 # [ms]
-    self.ryrTau = -50/np.log(1/2.) # half-max amp at 50 ms 
+##    self.ryrTau = -50/np.log(1/2.) # half-max amp at 50 ms  #CES
+    self.ryrTau = 274.243089 #CES
     self.ryrKm = 0.2 # uM (made this up)  
 
     # from Soeller

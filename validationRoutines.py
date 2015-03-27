@@ -61,7 +61,7 @@ def validationSERCA():
   print "PASS SERCA test"
 
 
-def validationRyR():
+def validationRyR(reactions="ryrOnly"):
 
   # this expression is taken from simple.py
   #self.iryr = Expression(dirac+"a*exp(-(t-to)/tau)",
@@ -74,8 +74,6 @@ def validationRyR():
   params = Params()
   idxCaCleft = 4
   idxCa = 0
-  #reactions = "ryrOnlySwitch" # validated 
-  reactions = "ryrOnly" # validated 
   if reactions == "ryrOnlySwitch":
     si=0; fi=10; st = fi
     ts = np.linspace(si,fi,st+1)
@@ -97,7 +95,8 @@ def validationRyR():
   dCas = js*dt
   totDCa = np.cumsum(dCas)
   finaldCa  = totDCa[-1]
-  #print "Tot expected ", finaldCa
+  print "Tot expected ", finaldCa
+  #quit()
 
   #########
   params.dt = dt # ms
@@ -346,10 +345,12 @@ def validation(test=1):
   test = int(test)
   
   if test==1:
-    validationRyR()
+    validationRyR(reactions="ryrOnly")
+  if test==12:
+    validationRyR(reactions="ryrOnlySwitch")
   #raise RuntimeError("NOT FINISHED VALID") 
 
-  #quit()
+  quit()
   if test==2:
     validationMergingSSLCyto()
 

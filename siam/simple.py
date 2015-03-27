@@ -86,6 +86,10 @@ class Simple(ReactionsBase):
     # shuts off after time interval (see Update) 
     if self.ryrOnlySwitch:
       self.iryr = Expression("a+t*0",a=params.ryrAmp,t=0)
+    elif self.caitlinSerca:
+      self.iryr = Expression("0+t*0")
+      params.flux = 0.2 # [uM/ms]
+      self.jSERCA = Expression("a+t*0",a=params.flux,t=0)
 
     # Action potential [mV]
     self.V = Expression("0") 
@@ -95,7 +99,12 @@ class Simple(ReactionsBase):
     self.iNCX = Expression("0.")
 
     # SERCA [uM/ms]
-    self.jSERCA= SERCAExpression(Vmax=params.sercaVmax,H=params.sercaH,Kmf=params.sercaKmf)
+    if self.caitlinSerca:
+      self.iryr = Expression("0+t*0")
+      params.flux = 0.2 # [uM/ms]
+      self.jSERCA = Expression("a+t*0",a=params.flux,t=0)
+    else:
+      self.jSERCA= SERCAExpression(Vmax=params.sercaVmax,H=params.sercaH,Kmf=params.sercaKmf)
     
     if self.noSERCA:
       self.jSERCA = Expression("t*0",t=0)
