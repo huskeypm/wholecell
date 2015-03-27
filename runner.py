@@ -54,7 +54,6 @@ i_Stim = 6
 totMonitors = 7
 
 from scipy.integrate import odeint
-import matplotlib.pyplot as plt
 import numpy as np
 
 # get monitored values 
@@ -129,6 +128,7 @@ def runner(dt=1000,dtn=1.,\
 
 
 def plotting(p,states,ts,js,case="default"):
+  import matplotlib.pyplot as plt
   tsteps = np.zeros(np.shape(ts)[0]+1)
   tsteps[1:]=ts
   state_indices = model.state_indices    

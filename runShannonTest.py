@@ -1,10 +1,9 @@
-import runner 
 import numpy as np
-runner.init()
 
 #def namer(PCa,ks,vMax=None,stim=None):
 def namer(var1Name, var1Val, var2Name=None,var2Val=None):
-    loc = "/u1/huskeypm/srcs/wholecell/"
+    #loc = "/u1/huskeypm/srcs/wholecell/"
+    loc = "./"
     name =  loc+"run"
     name+=  "_%s%3.2f"%(var1Name,var1Val)
     if var2Name!=None:    
@@ -21,15 +20,14 @@ class empty:
       self.ts = ts
       self.js = js
 
-def doit(
+def runParams(
+  runner=None,
   varDict=None,       
   name = "out",
-#  rPCa=1, # for LCC
-#  rks=1,  # for RyR 
-#  rVmax=1,# for SERCA
   stim_period = 441,
   mxsteps = 1000,
   dt = 3000):
+
 
   # rescale params 
   pi = runner.model.p
@@ -57,8 +55,8 @@ def doit(
   output.close()
 
 # Print's command lines for running param sweep
-#def sweep1(var1Name,var1Vals,var2Name=None,var2Vals=None):
-def sweep1(varDict):
+#def GenSweptParams(var1Name,var1Vals,var2Name=None,var2Vals=None):
+def GenSweptParams(varDict):
 
   # create list of input args (for command line) 
   allArgs=[]
@@ -167,15 +165,18 @@ if __name__ == "__main__":
   #  1
   #  #print "arg"
 
+  import runner 
+  runner.init()
+
   # Loops over each argument in the command line 
   pi = runner.model.p
   stim = 441 
   name="out"
-  dt = 1000
+  dt = 10000
   sweep = False
   varDict = dict()              
   for i,arg in enumerate(sys.argv):
-    # calls 'doit' with the next argument following the argument '-validation'
+    # calls 'runParams' with the next argument following the argument '-validation'
     if("-var" in arg):
       varName =sys.argv[i+1] 
       varVal =sys.argv[i+2] 
@@ -194,8 +195,10 @@ if __name__ == "__main__":
     if(arg=="-stim"):
       stim=sys.argv[i+1] 
 
+  # execute
   if sweep:
-    sweep1(varDict)# var1Name,var1Vals)
+    GenSweptParams(varDict)# var1Name,var1Vals)
   else: 
-    doit(varDict=varDict,name=name,dt=dt,stim_period = stim)
+    runParams(runner=runner,varDict=varDict,\
+              name=name,dt=dt,stim_period = stim)
   
