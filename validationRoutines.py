@@ -349,8 +349,11 @@ def validation(test=1):
   if test==12:
     validationRyR(reactions="ryrOnlySwitch")
   #raise RuntimeError("NOT FINISHED VALID") 
-
   quit()
+
+  if test==13:
+    validationRyR(reactions="sercaSwitch")
+
   if test==2:
     validationMergingSSLCyto()
 
