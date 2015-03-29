@@ -3,8 +3,7 @@
 # 
 from dolfin import *
 import numpy as np
-import matplotlib.pylab as plt
-from scipy.interpolate import griddata
+#import matplotlib.pylab as plt
 class empty:pass 
 
 idxCa = 0 # PDE 
@@ -85,6 +84,7 @@ def PrintSlice(mesh,u):
     #                      0:dims[2]:(res*1j)]
     (gx,gy) = np.mgrid[mmin[0]:mmax[0]:(res*1j),
                        mmin[0]:mmax[1]:(res*1j)]
+    from scipy.interpolate import griddata
     img0 = griddata(mesh.coordinates(),up.vector(),(gx,gy))
     return img0
 
