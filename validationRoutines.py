@@ -29,7 +29,6 @@ def validationSERCA():
     assert( (expr(cai) - evaled ) < 1e-4 ), "SERCA failed"
 
 
-
   # verify that constant flux ok rthrough SERCA pexression  
   # m=0 
   # Km = 0 
@@ -44,8 +43,9 @@ def validationSERCA():
   params.sercaKmf = 0.000 # uM
   params.sercaH = 0.  # Hill coeff 
   # for these params, jSERCA = -0.1 [uM/ms]
-  jSERCA = -0.1  # [uM/ms[
+  jSERCA = params.sercaVmax / 2. # (since Expression is Vmax/(km^0+ca^0)=V/2.
   dCa = params.T  * jSERCA  
+  
 
   params.cInits[idxCa] = 2.0
   refFinal = params.cInits[idxCa] + dCa
@@ -141,31 +141,64 @@ def validationCaitlinSERCA():
                      existsCleft=False,existsSSL=False)
 
     assert( (concsFinal[idxCa] - refFinal) < 1e-4 ),  "SERCA test failed"
+
   # use expression in Simple
-  if 1: 
+  # Equivalent to a constant flux for serca, since we remove cai dependence 
+  if 0: 
     params = Params()
-    params.T = 1000 # ms 
+    idxCa = 0
+    params.T = 100
     params.dt = 10.0 # ms
-    params.ryrOffset = 1e9    
+    params.ryrOffset = 1500
+    params.sercaVmax = 0.4 # uM/ms
+    #params.sercaKmf = 0.000 # uM
+    params.sercaH = 0.  # Hill coeff 
+    # for these params, jSERCA = -0.1 [uM/ms]
+    jSERCA = -params.sercaVmax / 2. # (since Expression is Vmax/(km^0+ca^0)=V/2.
+    dCa = params.T  * jSERCA
   
-    #concCaAfterRyR = concsFinal[idxCa] 
+  
     concCaAfterRyR = 20.
     params.cInits[idxCa] = concCaAfterRyR  #CES
+    refFinal = params.cInits[idxCa] + dCa
     params.D_SSLCyto = 0.
     params.D_CleftSSL = 0.
     params.D_CleftCyto = 0.
-
     reactions = "simple"
     concsFinal= tsolve(mode="2D_noSSL",
-                     params=params,reactions=reactions,buffers=False,
-                     existsCleft=False,existsSSL=False)
-
+                       params=params,reactions=reactions,buffers=False,
+                       existsCleft=False,existsSSL=False)
+  
     jSERCAAvg = (concCaAfterRyR - concsFinal[idxCa])/params.T
     print "Avg jSERCA ", jSERCAAvg
+    assert( (concsFinal[idxCa] - refFinal) < 1e-4 ),  "SERCA test failed"
 
-    
-    assert( 0 ==1  ),  "SERCA test failed"
-  print "PASS SERCA test"
+  # Uses a serca model that will be nonzero until the cellular conc is 0. 
+  # therefore, we stop this t some time T s.t. conc is reasonable.
+  # Note too that dt=1.; other SERCA overshoots cai=0
+  if 1: 
+    params = Params()
+    idxCa = 0
+    params.T = 200
+    params.dt = 1.0 # ms
+    params.ryrOffset = 1500
+  
+    concCaAfterRyR = 20.
+    params.cInits[idxCa] = concCaAfterRyR  #CES
+    #refFinal = params.cInits[idxCa] + dCa
+    refFinal = 0.02635 # from PKH 150330
+    params.D_SSLCyto = 0.
+    params.D_CleftSSL = 0.
+    params.D_CleftCyto = 0.
+    reactions = "simple"
+    concsFinal= tsolve(mode="2D_noSSL",
+                       params=params,reactions=reactions,buffers=False,
+                       existsCleft=False,existsSSL=False)
+  
+    jSERCAAvg = (concCaAfterRyR - concsFinal[idxCa])/params.T
+    print "Avg jSERCA ", jSERCAAvg
+    assert( (concsFinal[idxCa] - refFinal) < 1e-4 ),  "SERCA test failed"
+
   print "PASS SERCA test"
 
 def validationRyR(reactions="ryrOnly"):
@@ -181,10 +214,12 @@ def validationRyR(reactions="ryrOnly"):
   params = Params()
   idxCaCleft = 4
   idxCa = 0
+
   if reactions == "ryrOnlySwitch":
     si=0; fi=10; st = fi
     ts = np.linspace(si,fi,st+1)
     ts = ts[1:]
+    #params.ryrAmp = 1.
     iFlux = params.ryrAmp # A/F
     i_s = np.ones(np.shape(ts)[0]) * iFlux # A/F
     eps = 1e-2
@@ -196,15 +231,13 @@ def validationRyR(reactions="ryrOnly"):
     i_s = params.ryrAmp*np.exp(-ts/params.ryrTau)
     eps = 1e-1   # generous b.c. of use of dirac function and 
 
-
   params.T = fi - si
   js = wholeCellI_to_wholeCellJ(i_s)
   dt = ts[1]-ts[0]
   dCas = js*dt
   totDCa = np.cumsum(dCas)
   finaldCa  = totDCa[-1]
-  print "Tot expected ", finaldCa
-  #quit()
+  #print "Tot expected ", finaldCa
 
   #########
   params.dt = dt # ms
@@ -453,14 +486,12 @@ def validation(test=1):
   test = int(test)
   
   if test==1:
-    validationRyR(reactions="ryrOnly")
-  if test==12:
-    validationRyR(reactions="ryrOnlySwitch")
+    validationRyR()
   #raise RuntimeError("NOT FINISHED VALID") 
-
-  if test==13:
+  if test==13: 
     validationCaitlinSERCA()
 
+  #quit()
   if test==2:
     validationMergingSSLCyto()
 

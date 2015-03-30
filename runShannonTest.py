@@ -112,7 +112,7 @@ def GenSweptParams(varDict):
   else:
    raise RuntimeError("Not supported") 
 
-  return names 
+  return names,keys,allVars 
 
 
 
