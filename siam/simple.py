@@ -65,11 +65,12 @@ def SERCAShannonExpression(cai=0.1, casr=500):
 
 
 class Simple(ReactionsBase): 
-  def __init__(self,noSERCA=False,ryrOnlySwitch=False):
+  def __init__(self,noSERCA=False,ryrOnlySwitch=False,caitlinSERCA=False):
     ReactionsBase.__init__(self)
     self.noSERCA=noSERCA
     self.ryrOnlySwitch=ryrOnlySwitch
-    
+    self.caitlinSERCA=caitlinSERCA #CES
+
   def Init(self,params):
     self.params = params
     # RyR [A/F]???
@@ -99,12 +100,12 @@ class Simple(ReactionsBase):
     self.iNCX = Expression("0.")
 
     # SERCA [uM/ms]
-    if self.caitlinSerca:
-      self.iryr = Expression("0+t*0")
-      params.flux = 0.2 # [uM/ms]
-      self.jSERCA = Expression("a+t*0",a=params.flux,t=0)
+    if self.caitlinSERCA:
+      self.iryr = Expression("0+t*0",t=0)
+      self.jSERCA = Expression("a+t*0",a=params.sercaVmax,t=0)
     else:
-      self.jSERCA= SERCAExpression(Vmax=params.sercaVmax,H=params.sercaH,Kmf=params.sercaKmf)
+      self.jSERCA= SERCAExpression(Vmax=params.sercaVmax,\
+                                   H=params.sercaH,Kmf=params.sercaKmf)
     
     if self.noSERCA:
       self.jSERCA = Expression("t*0",t=0)

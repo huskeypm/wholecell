@@ -29,6 +29,7 @@ def validationSERCA():
     assert( (expr(cai) - evaled ) < 1e-4 ), "SERCA failed"
 
 
+
   # verify that constant flux ok rthrough SERCA pexression  
   # m=0 
   # Km = 0 
@@ -45,7 +46,6 @@ def validationSERCA():
   # for these params, jSERCA = -0.1 [uM/ms]
   jSERCA = -0.1  # [uM/ms[
   dCa = params.T  * jSERCA  
-  
 
   params.cInits[idxCa] = 2.0
   refFinal = params.cInits[idxCa] + dCa
@@ -59,6 +59,37 @@ def validationSERCA():
 
   assert( (concsFinal[idxCa] - refFinal) < 1e-4 ),  "SERCA test failed" 
   print "PASS SERCA test"
+
+def validationCaitlinSERCA():
+  # verify that constant flux ok rthrough SERCA pexression  
+  # m=0 
+  # Km = 0 
+  # Vma = 0.1 
+  #########
+  params = Params()
+  idxCa = 0
+  params.T = 100 # ms 
+  params.dt = 1.0 # ms
+  # for these params, jSERCA = -0.2 [uM/ms]
+  jSERCA = -0.2  # [uM/ms]
+  params.sercaVmax = jSERCA
+  dCa = params.T  * jSERCA
+
+
+  params.cInits[idxCa] = 20.1
+  refFinal = params.cInits[idxCa] + dCa
+  params.D_SSLCyto = 0.
+  params.D_CleftSSL = 0.
+  params.D_CleftCyto = 0.
+  reactions = "caitlinSERCA"
+  concsFinal= tsolve(mode="2D_noSSL",
+                     params=params,reactions=reactions,buffers=False,
+                     existsCleft=False,existsSSL=False)
+
+  assert( (concsFinal[idxCa] - refFinal) < 1e-4 ),  "SERCA test failed"
+  print "PASS SERCA test"
+
+
 
 
 def validationRyR(reactions="ryrOnly"):
@@ -88,6 +119,7 @@ def validationRyR(reactions="ryrOnly"):
     params.ryrOffset = 0.
     i_s = params.ryrAmp*np.exp(-ts/params.ryrTau)
     eps = 1e-1   # generous b.c. of use of dirac function and 
+
 
   params.T = fi - si
   js = wholeCellI_to_wholeCellJ(i_s)
@@ -349,10 +381,9 @@ def validation(test=1):
   if test==12:
     validationRyR(reactions="ryrOnlySwitch")
   #raise RuntimeError("NOT FINISHED VALID") 
-  quit()
 
   if test==13:
-    validationRyR(reactions="sercaSwitch")
+    validationCaitlinSERCA()
 
   if test==2:
     validationMergingSSLCyto()

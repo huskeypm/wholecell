@@ -381,8 +381,19 @@ def tsolve(pvdName=None,\
       itoJ = wholeCellI_to_wholeCellJ(1.) # rescale 1 [A/F] --> [uM/ms]
       itoj = wholeCellJ_to_jCleft(itoJ,params) 
       RHS += reactions.iryr*itoj*vCaCleft*dx()
+
+    elif reactions=="caitlinSERCA": #CES
+      import simple 
+      reactions = simple.Simple(caitlinSERCA=True) #CES
+      reactions.Init(params)
+      # SERCA
+      Jtoj = wholeCellJ_to_jCyto(1.0,params) # 1 [uM/ms] --> [uM um /ms]
+      RHS+= reactions.jSERCA*(Jtoj)*vCa*dx()
+
+      
     # apply
     F += - RHS
+
 
   ## Reactions
   if buffers !=False: 
