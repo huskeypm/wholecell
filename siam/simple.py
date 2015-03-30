@@ -8,17 +8,17 @@ from reactionsBase import ReactionsBase
 # based on Soeller 
 # [1]	C. Soeller, I. D. Jayasinghe, P. Li, A. V. Holden, and M. B. Cannell, 2009
 def SERCAExpression(cai=0.1,   
-  Vmax = 200,# uM/Hs
+  Vmax = 200,# uM/ms
   Kmf = 0.184,# uM
   H = 4.  # Hill coeff 
   ):
-  mystr = "-Vmax * pow(cai,H) / (Kmf + pow(cai,H))"
+  mystr = "-Vmax * pow(cai,H) / (pow(Kmf,H) + pow(cai,H))"
   #mystr = "-0.1+0*cai"
   expr = Expression(mystr,
-    Vmax=Vmax,
-    Kmf=Kmf,
-    cai=cai,
-    H = H)
+    Vmax=Vmax)
+#    Kmf=Kmf,
+#    cai=cai,
+#    H = H)
   return expr
 
 # uM/mso
