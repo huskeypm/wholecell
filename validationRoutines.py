@@ -63,11 +63,13 @@ def validationSERCA():
 
 # Test that addition of Ca2+ via RyR is approximately offset by SERCA 
 # uptake 
-def validationCaitlinSERCA():
+def validationCaitlinSERCA(withBuffers=False): 
   reactions="ryrOnly"
   params = Params()
   idxCaCleft = 4
   idxCa = 0
+  idxCaBuff = 1
+  idxCaFluo = 2
 
   # ryr stuff 
   si=0; fi=300; st = fi
@@ -76,6 +78,8 @@ def validationCaitlinSERCA():
   params.ryrOffset = 0.
   i_s = params.ryrAmp*np.exp(-ts/params.ryrTau)
   eps = 1e-1   # generous b.c. of use of dirac function and 
+
+
 
 
   params.T = fi - si
@@ -89,7 +93,7 @@ def validationCaitlinSERCA():
 
   #########
   ## 1) release RyR Ca2+ into partitioned cleft 
-  if 0: 
+  if 1: 
     params.dt = dt # ms
   
     params.D_SSLCyto = 0.
@@ -97,7 +101,7 @@ def validationCaitlinSERCA():
     params.D_CleftCyto = 0.
   
     concsFinal= tsolve(
-                         params=params,reactions=reactions,buffers=False)
+                         params=params,reactions=reactions,buffers=withBuffers)
     caCleftInit = concsFinal[idxCaCleft]
   
 
@@ -110,14 +114,15 @@ def validationCaitlinSERCA():
     params.D_CleftSSL = 1
     params.D_CleftCyto = 1
     concsFinal= tsolve(doAssert="conservation",\
-                         params=params,reactions=None,buffers=False)
+                         params=params,reactions=None,buffers=withBuffers)
     print "concsFinal idx: ",concsFinal[idxCa] #CES
 
   # verify that constant flux ok rthrough SERCA pexression  
   #########
   ## 3) suck up cyto Ca via SERCA  
   print "CAITLIN - add a flag for me" 
-  ## Constant rate 
+
+  ### Constant rate, but WITHOUT using RyR/SERCA expressions  
   if 0: 
     params = Params()
     params.T = 90 # ms 
@@ -142,14 +147,14 @@ def validationCaitlinSERCA():
 
     assert( (concsFinal[idxCa] - refFinal) < 1e-4 ),  "SERCA test failed"
 
-  # use expression in Simple
+  ### Constant SERCA rate, but through using expressions in Simple
   # Equivalent to a constant flux for serca, since we remove cai dependence 
   if 0: 
     params = Params()
     idxCa = 0
     params.T = 100
     params.dt = 10.0 # ms
-    params.ryrOffset = 1500
+    params.ryrOffset = 1500 # delay firing of Ryr until long after the sim
     params.sercaVmax = 0.4 # uM/ms
     #params.sercaKmf = 0.000 # uM
     params.sercaH = 0.  # Hill coeff 
@@ -173,9 +178,15 @@ def validationCaitlinSERCA():
     print "Avg jSERCA ", jSERCAAvg
     assert( (concsFinal[idxCa] - refFinal) < 1e-4 ),  "SERCA test failed"
 
+  ### Uses usual, Ca-dependent SERCA model 
   # Uses a serca model that will be nonzero until the cellular conc is 0. 
   # therefore, we stop this t some time T s.t. conc is reasonable.
-  # Note too that dt=1.; other SERCA overshoots cai=0
+  # Note too that dt=1.; otherwise SERCA overshoots cai=0
+  if withBuffers:
+    refFinal = 0.11636
+  else: 
+    refFinal = 0.02635 # from PKH 150330
+
   if 1: 
     params = Params()
     idxCa = 0
@@ -186,13 +197,12 @@ def validationCaitlinSERCA():
     concCaAfterRyR = 20.
     params.cInits[idxCa] = concCaAfterRyR  #CES
     #refFinal = params.cInits[idxCa] + dCa
-    refFinal = 0.02635 # from PKH 150330
     params.D_SSLCyto = 0.
     params.D_CleftSSL = 0.
     params.D_CleftCyto = 0.
     reactions = "simple"
     concsFinal= tsolve(mode="2D_noSSL",
-                       params=params,reactions=reactions,buffers=False,
+                       params=params,reactions=reactions,buffers=withBuffers,
                        existsCleft=False,existsSSL=False)
   
     jSERCAAvg = (concCaAfterRyR - concsFinal[idxCa])/params.T
@@ -490,6 +500,9 @@ def validation(test=1):
   #raise RuntimeError("NOT FINISHED VALID") 
   if test==13: 
     validationCaitlinSERCA()
+
+  if test==14: 
+    validationCaitlinSERCA(withBuffers=True)
 
   #quit()
   if test==2:

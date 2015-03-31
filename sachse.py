@@ -50,6 +50,7 @@ class Params(object):
     self.dt = 1. # time-step size [ms] 
   
     self.DCompart = 1 # [um/ms]
+    self.CaitlinsNewVariabvle = 1 # [INITS!!]
     self.D_SSLCyto = self.DCompart # Diffusion rate between SSL/Cyto compartments (if SSL exists) [um/ms]
     self.D_CleftSSL = self.DCompart #  Diffusion rate between Cleft/SSL compartments (if SSL exists)
     self.D_CleftCyto= self.DCompart #  Diffusion rate between Cleft/Cyto compartments (if SSL does not exist)
@@ -92,7 +93,7 @@ class Params(object):
     self.ryrKm = 0.2 # uM (made this up)  
 
     # from Soeller
-    self.sercaVmax = 200 # uM/ms
+    self.sercaVmax = 0.2 # uM/ms
     self.sercaKmf = 0.184 # uM
     self.sercaH = 4.  # Hill coeff 
   
@@ -206,6 +207,7 @@ def tsolve(pvdName=None,\
     params.Btot = params.Btot*cm.volFracCyto
     if "2D" not in mode:
       raise RuntimeError("Have not written support for this yet") 
+
 
 
   # Boundaries and measures 
@@ -800,6 +802,7 @@ if __name__ == "__main__":
       quit()
     elif(arg=="-test1"):
       tag = "ode"
+      raise RuntimeError("Not suported") 
       tsolve(debug=False,params=params,hdfName=tag+".h5",mode=tag)
       quit()
     elif(arg=="-test2D_torres"):

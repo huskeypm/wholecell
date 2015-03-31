@@ -14,6 +14,8 @@ validationRoutines.validation(4)
 validationRoutines.validation(5)
 validationRoutines.validation(6)
 #validationRoutines.validation(12) #CES
+validationRoutines.validation(13)
+validationRoutines.validation(14)
 
 
 print "All ValidationRoutines passed"
