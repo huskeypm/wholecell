@@ -1,4 +1,8 @@
 import numpy as np
+import runner 
+runner.init()
+idxNCX = runner.model.monitor_indices("i_NaCa")
+print idxNCX
 
 #def namer(PCa,ks,vMax=None,stim=None):
 def namer(var1Name, var1Val, var2Name=None,var2Val=None):
@@ -26,7 +30,7 @@ def runParams(
   name = "out",
   stim_period = 441,
   mxsteps = 1000,
-  dt = 3000):
+  deltaT = 3000):
 
 
   # rescale params 
@@ -43,7 +47,7 @@ def runParams(
   #pi[runner.model.parameter_indices("V_max_Jpump")]=V_max*np.float(rVmax)
 
   runner.model.p = pi
-  (p,s,t,j)=runner.runner(dt=dt, stim_period=stim_period,mxsteps=mxsteps)
+  (p,s,t,j)=runner.runner(dt=deltaT, stim_period=stim_period,mxsteps=mxsteps)
 #dummy = runner.plotting(p,sres,tsres,jsres,case="fast_healthy")
 #res = empty(p,sres,tsres,jsres)
   data1 = {'p':p,'s':s,'t':t,'j':j}
@@ -165,14 +169,12 @@ if __name__ == "__main__":
   #  1
   #  #print "arg"
 
-  import runner 
-  runner.init()
 
   # Loops over each argument in the command line 
   pi = runner.model.p
   stim = 441 
   name="out"
-  dt = 10000
+  deltaT = 10000
   sweep = False
   varDict = dict()              
   for i,arg in enumerate(sys.argv):
@@ -188,8 +190,8 @@ if __name__ == "__main__":
       sweep=True
       
       
-    if(arg=="-dt"):
-      dt=np.int(sys.argv[i+1])
+    if(arg=="-T"):
+      deltaT=np.int(sys.argv[i+1])
     if(arg=="-name"):
       name=sys.argv[i+1] 
     if(arg=="-stim"):
@@ -200,5 +202,5 @@ if __name__ == "__main__":
     GenSweptParams(varDict)# var1Name,var1Vals)
   else: 
     runParams(runner=runner,varDict=varDict,\
-              name=name,dt=dt,stim_period = stim)
+              name=name,deltaT=deltaT,stim_period = stim)
   
