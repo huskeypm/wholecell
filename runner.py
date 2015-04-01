@@ -1,6 +1,7 @@
 from separate import * # This imports separate fluxes
-import shannon_2004 as model
-#import shannon_pkh as model
+import shannon_2004_hack as model
+# NOTE: this hack has the cut-and-pasted parameters, as described in 
+# 150220_gotranbug 
 
 ## MONITORS
 # New gotran 
@@ -44,14 +45,14 @@ mM_to_uM = 1e3
 #monitor(j_rel_SR)
 #monitor(j_pump_SR)
 #monitor(i_Stim)
-fCa_SL  =0
-fCa_jct =1
-i_NaCa  =2 
-j_rel_SR=3
-j_pump_SR=4
-i_CaL=5
-i_Stim = 6
-totMonitors = 7
+#fCa_SL  =0
+#fCa_jct =1
+#i_NaCa  =2 
+#j_rel_SR=3
+#j_pump_SR=4
+#i_CaL=5
+#i_Stim = 6
+#totMonitors = 7
 
 from scipy.integrate import odeint
 import numpy as np
@@ -66,14 +67,16 @@ def monitorstepper(model,states,pi,tsteps):
   jis = model.monitor(states[0,:], 0, pi) 
   totMonitors = np.shape(jis)[0]
   jall = np.zeros((np.shape(tstepsm1)[0],totMonitors)) 
+  idxNCX = model.monitor_indices("i_NaCa")
 
   #print np.shape(jis)
   jSums = np.zeros(totMonitors)
   for i,t in enumerate(tstepsm1):
     # get current state
     si = states[i,:]
-    # extract monitored fluxes 
+    # extract ALL monitored fluxes 
     jis = model.monitor(si, t, pi) 
+    #print "jis ", jis[idxNCX]
     #print np.shape(jis)
     jall[i,] = jis
     
@@ -121,8 +124,8 @@ def runner(dt=1000,dtn=1.,\
   states = odeint(model.rhs,s,tsteps,(p,),mxstep=mxsteps,hmax=.03,rtol=1e-12, atol=1e-12)
   
   # get monitored variables
-  #(ts,js)=monitorstepper(model,states,np.copy(p),tsteps)
-  ts=tsteps[1:]; js=0
+  (ts,js)=monitorstepper(model,states,np.copy(p),tsteps)
+  ts=tsteps[1:]; #js=0
   
   return (p,states,ts,js)
 

@@ -29,7 +29,7 @@ from scipy.integrate import odeint
 
 
 # set var, namespaces
-import shannon_2004 as model
+import shannon_2004_hack as model
 # TODO Check
 model = runner.model 
 param_indices = runner.model.param_indices

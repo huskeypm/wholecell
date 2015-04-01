@@ -1,6 +1,6 @@
 isubstrate_idx=7
 
-import shannon_2004 as model
+import shannon_2004_hack as model
 import numpy as np
 from scipy.integrate import odeint
 import matplotlib.pyplot as plt
