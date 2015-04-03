@@ -70,7 +70,7 @@ def runParams(
 
 # Print's command lines for running param sweep
 #def GenSweptParams(var1Name,var1Vals,var2Name=None,var2Vals=None):
-def GenSweptParams(varDict,stim_period=1000):
+def GenSweptParams(varDict,stim_period=1000,T=10000):
 
   # create list of input args (for command line) 
   allArgs=[]
@@ -92,6 +92,11 @@ def GenSweptParams(varDict,stim_period=1000):
     allArgs.append(args1)
     #print args1
     
+
+  # cmd and timing 
+  cmd = "python runShannonTest.py"
+  cmd+= " -stim %d" % stim_period
+  cmd+= " -T %d" % T                 
     
 
 
@@ -100,9 +105,7 @@ def GenSweptParams(varDict,stim_period=1000):
   if len(allArgs)==1:
     for i, arg1 in enumerate(allArgs[0]): 
         var1 = (allVars[0])[i]
-        name = namer(keys[0],var1)
-        cmd = "python runShannonTest.py"
-        cmd+= " -stim %d" % stim_period
+        name = namer(keys[0],var1,stim_period=stim_period)
         cmd+= " "+arg1 
         cmd+= " -name "+name 
         cmd+= " &"
@@ -115,9 +118,7 @@ def GenSweptParams(varDict,stim_period=1000):
       for j, arg2 in enumerate(allArgs[1]):
         var1 = (allVars[0])[i]
         var2 = (allVars[1])[j]
-        name = namer(keys[0],var1,keys[1],var2)
-        cmd = "python runShannonTest.py"
-        cmd+= " -stim %d" % stim_period
+        name = namer(keys[0],var1,keys[1],var2,stim_period=stim_period)
         cmd+= " "+arg1 
         cmd+= " "+arg2 
         cmd+= " -name "+name 

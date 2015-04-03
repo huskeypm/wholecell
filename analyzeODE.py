@@ -169,8 +169,11 @@ def PlotFluxes(t,j,idx1,label1="flux1",idx2=None,label2="flux2"):
     rect2 = ax2.plot(t,j[:,idx2],'k--',label=label2)
     rects.append(rect2[0])
     ax2.set_ylabel(label2)
+    leg = ax2.legend( (rects) , (labels), loc=2, fancybox=True)
+  else: 
+    leg = ax1.legend( (rects) , (labels), loc=2, fancybox=True)
   
   
   
-  ax1.legend( (rects) , (labels), loc=2 )
+  leg.get_frame().set_alpha(1.0) 
 
