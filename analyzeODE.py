@@ -44,15 +44,26 @@ def analyOut(data1,state="Cai",label=""):
 #d = readOut(name)
 #pca,ks,minCai,maxCai = analyOut(d)
 
-def ProcessOneDOutputs(var1Name,names,allVars,state="Cai",xlim=None,ylim=None):
+def ProcessOneDOutputs(var1Name,names,allVars,state="Cai",xlim=None,ylim=None,offsetMin=False):
   print "WARNING: does not include time steps" 
   for i,name in enumerate(names):               
       print name
       d = readOut(name+".pickle")
       print np.shape(d['s'])
       s = d['s']
-      caSR = s[:,runner.model.state_indices(state)]         
-      plt.plot(caSR*mM_to_uM,label="%s=%4.2f"%(var1Name,allVars[i]))  
+      si = s[:,runner.model.state_indices(state)]         
+     
+      # recenter each to minimum
+      if offsetMin:
+        # assume last third is in steady state
+        inds  = np.shape(si)[0]
+        inds = np.int(inds/3.)
+        si = si - np.min(si[-inds:])
+          
+      plt.plot(si*mM_to_uM,label="%s=%4.2f"%(var1Name,allVars[i]))  
+
+  if offsetMin:
+    plt.title("Minima offset to 0. uM")
 
   plt.legend(loc=2)
 
@@ -60,6 +71,9 @@ def ProcessOneDOutputs(var1Name,names,allVars,state="Cai",xlim=None,ylim=None):
     plt.xlim(xlim)
   if ylim!=None:
     plt.ylim(ylim)
+
+
+
   plt.ylabel("[%s] [uM]" % state)  
   plt.xlabel("timesteps []") # t [ms]") 
   name = state+"transients%s"%(var1Name)

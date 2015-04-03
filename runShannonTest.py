@@ -8,14 +8,17 @@ import numpy as np
 import runner 
 runner.init()
 idxNCX = runner.model.monitor_indices("i_NaCa")
+
 #def namer(PCa,ks,vMax=None,stim=None):
-def namer(var1Name, var1Val, var2Name=None,var2Val=None):
+def namer(var1Name, var1Val, var2Name=None,var2Val=None,stim_period=1000):
     #loc = "/u1/huskeypm/srcs/wholecell/"
     loc = "./"
     name =  loc+"run"
     name+=  "_%s%3.2f"%(var1Name,var1Val)
     if var2Name!=None:    
       name+=  "_%s%3.2f"%(var2Name,var2Val)
+
+    name+="_stim%d"%stim_period
 
     return name 
 
@@ -32,10 +35,11 @@ def runParams(
   runner=None,
   varDict=None,       
   name = "out",
-  stim_period = 441,
-  mxsteps = 2000,
-  deltaT = 3000):
-
+  stim_period = 1000,
+  mxsteps = 1000,
+  deltaT = 3000, # duration
+  dt = 1. # interval 
+  ):
 
   # rescale params 
   pi = runner.model.p
@@ -51,7 +55,7 @@ def runParams(
   #pi[runner.model.parameter_indices("V_max_Jpump")]=V_max*np.float(rVmax)
 
   runner.model.p = pi
-  (p,s,t,j)=runner.runner(dt=deltaT, stim_period=stim_period,mxsteps=mxsteps)
+  (p,s,t,j)=runner.runner(dt=deltaT, dtn=dt, stim_period=stim_period,mxsteps=mxsteps)
 #dummy = runner.plotting(p,sres,tsres,jsres,case="fast_healthy")
 #res = empty(p,sres,tsres,jsres)
   data1 = {'p':p,'s':s,'t':t,'j':j}
@@ -66,7 +70,7 @@ def runParams(
 
 # Print's command lines for running param sweep
 #def GenSweptParams(var1Name,var1Vals,var2Name=None,var2Vals=None):
-def GenSweptParams(varDict):
+def GenSweptParams(varDict,stim_period=1000):
 
   # create list of input args (for command line) 
   allArgs=[]
@@ -98,6 +102,7 @@ def GenSweptParams(varDict):
         var1 = (allVars[0])[i]
         name = namer(keys[0],var1)
         cmd = "python runShannonTest.py"
+        cmd+= " -stim %d" % stim_period
         cmd+= " "+arg1 
         cmd+= " -name "+name 
         cmd+= " &"
@@ -112,6 +117,7 @@ def GenSweptParams(varDict):
         var2 = (allVars[1])[j]
         name = namer(keys[0],var1,keys[1],var2)
         cmd = "python runShannonTest.py"
+        cmd+= " -stim %d" % stim_period
         cmd+= " "+arg1 
         cmd+= " "+arg2 
         cmd+= " -name "+name 
@@ -178,8 +184,9 @@ if __name__ == "__main__":
 
   # Loops over each argument in the command line 
   pi = runner.model.p
-  stim = 701 # [ms] 
-  name="out.pickle"
+  stim = 1000 # [ms] 
+  dt = 1. # [ms] 
+  name="out"
   deltaT = 10000 # [ms] 
   sweep = False
   varDict = dict()              
@@ -195,9 +202,11 @@ if __name__ == "__main__":
       varDict[varName] = varVals
       sweep=True
       
+    if(arg=="-dt"):
+      dt=np.float(sys.argv[i+1])
       
     if(arg=="-T"):
-      deltaT=np.int(sys.argv[i+1])
+      deltaT=np.float(sys.argv[i+1])
     if(arg=="-name"):
       name=sys.argv[i+1] 
     if(arg=="-stim"):
@@ -208,5 +217,5 @@ if __name__ == "__main__":
     GenSweptParams(varDict)# var1Name,var1Vals)
   else: 
     runParams(runner=runner,varDict=varDict,\
-              name=name,deltaT=deltaT,stim_period = stim)
+              name=name,deltaT=deltaT,dt=dt, stim_period = stim)
   
