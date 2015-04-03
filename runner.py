@@ -76,7 +76,6 @@ def monitorstepper(model,states,pi,tsteps):
     si = states[i,:]
     # extract ALL monitored fluxes 
     jis = model.monitor(si, t, pi) 
-    #print "jis ", jis[idxNCX]
     #print np.shape(jis)
     jall[i,] = jis
     

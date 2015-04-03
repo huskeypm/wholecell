@@ -1,9 +1,13 @@
+"""
+For performing parameter sweeps and running shannon model with dictionaries of parameter values 
+"""
+
+# Revisions 
+# Changed default stimulation to 701
 import numpy as np
 import runner 
 runner.init()
 idxNCX = runner.model.monitor_indices("i_NaCa")
-print idxNCX
-
 #def namer(PCa,ks,vMax=None,stim=None):
 def namer(var1Name, var1Val, var2Name=None,var2Val=None):
     #loc = "/u1/huskeypm/srcs/wholecell/"
@@ -29,7 +33,7 @@ def runParams(
   varDict=None,       
   name = "out",
   stim_period = 441,
-  mxsteps = 1000,
+  mxsteps = 2000,
   deltaT = 3000):
 
 
@@ -54,7 +58,9 @@ def runParams(
   #print np.shape(data1['s'])
 
   import cPickle as pickle 
-  output = open(name+'.pickle', 'wb')
+  if ".pickle" not in name:
+    name += ".pickle"
+  output = open(name, 'wb')
   pickle.dump(data1, output)
   output.close()
 
@@ -172,9 +178,9 @@ if __name__ == "__main__":
 
   # Loops over each argument in the command line 
   pi = runner.model.p
-  stim = 441 
-  name="out"
-  deltaT = 10000
+  stim = 701 # [ms] 
+  name="out.pickle"
+  deltaT = 10000 # [ms] 
   sweep = False
   varDict = dict()              
   for i,arg in enumerate(sys.argv):
