@@ -1,4 +1,22 @@
+To create xml files from geo:
+
+- convert geo file to msh 
+gmsh -clscale 0.2 sarcomere4TT_2D.geo -2
+- convert msh to xml 
+source /u1/huskeypm/srcs/FEniCS_1.4.0/share/dolfin/dolfin.conf
+dolfin-convert sarcomere4TT_2D.msh sarcomere4TT_2D.xml
+
+
+
+
+
+
+
+
+Misc: 
 Created sarco.geo using segmentation.ipynb
-
-
 see 150225_satincryo.tex
+
+Created 2D geo file with:
+gmsh sarcomere2TT.geo
+Select 2D option, and save file in .geo format.

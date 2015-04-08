@@ -46,12 +46,26 @@ class OuterSarcolemma(SubDomain):
     #print x[0], edge, on_boundary
     return on_boundary and edge
 
+##  ADDED BY CES
+#class sarcomere2TT(SarcomereBase):
+#  def __init__(self,params="",mode="",geom="2D"):
+#    SarcomereBase.__init__(self)
+#    self.mode = mode
+#    if geom=="2D":
+#      self.fileName = "siam/sarcomere2TT_2D.xml"
+#      self.dim = 2
+#    else:
+#      self.fileName = "./siam/sarcomere2TT.xml"
+#      self.dim = 3
+#    self.params = params
+#    self.distributions() 
+
 class sarcomere2TT(SarcomereBase):
   def __init__(self,params="",mode=""):
     SarcomereBase.__init__(self)
     self.mode = mode
     self.fileName = "./siam/sarcomere2TT.xml"
-    self.params = params 
+    self.params = params
 
   def GetMesh(self):
     self.mesh = Mesh(self.fileName)

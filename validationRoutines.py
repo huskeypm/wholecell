@@ -60,6 +60,21 @@ def validationSERCA():
   assert( (concsFinal[idxCa] - refFinal) < 1e-4 ),  "SERCA test failed" 
   print "PASS SERCA test"
 
+def validationCaitlinRoutine(withBuffers=False):
+  reactions=None  
+  params = Params()
+  idxCaCleft = 4
+  idxCaSSL  = 3
+  #jFlux_CleftSSL =D_CleftSSL*area_CleftSSL*(0.9)/(delx_CleftSSL)
+  params.cInits[idxCaCleft] = 1.
+  params.cInits[idxCaSSL]   = 0.1
+  params.D_SSLCyto = 0
+  params.T = 1.
+  params.dt = 1.0 # ms
+  #params.D_SSLCyto = 0.122 #From Bers 2004 paper.
+  concsFinal= tsolve(
+                    params=params,reactions=reactions,buffers=withBuffers)
+  print concsFinal
 
 # Test that addition of Ca2+ via RyR is approximately offset by SERCA 
 # uptake 
@@ -79,9 +94,6 @@ def validationCaitlinSERCA(withBuffers=False):
   i_s = params.ryrAmp*np.exp(-ts/params.ryrTau)
   eps = 1e-1   # generous b.c. of use of dirac function and 
 
-
-
-
   params.T = fi - si
   js = wholeCellI_to_wholeCellJ(i_s)
   dt = ts[1]-ts[0]
@@ -89,7 +101,7 @@ def validationCaitlinSERCA(withBuffers=False):
   totDCa = np.cumsum(dCas)
   finaldCa  = totDCa[-1]
   print "Tot expected ", finaldCa
-  #quit()
+#  quit()
 
   #########
   ## 1) release RyR Ca2+ into partitioned cleft 
@@ -101,20 +113,19 @@ def validationCaitlinSERCA(withBuffers=False):
     params.D_CleftCyto = 0.
   
     concsFinal= tsolve(
-                         params=params,reactions=reactions,buffers=withBuffers)
+                    params=params,reactions=reactions,buffers=withBuffers)
     caCleftInit = concsFinal[idxCaCleft]
   
 
     ## 2) Open cleft and release Ca2+ into cyto 
     params.T = 100
-    params.dt = 10
+    params.dt = 0.5
     params.cInits[idxCaCleft] = caCleftInit 
     #params.jTest = 0.
-    params.D_SSLCyto = 1
-    params.D_CleftSSL = 1
-    params.D_CleftCyto = 1
+    params.D_SSLCyto = 117.48 #Calculated from TTheight and SSL and Bers model
+    params.D_CleftSSL = 3.29093 #See above 
     concsFinal= tsolve(doAssert="conservation",\
-                         params=params,reactions=None,buffers=withBuffers)
+                         params=params,hdfName="openCleft_test1.h5",reactions=None,buffers=withBuffers)
     print "concsFinal idx: ",concsFinal[idxCa] #CES
 
   # verify that constant flux ok rthrough SERCA pexression  
@@ -149,12 +160,13 @@ def validationCaitlinSERCA(withBuffers=False):
 
   ### Constant SERCA rate, but through using expressions in Simple
   # Equivalent to a constant flux for serca, since we remove cai dependence 
-  if 0: 
+  if 1: 
     params = Params()
     idxCa = 0
     params.T = 100
     params.dt = 10.0 # ms
-    params.ryrOffset = 1500 # delay firing of Ryr until long after the sim
+    #params.ryrOffset = 1500 # delay firing of Ryr until long after the sim
+    params.ryrOffset = 1500 #fire ryr CES 
     params.sercaVmax = 0.4 # uM/ms
     #params.sercaKmf = 0.000 # uM
     params.sercaH = 0.  # Hill coeff 
@@ -163,14 +175,16 @@ def validationCaitlinSERCA(withBuffers=False):
     dCa = params.T  * jSERCA
   
   
-    concCaAfterRyR = 20.
+    concCaAfterRyR = 20. # CES
+    ##concCaAfterRyR = concsFinal[idxCa]
     params.cInits[idxCa] = concCaAfterRyR  #CES
     refFinal = params.cInits[idxCa] + dCa
     params.D_SSLCyto = 0.
     params.D_CleftSSL = 0.
     params.D_CleftCyto = 0.
     reactions = "simple"
-    concsFinal= tsolve(mode="2D_noSSL",
+  #  concsFinal= tsolve(mode="2D_noSSL",
+    concsFinal= tsolve(hdfName = "out_test1_const.h5",
                        params=params,reactions=reactions,buffers=False,
                        existsCleft=False,existsSSL=False)
   
@@ -193,7 +207,8 @@ def validationCaitlinSERCA(withBuffers=False):
     params.T = 200
     params.dt = 1.0 # ms
     params.ryrOffset = 1500
-  
+    #params.ryrOffset = 0 #CES
+
     concCaAfterRyR = 20.
     params.cInits[idxCa] = concCaAfterRyR  #CES
     #refFinal = params.cInits[idxCa] + dCa
@@ -201,8 +216,9 @@ def validationCaitlinSERCA(withBuffers=False):
     params.D_CleftSSL = 0.
     params.D_CleftCyto = 0.
     reactions = "simple"
-    concsFinal= tsolve(mode="2D_noSSL",
-                       params=params,reactions=reactions,buffers=withBuffers,
+#    concsFinal= tsolve(mode="2D_noSSL",
+    concsFinal= tsolve( 
+                       params=params,hdfName = "out_test1.h5",reactions=reactions,buffers=withBuffers,
                        existsCleft=False,existsSSL=False)
   
     jSERCAAvg = (concCaAfterRyR - concsFinal[idxCa])/params.T
@@ -326,7 +342,7 @@ def validationMergingSSLCyto():
   if 1: 
     params.T = 25     
     mode = "2D_SSL"
-    threeComps = tsolve(mode=mode,params=params,hdfName="%s_%s.h5"%(mode,case),
+    threeComps = tsolve(mode=mode,params=params,hdfName="sacshe2TT_%s_%s.h5"%(mode,case),
       reactions = reactions,buffers=buffers) 
  
   # merged compartments 
@@ -334,7 +350,7 @@ def validationMergingSSLCyto():
   mode = "2D_noSSL"
   params.T = 76     
   params.dt = 0.5
-  twoComps = tsolve(pvdName="test.pvd",mode=mode,params=params,hdfName="%s_%s.h5"%(mode,case),
+  twoComps = tsolve(pvdName="test.pvd",mode=mode,params=params,hdfName="sacshe2TT_%s_%s.h5"%(mode,case),
     reactions = reactions,buffers=buffers) 
   msg = "%f != %f " %( threeComps[idxCa] ,twoComps[idxCa])
   # NOTE: more generous with this error 
@@ -503,6 +519,9 @@ def validation(test=1):
 
   if test==14: 
     validationCaitlinSERCA(withBuffers=True)
+
+  if test==15:
+    validationCaitlinRoutine(withBuffers=False)
 
   #quit()
   if test==2:
