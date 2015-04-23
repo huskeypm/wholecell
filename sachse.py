@@ -64,7 +64,7 @@ class Params(object):
     self.DCa_SSL = 0.6 * self.DCa # Diff const within SSL region (of cytosol) 
   
     # geom 
-    self.volSSL = 1. # Volume of SSL domain [um^3]
+    self.volSSL = 1. # Volume of SSL domain [um^3] (overridden by sarcomere files)
     self.volCleft = 0.1 # [um^3] 
   
     # buffer (mostly TnC) 

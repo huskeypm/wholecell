@@ -700,6 +700,9 @@ def rhs(states, t, parameters, values=None):
         dCa_jct1_tot_bound
     values[36] = (J_Ca_jct1_SL - J_Ca_SL_myo)/Vol_SL - dCa_SL_tot_bound -\
         Cm*i_Ca_SL_tot/(2*F*Vol_SL)
+    #print Ca_jct1, Ca_SL, J_Ca_jct1_SL          
+    #print J_Ca_jct1_SL/Vol_jct1, " [mM/ms]"
+    
     values[37] = -dCa_cytosol_tot_bound + J_Ca_SL_myo/Vol_myo -\
         Vol_SR*j_pump_SR/Vol_myo
     #print J_Ca_SL_myo

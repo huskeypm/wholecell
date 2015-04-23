@@ -94,9 +94,9 @@ def GenSweptParams(varDict,stim_period=1000,T=10000):
     
 
   # cmd and timing 
-  cmd = "python runShannonTest.py"
-  cmd+= " -stim %d" % stim_period
-  cmd+= " -T %d" % T                 
+  cmdpre = "python runShannonTest.py"
+  cmdpre+= " -stim %d" % stim_period
+  cmdpre+= " -T %d" % T                 
     
 
 
@@ -106,6 +106,7 @@ def GenSweptParams(varDict,stim_period=1000,T=10000):
     for i, arg1 in enumerate(allArgs[0]): 
         var1 = (allVars[0])[i]
         name = namer(keys[0],var1,stim_period=stim_period)
+        cmd = cmdpre
         cmd+= " "+arg1 
         cmd+= " -name "+name 
         cmd+= " &"
@@ -119,6 +120,7 @@ def GenSweptParams(varDict,stim_period=1000,T=10000):
         var1 = (allVars[0])[i]
         var2 = (allVars[1])[j]
         name = namer(keys[0],var1,keys[1],var2,stim_period=stim_period)
+        cmd = cmdpre
         cmd+= " "+arg1 
         cmd+= " "+arg2 
         cmd+= " -name "+name 

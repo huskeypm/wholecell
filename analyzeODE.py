@@ -10,7 +10,7 @@ runner.init()
 
 mM_to_uM=1e3
 
-def readOut(name = "PCa0.75kss0.25.pickle"):
+def readPickle(name = "PCa0.75kss0.25.pickle"):
   print "Reading " + name  
   pkl_file = open(name, 'rb')
   data1 = pickle.load(pkl_file)  
@@ -41,14 +41,14 @@ def analyOut(data1,state="Cai",label=""):
   return (PCa,ks,minCai,maxCai)
     
 #name =  "/tmp/PCa1.00ks1.00.pickle"      
-#d = readOut(name)
+#d = readPickle(name)
 #pca,ks,minCai,maxCai = analyOut(d)
 
 def ProcessOneDOutputs(var1Name,names,allVars,state="Cai",xlim=None,ylim=None,offsetMin=False):
   print "WARNING: does not include time steps" 
   for i,name in enumerate(names):               
       print name
-      d = readOut(name+".pickle")
+      d = readPickle(name+".pickle")
       print np.shape(d['s'])
       s = d['s']
       si = s[:,runner.model.state_indices(state)]         
@@ -98,7 +98,7 @@ def ProcessTwoDOutputs(allKeys,allVars,state="Cai",ylims=None):
     for j, var2Val in enumerate(vars2):
         name =namer(var1Name,var1Val,var2Name,var2Val)+".pickle"
         #print name
-        d = readOut(name) 
+        d = readPickle(name) 
         #print np.shape(d['s'])
         dummy,dummy,minCai,maxCai = analyOut(d,state=state,label="%s=%3.2f"%(var2Name,var2Val))
         outsMin[i,j]= minCai 

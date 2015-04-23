@@ -2,14 +2,6 @@ from scipy.integrate import odeint
 import numpy as np      
 
 
-
-
-
-# Runner
-
-# In[ ]:
-
-
 #monitors = ["fCa_SL","fCa_jct","i_NaCa","j_rel_SR","j_pump_SR","i_Stim"]
 #units = ["unk","unk","unk","unk","unk","unk"]
 def RunnerMonitor(model,tsteps,s,p,monitors):
@@ -32,5 +24,15 @@ def RunnerMonitor(model,tsteps,s,p,monitors):
         allJs = model.monitor(si, t, p)
         monitored[i,:] = allJs[idxMonitors]
     return states,monitored
+
+    
+def GetMonitored(case,model,tsteps,mlabel="J_Ca_SL_myo"):
+  case.js = np.zeros(np.shape(tsteps)[0])
+  for i, ti in enumerate(tsteps):    
+    r=model.monitor(case.states[i,:],ti,case.p)
+    case.js[i]=r[model.monitor_indices(mlabel)]
+
+    
+
 
 
