@@ -50,7 +50,7 @@ parameters("Model parameters",
 
 parameters("INa",
            G_INa = ScalarParam(16, unit="mS*uF**-1"),
-           Fx_Na_jct = 0.11,
+           Fx_Na_jct1 = 0.11,
            Fx_Na_SL = 0.89)
 
 states("INa", "h gate",
@@ -64,7 +64,7 @@ states("INa", "m gate",
 
 parameters("INab",
            G_NaBk = ScalarParam(0.297e-3, unit="mS*uF**-1"),
-           Fx_NaBk_jct = 0.11,
+           Fx_NaBk_jct1 = 0.11,
            Fx_NaBk_SL = 0.89)
 
 parameters("INaK",
@@ -72,14 +72,14 @@ parameters("INaK",
            Km_Nai = ScalarParam(11, unit="mM"),
            Km_Ko = ScalarParam(1.5, unit="mM"),
            I_NaK_max = ScalarParam(1.90719, unit="uA*uF**-1"),
-           Fx_NaK_jct = 0.11,
+           Fx_NaK_jct1 = 0.11,
            Fx_NaK_SL = 0.89)
 
 states("IKr", "Xr gate",
        Xr = 8.641386e-3)
 
 parameters("IKs",
-           Fx_Ks_jct = 0.11,
+           Fx_Ks_jct1 = 0.11,
            Fx_Ks_SL = 0.89,
            pKNa = 0.01833)
 
@@ -113,7 +113,7 @@ states("Itof", "Itof Y gate",
 parameters("ICl Ca",
            G_Cl = ScalarParam(0.109625, unit="mS*uF**-1"),
            Kd_ClCa = ScalarParam(0.1, unit="mM"),
-           Fx_Cl_jct = 0.11,
+           Fx_Cl_jct1 = 0.11,
            Fx_Cl_SL = 0.89)
 
 parameters("IClb",
@@ -127,11 +127,11 @@ states("ICaL", "f gate",
 
 states("ICaL", "FCa gate",
        fCaB_SL = 1.452605e-2,
-       fCaB_jct = 2.421991e-2)
+       fCaB_jct1 = 2.421991e-2)
 
 parameters("INaCa",
            V_max_INaCa = ScalarParam(9, unit="uA*uF**-1"),
-           Fx_NCX_jct = 0.11,
+           Fx_NCX_jct1 = 0.11,
            Fx_NCX_SL = 0.89,
            Q10_NCX = 1.57,
            K_mNai = ScalarParam(12.29, unit="mM"),
@@ -144,7 +144,7 @@ parameters("INaCa",
            HNa = 3)
 
 parameters("ICap",
-           Fx_SLCaP_jct = 0.11,
+           Fx_SLCaP_jct1 = 0.11,
            Fx_SLCaP_SL = 0.89,
            Q10_SLCaP = 2.35,
            Km = ScalarParam(0.0005, unit="mM"),
@@ -153,7 +153,7 @@ parameters("ICap",
 
 parameters("ICab",
            G_CaBk = ScalarParam(0.0002513, unit="mS*uF**-1"),
-           Fx_CaBk_jct = 0.11,
+           Fx_CaBk_jct1 = 0.11,
            Fx_CaBk_SL = 0.89)
 
 states("Jrel SR",
@@ -176,11 +176,11 @@ parameters("Jleak SR",
            KSRleak = ScalarParam(5.348e-6, unit="ms**-1"))
 
 parameters("Jpump SR",
-           V_max = ScalarParam(5.3114e-3, unit="mM*ms**-1"),
+           V_max_Jpump = ScalarParam(5.3114e-3, unit="mM*ms**-1"),
            Q10_SRCaP = 2.6,
            Kmf = ScalarParam(0.000246, unit="mM"),
            Kmr = ScalarParam(1.7, unit="mM"),
-           H = 1.787)
+           H_Jpump = 1.787)
 
 states("Ca buffer", "Cytosolic",
        Ca_TroponinC = ScalarParam(8.773191e-3, unit="mM"),
@@ -218,7 +218,7 @@ parameters("ICaL",
            PCa = ScalarParam(5.4e-4, unit="l*F**-1*ms**-1"),
            PNa = ScalarParam(1.5e-8, unit="l*F**-1*ms**-1"),
            PK = ScalarParam(2.7e-7, unit="l*F**-1*ms**-1"),
-           Fx_ICaL_jct = 0.9,
+           Fx_ICaL_jct1 = 0.9,
            Fx_ICaL_SL = 0.1,
            gamma_Cai = 0.341,
            gamma_Cao = 0.341,
@@ -229,34 +229,34 @@ parameters("ICaL",
            Q10_CaL = 1.8)
 
 states("Na buffer",
-       Na_jct_buf = ScalarParam(3.539892, unit="mM"),
+       Na_jct1_buf = ScalarParam(3.539892, unit="mM"),
        Na_SL_buf = ScalarParam(7.720854e-1, unit="mM"),
-       Na_jct = ScalarParam(8.80329, unit="mM"),
+       Na_jct1 = ScalarParam(8.80329, unit="mM"),
        Na_SL = ScalarParam(8.80733, unit="mM"),
        Nai = ScalarParam(8.80853, unit="mM"))
 
 parameters("Na buffer",
            Bmax_SL = ScalarParam(1.65, unit="mM"),
-           Bmax_jct = ScalarParam(7.561, unit="mM"),
+           Bmax_jct1 = ScalarParam(7.561, unit="mM"),
            kon = ScalarParam(0.0001, unit="mM**-1*ms**-1"),
            koff = ScalarParam(1e-3, unit="ms**-1"))
 
 states("Ca buffer",
        Ca_Calsequestrin = ScalarParam(1.242988, unit="mM"),
        Ca_SLB_SL = ScalarParam(1.110363e-1, unit="mM"),
-       Ca_SLB_jct = ScalarParam(9.566355e-3, unit="mM"),
+       Ca_SLB_jct1 = ScalarParam(9.566355e-3, unit="mM"),
        Ca_SLHigh_SL = ScalarParam(7.297378e-2, unit="mM"),
-       Ca_SLHigh_jct = ScalarParam(7.347888e-3, unit="mM"),
+       Ca_SLHigh_jct1 = ScalarParam(7.347888e-3, unit="mM"),
        Ca_SR = ScalarParam(5.545201e-1, unit="mM"),
-       Ca_jct = ScalarParam(1.737475e-4, unit="mM"),
+       Ca_jct1 = ScalarParam(1.737475e-4, unit="mM"),
        Ca_SL = ScalarParam(1.031812e-4, unit="mM"),
        Cai = ScalarParam(8.597401e-5, unit="mM"))
 
 parameters("Ca buffer",
            Bmax_SLB_SL = ScalarParam(0.0374, unit="mM"),
-           Bmax_SLB_jct = ScalarParam(0.0046, unit="mM"),
+           Bmax_SLB_jct1 = ScalarParam(0.0046, unit="mM"),
            Bmax_SLHigh_SL = ScalarParam(0.0134, unit="mM"),
-           Bmax_SLHigh_jct = ScalarParam(0.00165, unit="mM"),
+           Bmax_SLHigh_jct1 = ScalarParam(0.00165, unit="mM"),
            Bmax_Calsequestrin = ScalarParam(0.14, unit="mM"),
            kon_SL = ScalarParam(100, unit="mM**-1*ms**-1"),
            kon_Calsequestrin = ScalarParam(100, unit="mM**-1*ms**-1"),
@@ -277,22 +277,22 @@ component("Model parameters")
 Vol_Cell = 3.141592654*(cell_radius/1000)**2*cell_length/1000**3 # l
 Vol_SR = 0.035*Vol_Cell # l
 Vol_SL = 0.02*Vol_Cell # l
-Vol_jct = 0.0539*0.01*Vol_Cell # l
+Vol_jct1 = 0.0539*0.01*Vol_Cell # l
 Vol_myo = 0.65*Vol_Cell # l
 
 component("Reversal potentials")
-E_Na_jct = Rgas*T/F*log(Nao/Na_jct) # mV
+E_Na_jct1 = Rgas*T/F*log(Nao/Na_jct1) # mV
 E_Na_SL = Rgas*T/F*log(Nao/Na_SL) # mV
-E_Ca_jct = Rgas*T/(2*F)*log(Cao/Ca_jct) # mV
+E_Ca_jct1 = Rgas*T/(2*F)*log(Cao/Ca_jct1) # mV
 E_Ca_SL = Rgas*T/(2*F)*log(Cao/Ca_SL) # mV
 E_K = Rgas*T/F*log(Ko/Ki) # mV
 E_Cl = Rgas*T/F*log(Cli/Clo) # mV
 
 component("INa")
 openProb = m**3*h*j
-i_Na_jct = Fx_Na_jct*G_INa*openProb*(V - E_Na_jct) # uA*uF**-1
+i_Na_jct1 = Fx_Na_jct1*G_INa*openProb*(V - E_Na_jct1) # uA*uF**-1
 i_Na_SL = Fx_Na_SL*G_INa*openProb*(V - E_Na_SL) # uA*uF**-1
-i_Na = i_Na_jct + i_Na_SL # uA*uF**-1
+i_Na = i_Na_jct1 + i_Na_SL # uA*uF**-1
 
 component("INa", "h gate")
 alpha_h = Conditional(Lt(V, -40), 0.135*exp((80 + V)/-6.8), 0) # ms**-1
@@ -310,16 +310,16 @@ beta_m = 0.08*exp(-V/11) # ms**-1
 dm_dt = alpha_m*(1 - m) - beta_m*m
 
 component("INab")
-i_Nab_jct = Fx_NaBk_jct*G_NaBk*(V - E_Na_jct) # uA*uF**-1
+i_Nab_jct1 = Fx_NaBk_jct1*G_NaBk*(V - E_Na_jct1) # uA*uF**-1
 i_Nab_SL = Fx_NaBk_SL*G_NaBk*(V - E_Na_SL) # uA*uF**-1
-i_Nab = i_Nab_jct + i_Nab_SL # uA*uF**-1
+i_Nab = i_Nab_jct1 + i_Nab_SL # uA*uF**-1
 
 component("INaK")
 sigma = (exp(Nao/67.3) - 1)/7
 f_NaK = 1/(1 + 0.1245*exp(-0.1*V*F/(Rgas*T)) + 0.0365*sigma*exp(-V*F/(Rgas*T)))
-i_NaK_jct = Fx_NaK_jct*I_NaK_max*f_NaK/(1 + (Km_Nai/Na_jct)**H_NaK)*Ko/(Ko + Km_Ko) # uA*uF**-1
+i_NaK_jct1 = Fx_NaK_jct1*I_NaK_max*f_NaK/(1 + (Km_Nai/Na_jct1)**H_NaK)*Ko/(Ko + Km_Ko) # uA*uF**-1
 i_NaK_SL = Fx_NaK_SL*I_NaK_max*f_NaK/(1 + (Km_Nai/Na_SL)**H_NaK)*Ko/(Ko + Km_Ko) # uA*uF**-1
-i_NaK = i_NaK_jct + i_NaK_SL # uA*uF**-1
+i_NaK = i_NaK_jct1 + i_NaK_SL # uA*uF**-1
 
 component("IKr", "Xr gate")
 Xr_infinity = 1/(1 + exp(-(50 + V)/7.5))
@@ -330,14 +330,14 @@ component("IKr", "Rr gate")
 Rr = 1/(1 + exp((33 + V)/22.4))
 
 component("IKs")
-pCa_jct = -log(Ca_jct/1) + 3
+pCa_jct1 = -log(Ca_jct1/1) + 3
 pCa_SL = -log(Ca_SL/1) + 3
-G_Ks_jct = 0.07*(0.057 + 0.19/(1 + exp((-7.2 + pCa_jct)/0.6))) # mS*uF**-1
+G_Ks_jct1 = 0.07*(0.057 + 0.19/(1 + exp((-7.2 + pCa_jct1)/0.6))) # mS*uF**-1
 G_Ks_SL = 0.07*(0.057 + 0.19/(1 + exp((-7.2 + pCa_SL)/0.6))) # mS*uF**-1
 E_Ks = Rgas*T/F*log((Ko + pKNa*Nao)/(Ki + pKNa*Nai)) # mV
-i_Ks_jct = Fx_Ks_jct*G_Ks_jct*Xs**2*(V - E_Ks) # uA*uF**-1
+i_Ks_jct1 = Fx_Ks_jct1*G_Ks_jct1*Xs**2*(V - E_Ks) # uA*uF**-1
 i_Ks_SL = Fx_Ks_SL*G_Ks_SL*Xs**2*(V - E_Ks) # uA*uF**-1
-i_Ks = i_Ks_jct + i_Ks_SL # uA*uF**-1
+i_Ks = i_Ks_jct1 + i_Ks_SL # uA*uF**-1
 
 component("IKs", "Xs gate")
 Xs_infinity = 1/(1 + exp(-(V - 1.5)/16.7))
@@ -384,7 +384,7 @@ beta_K1 = (0.49124*exp(0.08032*(V - E_K + 5.476)) + 1*exp(0.06175*(V - (E_K + 59
 K1_infinity = alpha_K1/(alpha_K1 + beta_K1)
 
 component("ICl Ca")
-i_Cl_Ca = G_Cl*(V - E_Cl)*(Fx_Cl_jct/(1 + Kd_ClCa/Ca_jct) + Fx_Cl_SL/(1 + Kd_ClCa/Ca_SL)) # uA*uF**-1
+i_Cl_Ca = G_Cl*(V - E_Cl)*(Fx_Cl_jct1/(1 + Kd_ClCa/Ca_jct1) + Fx_Cl_SL/(1 + Kd_ClCa/Ca_SL)) # uA*uF**-1
 
 component("IClb")
 i_Clb = G_ClBk*(V - E_Cl) # uA*uF**-1
@@ -401,52 +401,52 @@ df_dt = (f_infinity - f)/tau_f
 
 component("ICaL", "FCa gate")
 fCa_SL = 1 - fCaB_SL
-fCa_jct = 1 - fCaB_jct
+fCa_jct1 = 1 - fCaB_jct1
 dfCaB_SL_dt = 1.7*Ca_SL*(1 - fCaB_SL) - 11.9e-3*fCaB_SL
-dfCaB_jct_dt = 1.7*Ca_jct*(1 - fCaB_jct) - 11.9e-3*fCaB_jct
+dfCaB_jct1_dt = 1.7*Ca_jct1*(1 - fCaB_jct1) - 11.9e-3*fCaB_jct1
 
 component("INaCa")
-temp_jct = (exp(eta*V*F/(Rgas*T))*Na_jct**HNa*Cao - exp((eta - 1)*V*F/(Rgas*T))*Nao**HNa*Ca_jct)/(1 + ksat*exp((eta - 1)*V*F/(Rgas*T))) # mM**4
+temp_jct1 = (exp(eta*V*F/(Rgas*T))*Na_jct1**HNa*Cao - exp((eta - 1)*V*F/(Rgas*T))*Nao**HNa*Ca_jct1)/(1 + ksat*exp((eta - 1)*V*F/(Rgas*T))) # mM**4
 temp_SL = (exp(eta*V*F/(Rgas*T))*Na_SL**HNa*Cao - exp((eta - 1)*V*F/(Rgas*T))*Nao**HNa*Ca_SL)/(1 + ksat*exp((eta - 1)*V*F/(Rgas*T))) # mM**4
 Q_NCX = Q10_NCX**((T - 310)/10)
 Ka_SL = 1/(1 + (Kd_act/Ca_SL)**3)
-Ka_jct = 1/(1 + (Kd_act/Ca_jct)**3)
-i_NaCa_jct = Fx_NCX_jct*V_max_INaCa*Ka_jct*Q_NCX*temp_jct/(K_mCai*Nao**HNa*(1 + (Na_jct/K_mNai)**HNa) + K_mNao**HNa*Ca_jct*(1 + Ca_jct/K_mCai) + K_mCao*Na_jct**HNa + Na_jct**HNa*Cao + Nao**HNa*Ca_jct) # uA*uF**-1
+Ka_jct1 = 1/(1 + (Kd_act/Ca_jct1)**3)
+i_NaCa_jct1 = Fx_NCX_jct1*V_max_INaCa*Ka_jct1*Q_NCX*temp_jct1/(K_mCai*Nao**HNa*(1 + (Na_jct1/K_mNai)**HNa) + K_mNao**HNa*Ca_jct1*(1 + Ca_jct1/K_mCai) + K_mCao*Na_jct1**HNa + Na_jct1**HNa*Cao + Nao**HNa*Ca_jct1) # uA*uF**-1
 i_NaCa_SL = Fx_NCX_SL*V_max_INaCa*Ka_SL*Q_NCX*temp_SL/(K_mCai*Nao**HNa*(1 + (Na_SL/K_mNai)**HNa) + K_mNao**HNa*Ca_SL*(1 + Ca_SL/K_mCai) + K_mCao*Na_SL**HNa + Na_SL**HNa*Cao + Nao**HNa*Ca_SL) # uA*uF**-1
-i_NaCa = i_NaCa_jct + i_NaCa_SL # uA*uF**-1
+i_NaCa = i_NaCa_jct1 + i_NaCa_SL # uA*uF**-1
 
 component("ICap")
 Q_SLCaP = Q10_SLCaP**((T - 310)/10)
-i_Cap_jct = Q_SLCaP*V_maxAF*Fx_SLCaP_jct/(1 + (Km/Ca_jct)**H_ICap) # uA*uF**-1
+i_Cap_jct1 = Q_SLCaP*V_maxAF*Fx_SLCaP_jct1/(1 + (Km/Ca_jct1)**H_ICap) # uA*uF**-1
 i_Cap_SL = Q_SLCaP*V_maxAF*Fx_SLCaP_SL/(1 + (Km/Ca_SL)**H_ICap) # uA*uF**-1
-i_Cap = i_Cap_jct + i_Cap_SL # uA*uF**-1
+i_Cap = i_Cap_jct1 + i_Cap_SL # uA*uF**-1
 
 component("ICab")
-i_Cab_jct = G_CaBk*Fx_CaBk_jct*(V - E_Ca_jct) # uA*uF**-1
+i_Cab_jct1 = G_CaBk*Fx_CaBk_jct1*(V - E_Ca_jct1) # uA*uF**-1
 i_Cab_SL = G_CaBk*Fx_CaBk_SL*(V - E_Ca_SL) # uA*uF**-1
-i_Cab = i_Cab_SL + i_Cab_jct # uA*uF**-1
+i_Cab = i_Cab_SL + i_Cab_jct1 # uA*uF**-1
 
 component("Jrel SR")
 kCaSR = Max_SR - (Max_SR - Min_SR)/(1 + (EC50_SR/Ca_SR)**HSR)
 koSRCa = koCa/kCaSR # mM**-2*ms**-1
 kiSRCa = kiCa*kCaSR # mM**-1*ms**-1
 RI = 1 - R - O - I
-dR_dt = kim*RI - kiSRCa*Ca_jct*R - (koSRCa*Ca_jct**2*R - kom*O)
-dO_dt = koSRCa*Ca_jct**2*R - kom*O - (kiSRCa*Ca_jct*O - kim*I)
-dI_dt = kiSRCa*Ca_jct*O - kim*I - (kom*I - koSRCa*Ca_jct**2*RI)
-j_rel_SR = ks*O*(Ca_SR - Ca_jct) # mM*ms**-1
+dR_dt = kim*RI - kiSRCa*Ca_jct1*R - (koSRCa*Ca_jct1**2*R - kom*O)
+dO_dt = koSRCa*Ca_jct1**2*R - kom*O - (kiSRCa*Ca_jct1*O - kim*I)
+dI_dt = kiSRCa*Ca_jct1*O - kim*I - (kom*I - koSRCa*Ca_jct1**2*RI)
+j_rel_SR = ks*O*(Ca_SR - Ca_jct1) # mM*ms**-1
 
 component("Jleak SR")
-j_leak_SR = KSRleak*(Ca_SR - Ca_jct) # mM*ms**-1
+j_leak_SR = KSRleak*(Ca_SR - Ca_jct1) # mM*ms**-1
 
 component("Jpump SR")
 Q_SRCaP = Q10_SRCaP**((T - 310)/10)
-j_pump_SR = Q_SRCaP*V_max*((Cai/Kmf)**H - (Ca_SR/Kmr)**H)/(1 + (Cai/Kmf)**H + (Ca_SR/Kmr)**H) # mM*ms**-1
+j_pump_SR = Q_SRCaP*V_max_Jpump*((Cai/Kmf)**H_Jpump - (Ca_SR/Kmr)**H_Jpump)/(1 + (Cai/Kmf)**H_Jpump + (Ca_SR/Kmr)**H_Jpump) # mM*ms**-1
 
 component("Ion diffusion")
-J_Na_jct_SL = (Na_jct - Na_SL)*1.8313e-14 # mmole*ms**-1
+J_Na_jct1_SL = (Na_jct1 - Na_SL)*1.8313e-14 # mmole*ms**-1
 J_Na_SL_myo = (Na_SL - Nai)*1.6386e-12 # mmole*ms**-1
-J_Ca_jct_SL = (Ca_jct - Ca_SL)*8.2413e-13 # mmole*ms**-1
+J_Ca_jct1_SL = (Ca_jct1 - Ca_SL)*8.2413e-13 # mmole*ms**-1
 J_Ca_SL_myo = (Ca_SL - Cai)*3.7243e-12 # mmole*ms**-1
 
 component("Ca buffer", "Cytosolic")
@@ -477,40 +477,40 @@ i_K1 = G_K1*K1_infinity*(V - E_K) # uA*uF**-1
 component("ICaL")
 Q_CaL = Q10_CaL**((T - 310)/10)
 temp = 0.45*d*f*Q_CaL*V*F**2/(Rgas*T) # C*mole**-1
-i_CaL_Ca_jct = temp*fCa_jct*Fx_ICaL_jct*PCa*4*(gamma_Cai*Ca_jct*exp(2*V*F/(Rgas*T)) - gamma_Cao*Cao)/(exp(2*V*F/(Rgas*T)) - 1) # uA*uF**-1
-i_CaL_Na_jct = temp*fCa_jct*Fx_ICaL_jct*PNa*(gamma_Nai*Na_jct*exp(V*F/(Rgas*T)) - gamma_Nao*Nao)/(exp(V*F/(Rgas*T)) - 1) # uA*uF**-1
+i_CaL_Ca_jct1 = temp*fCa_jct1*Fx_ICaL_jct1*PCa*4*(gamma_Cai*Ca_jct1*exp(2*V*F/(Rgas*T)) - gamma_Cao*Cao)/(exp(2*V*F/(Rgas*T)) - 1) # uA*uF**-1
+i_CaL_Na_jct1 = temp*fCa_jct1*Fx_ICaL_jct1*PNa*(gamma_Nai*Na_jct1*exp(V*F/(Rgas*T)) - gamma_Nao*Nao)/(exp(V*F/(Rgas*T)) - 1) # uA*uF**-1
 i_CaL_Ca_SL = temp*fCa_SL*Fx_ICaL_SL*PCa*4*(gamma_Cai*Ca_SL*exp(2*V*F/(Rgas*T)) - gamma_Cao*Cao)/(exp(2*V*F/(Rgas*T)) - 1) # uA*uF**-1
 i_CaL_Na_SL = temp*fCa_SL*Fx_ICaL_SL*PNa*(gamma_Nai*Na_SL*exp(V*F/(Rgas*T)) - gamma_Nao*Nao)/(exp(V*F/(Rgas*T)) - 1) # uA*uF**-1
-i_CaL_K = temp*(fCa_SL*Fx_ICaL_SL + fCa_jct*Fx_ICaL_jct)*PK*(gamma_Ki*Ki*exp(V*F/(Rgas*T)) - gamma_Ko*Ko)/(exp(V*F/(Rgas*T)) - 1) # uA*uF**-1
-i_CaL = i_CaL_Ca_SL + i_CaL_Ca_jct + i_CaL_Na_SL + i_CaL_Na_jct + i_CaL_K # uA*uF**-1
+i_CaL_K = temp*(fCa_SL*Fx_ICaL_SL + fCa_jct1*Fx_ICaL_jct1)*PK*(gamma_Ki*Ki*exp(V*F/(Rgas*T)) - gamma_Ko*Ko)/(exp(V*F/(Rgas*T)) - 1) # uA*uF**-1
+i_CaL = i_CaL_Ca_SL + i_CaL_Ca_jct1 + i_CaL_Na_SL + i_CaL_Na_jct1 + i_CaL_K # uA*uF**-1
 
 component("Na buffer")
-dNa_jct_buf = kon*Na_jct*(Bmax_jct - Na_jct_buf) - koff*Na_jct_buf # mM*ms**-1
+dNa_jct1_buf = kon*Na_jct1*(Bmax_jct1 - Na_jct1_buf) - koff*Na_jct1_buf # mM*ms**-1
 dNa_SL_buf = kon*Na_SL*(Bmax_SL - Na_SL_buf) - koff*Na_SL_buf # mM*ms**-1
-dNa_jct_buf_dt = dNa_jct_buf
+dNa_jct1_buf_dt = dNa_jct1_buf
 dNa_SL_buf_dt = dNa_SL_buf
-dNa_jct_dt = -Cm*(i_Na_jct + 3*i_NaCa_jct + i_Nab_jct + 3*i_NaK_jct + i_CaL_Na_jct)/(Vol_jct*F) - J_Na_jct_SL/Vol_jct - dNa_jct_buf
-dNa_SL_dt = -Cm*(i_Na_SL + 3*i_NaCa_SL + i_Nab_SL + 3*i_NaK_SL + i_CaL_Na_SL)/(Vol_SL*F) + (J_Na_jct_SL - J_Na_SL_myo)/Vol_SL - dNa_SL_buf
+dNa_jct1_dt = -Cm*(i_Na_jct1 + 3*i_NaCa_jct1 + i_Nab_jct1 + 3*i_NaK_jct1 + i_CaL_Na_jct1)/(Vol_jct1*F) - J_Na_jct1_SL/Vol_jct1 - dNa_jct1_buf
+dNa_SL_dt = -Cm*(i_Na_SL + 3*i_NaCa_SL + i_Nab_SL + 3*i_NaK_SL + i_CaL_Na_SL)/(Vol_SL*F) + (J_Na_jct1_SL - J_Na_SL_myo)/Vol_SL - dNa_SL_buf
 dNai_dt = J_Na_SL_myo/Vol_myo
 
 component("Ca buffer")
 dCalsequestrin = kon_Calsequestrin*Ca_SR*(Bmax_Calsequestrin*Vol_myo/Vol_SR - Ca_Calsequestrin) - koff_Calsequestrin*Ca_Calsequestrin # mM*ms**-1
 dCa_Calsequestrin_dt = dCalsequestrin
 dCa_SLB_SL = kon_SL*Ca_SL*(Bmax_SLB_SL*Vol_myo/Vol_SL - Ca_SLB_SL) - koff_SLB*Ca_SLB_SL # mM*ms**-1
-dCa_SLB_jct = kon_SL*Ca_jct*(Bmax_SLB_jct*0.1*Vol_myo/Vol_jct - Ca_SLB_jct) - koff_SLB*Ca_SLB_jct # mM*ms**-1
+dCa_SLB_jct1 = kon_SL*Ca_jct1*(Bmax_SLB_jct1*0.1*Vol_myo/Vol_jct1 - Ca_SLB_jct1) - koff_SLB*Ca_SLB_jct1 # mM*ms**-1
 dCa_SLHigh_SL = kon_SL*Ca_SL*(Bmax_SLHigh_SL*Vol_myo/Vol_SL - Ca_SLHigh_SL) - koff_SLHigh*Ca_SLHigh_SL # mM*ms**-1
-dCa_SLHigh_jct = kon_SL*Ca_jct*(Bmax_SLHigh_jct*0.1*Vol_myo/Vol_jct - Ca_SLHigh_jct) - koff_SLHigh*Ca_SLHigh_jct # mM*ms**-1
+dCa_SLHigh_jct1 = kon_SL*Ca_jct1*(Bmax_SLHigh_jct1*0.1*Vol_myo/Vol_jct1 - Ca_SLHigh_jct1) - koff_SLHigh*Ca_SLHigh_jct1 # mM*ms**-1
 dCa_SLB_SL_dt = dCa_SLB_SL
-dCa_SLB_jct_dt = dCa_SLB_jct
+dCa_SLB_jct1_dt = dCa_SLB_jct1
 dCa_SLHigh_SL_dt = dCa_SLHigh_SL
-dCa_SLHigh_jct_dt = dCa_SLHigh_jct
-dCa_jct_tot_bound = dCa_SLB_jct + dCa_SLHigh_jct # mM*ms**-1
+dCa_SLHigh_jct1_dt = dCa_SLHigh_jct1
+dCa_jct1_tot_bound = dCa_SLB_jct1 + dCa_SLHigh_jct1 # mM*ms**-1
 dCa_SL_tot_bound = dCa_SLB_SL + dCa_SLHigh_SL # mM*ms**-1
-i_Ca_jct_tot = i_CaL_Ca_jct - 2*i_NaCa_jct + i_Cab_jct + i_Cap_jct # uA*uF**-1
+i_Ca_jct1_tot = i_CaL_Ca_jct1 - 2*i_NaCa_jct1 + i_Cab_jct1 + i_Cap_jct1 # uA*uF**-1
 i_Ca_SL_tot = i_CaL_Ca_SL - 2*i_NaCa_SL + i_Cab_SL + i_Cap_SL # uA*uF**-1
 dCa_SR_dt = j_pump_SR - (j_leak_SR*Vol_myo/Vol_SR + j_rel_SR) - dCalsequestrin
-dCa_jct_dt = -i_Ca_jct_tot*Cm/(Vol_jct*2*F) - J_Ca_jct_SL/Vol_jct + j_rel_SR*Vol_SR/Vol_jct + j_leak_SR*Vol_myo/Vol_jct - 1*dCa_jct_tot_bound
-dCa_SL_dt = -i_Ca_SL_tot*Cm/(Vol_SL*2*F) + (J_Ca_jct_SL - J_Ca_SL_myo)/Vol_SL - 1*dCa_SL_tot_bound
+dCa_jct1_dt = -i_Ca_jct1_tot*Cm/(Vol_jct1*2*F) - J_Ca_jct1_SL/Vol_jct1 + j_rel_SR*Vol_SR/Vol_jct1 + j_leak_SR*Vol_myo/Vol_jct1 - 1*dCa_jct1_tot_bound
+dCa_SL_dt = -i_Ca_SL_tot*Cm/(Vol_SL*2*F) + (J_Ca_jct1_SL - J_Ca_SL_myo)/Vol_SL - 1*dCa_SL_tot_bound
 dCai_dt = -j_pump_SR*Vol_SR/Vol_myo + J_Ca_SL_myo/Vol_myo - 1*dCa_cytosol_tot_bound
 
 component("Cell")
