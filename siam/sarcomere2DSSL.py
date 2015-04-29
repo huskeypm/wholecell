@@ -35,11 +35,10 @@ class Sarcomere2DSSL(SarcomereBase):
     self.OuterSarcolemma = OuterSarcolemma
     self.ssl = True   
 
+    # Geometric considerations 
     self.TTHeight = 6. # TT height [um]
     self.sarcWidth = 1. # sarcomere witdth [um]
     #print "WARNING: Need to change"
-    self.SSLWidth= 0.20 # define ssl as x=0..xSSL [nm]
-    self.params.volSSL = self.TTHeight*self.sarcWidth*self.SSLWidth
     self.volFracCyto=1.0
     
 
@@ -49,6 +48,8 @@ class Sarcomere2DSSL(SarcomereBase):
     #self.volume  = assemble(Constant(1.)*dx(domain=self.mesh))
     return self.mesh 
 
+  def CalcSSLVol(self):
+    self.params.volSSL = self.TTHeight*self.sarcWidth*self.params.SSLWidth
 
   def Init(self): 
     ## Get mesh 
@@ -62,7 +63,7 @@ class Sarcomere2DSSL(SarcomereBase):
       c[:,0]*= self.sarcWidth #  [um]
       c[:,1]*= self.TTHeight #  [um]
     else:
-      c[:,0]*= self.SSLWidth + self.sarcWidth #  [um]
+      c[:,0]*= self.params.SSLWidth + self.sarcWidth #  [um]
       c[:,1]*= self.TTHeight #  [um]
       self.params.volSSL = 0. 
 
@@ -107,16 +108,16 @@ class Sarcomere2DSSL(SarcomereBase):
     # However, I have some numerical error..
     divs = 500.
     xs = np.linspace(self.mmin[0],self.mmax[0],divs)
-    y = 1-1/(1+np.exp((xs-self.SSLWidth)/sc)) # needs to agree w strCyto 
+    y = 1-1/(1+np.exp((xs-self.params.SSLWidth)/sc)) # needs to agree w strCyto 
     self.volFracCyto = (np.cumsum(y) / ( divs ))[-1]          
 
     self.pSSL= Expression(strSSL,\
           m=1, # mutlplier
-          xSSL=self.SSLWidth,sc=sc)
+          xSSL=self.params.SSLWidth,sc=sc)
     self.pCyto= Expression(strCyto,\
           m=1, # mutlplier
           #xSSL=0.75,sc=sc)
-          xSSL=self.SSLWidth,sc=sc)
+          xSSL=self.params.SSLWidth,sc=sc)
     return 1
 
   def Boundaries(self,subdomains):
@@ -125,15 +126,15 @@ class Sarcomere2DSSL(SarcomereBase):
     boundary = self.TT()
     boundary.mmin = self.mmin
     boundary.mmax = self.mmax
-    lMarker = 2
+    lMarker = self.params.lMarker
     boundary.mark(subdomains,lMarker)
   
-    rMarker = -1
+    rMarker = self.params.rMarker
   
     boundary = self.OuterSarcolemma()
     boundary.mmin = self.mmin
     boundary.mmax = self.mmax
-    slMarker = 4
+    slMarker = self.params.slMarker
     boundary.mark(subdomains,slMarker)
 
     return lMarker,rMarker,slMarker

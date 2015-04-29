@@ -6,6 +6,7 @@ import runner
 import matplotlib.pylab as plt
 import numpy as np 
 from runShannonTest import *
+import taufitting as tf
 runner.init()
 
 mM_to_uM=1e3
@@ -79,7 +80,7 @@ def ProcessOneDOutputs(var1Name,names,allVars,state="Cai",xlim=None,ylim=None,of
   name = state+"transients%s"%(var1Name)
   plt.gcf().savefig(name+".png")
 
-def ProcessTwoDOutputs(allKeys,allVars,state="Cai",ylims=None):
+def ProcessTwoDOutputs(allKeys,allVars,state="Cai",ylims=None,stim_period=1000):
   vars1 = allVars[0]
   var1Name = allKeys[0]
   vars2 = allVars[1]
@@ -96,9 +97,13 @@ def ProcessTwoDOutputs(allKeys,allVars,state="Cai",ylims=None):
     plt.title("%s=%3.2f"%(var1Name,var1Val))
     #for j, ks in enumerate(kss):
     for j, var2Val in enumerate(vars2):
-        name =namer(var1Name,var1Val,var2Name,var2Val)+".pickle"
+        name =namer(var1Name,var1Val,var2Name,var2Val,stim_period=stim_period)+".pickle"
         #print name
-        d = readPickle(name) 
+        try: 
+          d = readPickle(name) 
+        except: 
+          print name + " was not found. Skipping" 
+          continue 
         #print np.shape(d['s'])
         dummy,dummy,minCai,maxCai = analyOut(d,state=state,label="%s=%3.2f"%(var2Name,var2Val))
         outsMin[i,j]= minCai 
@@ -176,4 +181,172 @@ def PlotFluxes(t,j,idx1,label1="flux1",idx2=None,label2="flux2"):
   
   
   leg.get_frame().set_alpha(1.0) 
+
+idxCai = runner.model.state_indices("Cai")
+idxCaSR = runner.model.state_indices("Ca_SR")
+idxjRyR = runner.model.monitor_indices("j_rel_SR")
+
+# Compute quantities of interest from transient data
+def ProcessTransients(case,pacingInterval,tstart=8000):
+    # compute rate of \catwo transient decline 
+    tau = tf.GetTau(case,pacingInterval,tstart=tstart,idxCai=idxCai)
+    
+    
+    # get transient amplitudes 
+    # grab suitable spot for statistics 
+    tsub, caisub= tf.GetInterval(case,pacingInterval,tstart=tstart,idx=idxCai)
+    delCa = (np.max(caisub) - np.min(caisub))*mM_to_uM
+    
+    # get SR transient amplitudes 
+    tsub, casrsub= tf.GetInterval(case,pacingInterval,tstart=tstart,idx=idxCaSR)
+    delCaSR = (np.max(casrsub) - np.min(casrsub))*mM_to_uM
+    
+    # get max RyR
+    tsub, jRyRsub= tf.GetInterval(case,pacingInterval,tstart=tstart,getFlux=True, idx=idxjRyR)
+    #plt.figure()
+    #plt.plot(jRyRsub)
+    #jRyR = j[:, runner.model.monitor_indices(idx) ]
+    maxRyR = np.max(jRyRsub)*mM_to_uM
+    
+    print tau, delCa, delCaSR, maxRyR
+    #pctChg = GetExtreme(t,cai,subMin=7900,subMax=8500,si=7910)
+    #pctChgSR = GetExtreme(t,casr,subMin=7900,subMax=8500,si=7910)
+    
+    return tau,delCa, delCaSR, maxRyR
+
+def TransientBarPlots(cases,caseNames,resultsA,resultsB=False,tag=""):
+    plt.subplot(1,3,1)
+    idxs = np.arange(len(cases))
+    width = 0.5
+    plt.bar(idxs,resultsA.pctChgs,width)
+    if resultsB:
+      plt.bar(idxs+width,resultsB.pctChgs,width,color="r")
+    plt.title("$\Delta Ca_i^{2+}$")
+    plt.ylabel('$\Delta$ Ca [uM]')
+    plt.xticks(idxs+0.5*width, (caseNames),rotation=70)
+
+    plt.subplot(1,3,2)
+    plt.bar(idxs,resultsA.pctChgSRs,width)
+    if resultsB:
+     plt.bar(idxs+width,resultsB.pctChgSRs,width,color="r")
+    plt.title("$\Delta Ca_{SR}^{2+}$")
+    plt.ylabel('$\Delta$ Ca [uM]')
+    plt.xticks(idxs+0.5*width, (caseNames),rotation=70)
+
+
+    ax = plt.subplot(1,3,3)
+    rects1 = ax.bar(idxs,resultsA.taus,width)
+    if resultsB:
+      rects2 = ax.bar(idxs+width,resultsB.taus,width,color="r")
+    plt.title("Decay constant")
+    plt.ylabel('tau [ms]')
+    plt.xticks(idxs+0.5*width, (caseNames),rotation=70)
+    #plt.legend()
+    plt.ylim([0,300])
+    #label1="%3.1f Hz"%(1000/A.)
+    #label2="%3.1f Hz"%(1000/B.)
+    #ax.legend((rects1[0], rects2[0]), (label1,label2),loc=2)
+
+    plt.tight_layout()
+    plt.gcf().savefig(tag+"miscdata.png",dpi=300)
+
+    plt.figure()
+    plt.subplot(1,3,1)
+    plt.bar(idxs,resultsA.maxRyRs,width)
+    if resultsB:
+      plt.bar(idxs+width,resultsB.maxRyRs,width,color="r")
+    plt.title("$RyR Max$")
+    plt.ylabel('$jRyR$ [uM/ms]')
+    plt.xticks(idxs+0.5*width, (caseNames),rotation=70)
+
+
+    plt.tight_layout()
+    plt.gcf().savefig(tag+"jRyRmiscdata.png",dpi=300)
+
+class empty:pass
+mM_to_uM = 1e3
+ms_to_s = 1e-3
+# Collect all data 
+def ProcessAllTransients(cases,caseTags,pacingInterval,tag="",cols=[],name=None):
+    
+    baseline = readPickle(caseTags[0]+tag+".pickle")
+    caseA = readPickle(caseTags[1]+tag+".pickle")
+    caseB= readPickle(caseTags[2]+tag+".pickle")
+    #pca1p25vmax1p25 = readOut("PCa1.25ks1.00vMax1.25"+tag+".pickle")
+    if len(cases)>3:
+      caseC = readPickle(caseTags[3]+tag+".pickle")
+
+    
+    taus=[]
+    pctChgs=[]
+    pctChgSRs=[]
+    maxRyRs=[]
+    for i, case in enumerate(cases):
+      var = eval(case)
+      tau,pctChg,pctChgSR,maxRyR  = ProcessTransients(var,pacingInterval)
+      taus.append(tau)
+      pctChgs.append(pctChg)
+      pctChgSRs.append(pctChgSR)  
+      maxRyRs.append(maxRyR)    
+
+    plt.figure()    
+    plt.subplot(1,2,1) 
+    for i, case in enumerate(cases): 
+      var = eval(case)
+      s = var['s']
+      t = var['t']
+      cai = s[1:,idxCai]
+      idx = 8000
+      plt.plot(t[idx:]*ms_to_s,cai[idx:]*mM_to_uM,cols[i],label=case)
+      plt.xlabel("t [ms]")
+      plt.ylabel("Ca [uM]")          
+    #plt.legend(loc=3,ncol=2)
+    plt.title("Cai")
+    plt.ylim([0,1.2]) 
+    
+    plt.subplot(1,2,2)    
+    for i, case in enumerate(cases):
+      var = eval(case)  
+      s = var['s']
+      t = var['t']
+      casr = s[1:,idxCaSR]
+      idx = 8000
+      plt.plot(t[idx:]*ms_to_s,casr[idx:]*mM_to_uM,cols[i],label=case)
+      plt.xlabel("t [ms]")
+      plt.ylabel("Ca [uM]")
+    plt.ylim([250,1e3])    
+    plt.legend(loc=2,ncol=1)
+    plt.title("CaSR")
+
+    plt.tight_layout()
+    plt.gcf().savefig(name,dpi=300)
+
+    plt.figure()
+    for i, case in enumerate(cases):
+      var = eval(case)  
+      j = var['j']
+      t = var['t']
+      jRyR = j[:,idxjRyR]
+      idx = 8000
+      plt.plot(t[idx:]*ms_to_s,jRyR[idx:]*mM_to_uM,cols[i],label=case)
+      plt.xlabel("t [ms]")
+      plt.ylabel("j [uM/ms]")
+    plt.legend(loc=0,ncol=1)      
+    plt.ylim([0,200])    
+    plt.xlim([8.5,8.7])    
+    plt.title("jRyR")
+    plt.tight_layout()
+    plt.gcf().savefig("jRyR"+name,dpi=300)
+    
+    
+    
+    results = empty()
+    results.taus = taus; 
+    results.pctChgs = pctChgs; 
+    results.pctChgSRs = pctChgSRs
+    results.maxRyRs = maxRyRs
+    
+    return results
+
+
 

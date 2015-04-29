@@ -63,9 +63,15 @@ class Params(object):
     #Ds = [DCa,DBuff,DFluo]
     self.DCa_SSL = 0.6 * self.DCa # Diff const within SSL region (of cytosol) 
   
-    # geom 
-    self.volSSL = 1. # Volume of SSL domain [um^3] (overridden by sarcomere files)
-    self.volCleft = 0.1 # [um^3] 
+    ## geom 
+    # seee sharelatex geometric considerations 
+    # https://www.sharelatex.com/project/5511ddf1f70989723e7a2dfc
+    self.nCRUs_per_sarco = 25. # see share latex/
+    self.SSLWidth = 0.02 # Width of SSL region [um]  
+    
+    self.volPerCRU = 8.13e-4 # um^3 
+    self.volSSL = False # Volume of SSL domain [um^3] (overridden by sarcomere files)
+    self.volCleft = False # [um^3]; solved later  
   
     # buffer (mostly TnC) 
     self.alphabuff=0.04 # kon verified [1/uMms] 
@@ -107,6 +113,16 @@ class Params(object):
   
   
     self.jTest = 0.1 # Generic flux applied to cytosolic domain [uM/ms]
+
+
+    # boundary markings
+    self.lMarker = 2
+    self.rMarker = False # do lots of debugging testing once active
+    self.slMarker = 4
+
+    ## 
+    ## More parameters are in the sarcomereBase class 
+    ## 
 
 
 # J [uM/ms] --> j[uM*um/ms]
@@ -184,8 +200,6 @@ def tsolve(pvdName=None,\
   mesh = cm.GetMesh()
   dims =mesh.ufl_cell().geometric_dimension()
   #print cm.volume
-  cm.CalcGeomAttributes()
-  params.volCyto= cm.volume
 
   ## 
   print 'WARNING: will need to updated these'
@@ -204,6 +218,7 @@ def tsolve(pvdName=None,\
     params.cInits[idxFluo] = 0.
 
   if ssl==False:
+    print "WARNING: cm.volFracCyto is probably not set anymore"
     params.Btot = params.Btot*cm.volFracCyto
     if "2D" not in mode:
       raise RuntimeError("Have not written support for this yet") 
@@ -215,11 +230,16 @@ def tsolve(pvdName=None,\
   subdomains = MeshFunction("size_t",mesh,dims-1)
   subdomains.set_all(0)
   lMarker,rMarker,slMarker = cm.Boundaries(subdomains)
+  print "WARNING: rMarker is not used and should be considered 'inactive' membrane"; # lmarker, slmarker used for myocyte area determination 
 
   ds = Measure("ds")[subdomains]
   dx = Measure("dx")
   ds = ds(domain=mesh,subdomain_data=subdomains)
   dx = dx(domain=mesh)
+  cm.ds = ds 
+  cm.dx = dx 
+  cm.CalcGeomAttributes()
+  params.volCyto= cm.volume
 
   # FiniteElements
   V = FunctionSpace(mesh, "CG", 1)
@@ -242,10 +262,13 @@ def tsolve(pvdName=None,\
   dt = params.dt 
   tstop = params.T
   
-  # volume/area info 
+  ## volume/area info 
+  #print "WARNING: HACKED TRHIS"
+  #params.volCyto = 1.; params.volSSL = 1.; params.volCleft = 1.
   volCyto = params.volCyto
   #volCyto = Constant(assemble(Constant(1.0)*dx()))
   areaCyto = Constant(assemble(Constant(1.0)*ds(lMarker)))
+
   volSSL = params.volSSL
   volCleft= params.volCleft
   volFrac_CytoSSL= volCyto/np.max([1e-9,volSSL])
@@ -270,6 +293,10 @@ def tsolve(pvdName=None,\
 
   if ssl!=True:
     params.volSSL = 1e-9   # needed for validaton stuff
+
+  print "Vol Cyto/SSL/Cleft"
+  print volCyto,volSSL,volCleft
+  quit()
 
 
   # intercompartment transport 
@@ -382,6 +409,7 @@ def tsolve(pvdName=None,\
       reactions.Init(params)
       itoJ = wholeCellI_to_wholeCellJ(1.) # rescale 1 [A/F] --> [uM/ms]
       itoj = wholeCellJ_to_jCleft(itoJ,params) 
+      print "rescale", itoJ, itoj
       RHS += reactions.iryr*itoj*vCaCleft*dx()
 
     elif reactions=="caitlinSERCA": #CES
@@ -792,11 +820,15 @@ if __name__ == "__main__":
   # Loops over each argument in the command line 
   params = Params()
   params.T = 10 
+  pvdName=None
   for i,arg in enumerate(sys.argv):
     # calls 'tsolve' with the next argument following the argument '-validation'
     if(arg=="-debug"):
       #arg1=sys.argv[i+1] 
       tsolve(debug=True)     
+    elif(arg=="-pvdName"): 
+      print "ONLY PARTIAL SUPPORT AT THE MOMENT (SATIN)"
+      pvdName = sys.argv[i+1]
     elif(arg=="-test0"):
       tsolve(debug=False)    
       quit()
@@ -828,7 +860,18 @@ if __name__ == "__main__":
       quit()
     elif(arg=="-testsatin"):
       tag = "satin"
-      tsolve(debug=False,params=params,hdfName=tag+".h5",mode=tag)
+      #tag = "2D_noSSL"
+      reactions = "simple"
+      params.T = 1000
+      params.dt = 5 
+      #reactions = "ryrOnlySwitch"
+      #params.ryrAmp = 0.1
+      #reactions = None
+      #buffers = False
+      buffers = True 
+      tsolve(pvdName=pvdName,debug=False,params=params,\
+             reactions = reactions, buffers = buffers,
+             hdfName=tag+".h5",mode=tag)
       quit()
     elif(arg=="-test2"):
       tag = "sachse2TT"

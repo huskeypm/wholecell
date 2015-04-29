@@ -1,5 +1,4 @@
 # Gotran generated code for the  "shannon_2004" model
-# But with parameter sequence reordered see 150220_gotranbug 
 from __future__ import division
 
 def init_state_values(**values):
@@ -77,14 +76,15 @@ def init_parameter_values(**values):
     # Cao=1.8, Cli=15, Clo=150, Cm=1.381e-10, F=96485, Ki=135, Ko=5.4, Mgi=1,
     # Nao=140, Rgas=8314.3, T=310, cell_length=100, cell_radius=10.25,
     # Fx_Na_SL=0.89, Fx_Na_jct1=0.11, G_INa=16, Fx_NaBk_SL=0.89,
-    # Fx_NaBk_jct1=0.11, G_NaBk=0.000297, Fx_NaK_SL=0.89, Fx_NaK_jct1=0.11,
-    # H_NaK=4, I_NaK_max=1.90719, Km_Ko=1.5, Km_Nai=11, Fx_Ks_SL=0.89,
-    # Fx_Ks_jct1=0.11, pKNa=0.01833, g_Kp=0.001, G_tos=0.06, G_tof=0.02,
-    # Fx_Cl_SL=0.89, Fx_Cl_jct1=0.11, G_Cl=0.109625, Kd_ClCa=0.1,
-    # G_ClBk=0.009, Fx_ICaL_SL=0.1, Fx_ICaL_jct1=0.9, PCa=0.00054,
-    # PK=2.7e-07, PNa=1.5e-08, Q10_CaL=1.8, gamma_Cai=0.341,
-    # gamma_Cao=0.341, gamma_Ki=0.75, gamma_Ko=0.75, gamma_Nai=0.75,
-    # gamma_Nao=0.75, Fx_NCX_SL=0.89, Fx_NCX_jct1=0.11, HNa=3,
+    # Fx_NaBk_jct1=0.11, G_NaBk=0.000297, Fx_NaK_SL=0.89,
+    # Fx_NaK_jct1=0.11, H_NaK=4, I_NaK_max=1.90719, Km_Ko=1.5,
+    # Km_Nai=11, Fx_Ks_SL=0.89, Fx_Ks_jct1=0.11, pKNa=0.01833,
+    # g_Kp=0.001, G_tos=0.06, G_tof=0.02, Fx_Cl_SL=0.89,
+    # Fx_Cl_jct1=0.11, G_Cl=0.109625, Kd_ClCa=0.1, G_ClBk=0.009,
+    # Fx_ICaL_SL=0.1, Fx_ICaL_jct1=0.9, PCa=0.00054, PK=2.7e-07,
+    # PNa=1.5e-08, Q10_CaL=1.8, gamma_Cai=0.341, gamma_Cao=0.341,
+    # gamma_Ki=0.75, gamma_Ko=0.75, gamma_Nai=0.75, gamma_Nao=0.75,
+    # lccCaInact=1.7, Fx_NCX_SL=0.89, Fx_NCX_jct1=0.11, HNa=3,
     # K_mCai=0.00359, K_mCao=1.3, K_mNai=12.29, K_mNao=87.5,
     # Kd_act=0.000256, Q10_NCX=1.57, V_max_INaCa=9, eta=0.35,
     # ksat=0.27, Fx_SLCaP_SL=0.89, Fx_SLCaP_jct1=0.11, H_ICap=1.6,
@@ -111,15 +111,15 @@ def init_parameter_values(**values):
         8314.3, 310, 100, 10.25, 0.89, 0.11, 16, 0.89, 0.11, 0.000297, 0.89,\
         0.11, 4, 1.90719, 1.5, 11, 0.89, 0.11, 0.01833, 0.001, 0.06, 0.02,\
         0.89, 0.11, 0.109625, 0.1, 0.009, 0.1, 0.9, 0.00054, 2.7e-07,\
-        1.5e-08, 1.8, 0.341, 0.341, 0.75, 0.75, 0.75, 0.75, 0.89, 0.11, 3,\
-        0.00359, 1.3, 12.29, 87.5, 0.000256, 1.57, 9, 0.35, 0.27, 0.89, 0.11,\
-        1.6, 0.0005, 2.35, 0.0673, 0.89, 0.11, 0.0002513, 0.45, 2.5, 15, 1,\
-        0.5, 0.005, 10, 0.06, 25, 5.348e-06, 1.787, 0.000246, 1.7, 2.6,\
-        0.0053114, 0.14, 0.0374, 0.0046, 0.0134, 0.00165, 65, 1.3, 0.03, 100,\
-        100, 0.024, 0.14, 0.14, 0.0171, 0.07, 0.14, 0.14, 0.238, 0.00046,\
-        5.7e-05, 0.06, 0.0196, 3.2e-05, 0.00333, 34, 13.8, 0.0157, 100, 32.7,\
-        2.37, 0.003, 1.65, 7.561, 0.001, 0.0001, 9.5, 5, 1000, 100],\
-        dtype=np.float_)
+        1.5e-08, 1.8, 0.341, 0.341, 0.75, 0.75, 0.75, 0.75, 1.7, 0.89, 0.11,\
+        3, 0.00359, 1.3, 12.29, 87.5, 0.000256, 1.57, 9, 0.35, 0.27, 0.89,\
+        0.11, 1.6, 0.0005, 2.35, 0.0673, 0.89, 0.11, 0.0002513, 0.45, 2.5,\
+        15, 1, 0.5, 0.005, 10, 0.06, 25, 5.348e-06, 1.787, 0.000246, 1.7,\
+        2.6, 0.0053114, 0.14, 0.0374, 0.0046, 0.0134, 0.00165, 65, 1.3, 0.03,\
+        100, 100, 0.024, 0.14, 0.14, 0.0171, 0.07, 0.14, 0.14, 0.238,\
+        0.00046, 5.7e-05, 0.06, 0.0196, 3.2e-05, 0.00333, 34, 13.8, 0.0157,\
+        100, 32.7, 2.37, 0.003, 1.65, 7.561, 0.001, 0.0001, 9.5, 5, 1000,\
+        100], dtype=np.float_)
 
     # Parameter indices and limit checker
     param_ind = dict([("Cao", (0, Range())), ("Cli", (1, Range())), ("Clo",\
@@ -142,44 +142,44 @@ def init_parameter_values(**values):
         (41, Range())), ("gamma_Cai", (42, Range())), ("gamma_Cao", (43,\
         Range())), ("gamma_Ki", (44, Range())), ("gamma_Ko", (45, Range())),\
         ("gamma_Nai", (46, Range())), ("gamma_Nao", (47, Range())),\
-        ("Fx_NCX_SL", (48, Range())), ("Fx_NCX_jct1", (49, Range())), ("HNa",\
-        (50, Range())), ("K_mCai", (51, Range())), ("K_mCao", (52, Range())),\
-        ("K_mNai", (53, Range())), ("K_mNao", (54, Range())), ("Kd_act", (55,\
-        Range())), ("Q10_NCX", (56, Range())), ("V_max_INaCa", (57,\
-        Range())), ("eta", (58, Range())), ("ksat", (59, Range())),\
-        ("Fx_SLCaP_SL", (60, Range())), ("Fx_SLCaP_jct1", (61, Range())),\
-        ("H_ICap", (62, Range())), ("Km", (63, Range())), ("Q10_SLCaP", (64,\
-        Range())), ("V_maxAF", (65, Range())), ("Fx_CaBk_SL", (66, Range())),\
-        ("Fx_CaBk_jct1", (67, Range())), ("G_CaBk", (68, Range())),\
-        ("EC50_SR", (69, Range())), ("HSR", (70, Range())), ("Max_SR", (71,\
-        Range())), ("Min_SR", (72, Range())), ("kiCa", (73, Range())),\
-        ("kim", (74, Range())), ("koCa", (75, Range())), ("kom", (76,\
-        Range())), ("ks", (77, Range())), ("KSRleak", (78, Range())),\
-        ("H_Jpump", (79, Range())), ("Kmf", (80, Range())), ("Kmr", (81,\
-        Range())), ("Q10_SRCaP", (82, Range())), ("V_max_Jpump", (83,\
-        Range())), ("Bmax_Calsequestrin", (84, Range())), ("Bmax_SLB_SL",\
-        (85, Range())), ("Bmax_SLB_jct1", (86, Range())), ("Bmax_SLHigh_SL",\
-        (87, Range())), ("Bmax_SLHigh_jct1", (88, Range())),\
-        ("koff_Calsequestrin", (89, Range())), ("koff_SLB", (90, Range())),\
-        ("koff_SLHigh", (91, Range())), ("kon_Calsequestrin", (92, Range())),\
-        ("kon_SL", (93, Range())), ("Bmax_Calmodulin", (94, Range())),\
-        ("Bmax_Myosin_Ca", (95, Range())), ("Bmax_Myosin_Mg", (96, Range())),\
-        ("Bmax_SRB", (97, Range())), ("Bmax_TroponinC", (98, Range())),\
-        ("Bmax_TroponinC_Ca_Mg_Ca", (99, Range())),\
-        ("Bmax_TroponinC_Ca_Mg_Mg", (100, Range())), ("koff_Calmodulin",\
-        (101, Range())), ("koff_Myosin_Ca", (102, Range())),\
-        ("koff_Myosin_Mg", (103, Range())), ("koff_SRB", (104, Range())),\
-        ("koff_TroponinC", (105, Range())), ("koff_TroponinC_Ca_Mg_Ca", (106,\
-        Range())), ("koff_TroponinC_Ca_Mg_Mg", (107, Range())),\
-        ("kon_Calmodulin", (108, Range())), ("kon_Myosin_Ca", (109,\
-        Range())), ("kon_Myosin_Mg", (110, Range())), ("kon_SRB", (111,\
-        Range())), ("kon_TroponinC", (112, Range())),\
-        ("kon_TroponinC_Ca_Mg_Ca", (113, Range())),\
-        ("kon_TroponinC_Ca_Mg_Mg", (114, Range())), ("Bmax_SL", (115,\
-        Range())), ("Bmax_jct1", (116, Range())), ("koff", (117, Range())),\
-        ("kon", (118, Range())), ("stim_amplitude", (119, Range())),\
-        ("stim_duration", (120, Range())), ("stim_period", (121, Range())),\
-        ("stim_start", (122, Range()))])
+        ("lccCaInact", (48, Range())), ("Fx_NCX_SL", (49, Range())),\
+        ("Fx_NCX_jct1", (50, Range())), ("HNa", (51, Range())), ("K_mCai",\
+        (52, Range())), ("K_mCao", (53, Range())), ("K_mNai", (54, Range())),\
+        ("K_mNao", (55, Range())), ("Kd_act", (56, Range())), ("Q10_NCX",\
+        (57, Range())), ("V_max_INaCa", (58, Range())), ("eta", (59,\
+        Range())), ("ksat", (60, Range())), ("Fx_SLCaP_SL", (61, Range())),\
+        ("Fx_SLCaP_jct1", (62, Range())), ("H_ICap", (63, Range())), ("Km",\
+        (64, Range())), ("Q10_SLCaP", (65, Range())), ("V_maxAF", (66,\
+        Range())), ("Fx_CaBk_SL", (67, Range())), ("Fx_CaBk_jct1", (68,\
+        Range())), ("G_CaBk", (69, Range())), ("EC50_SR", (70, Range())),\
+        ("HSR", (71, Range())), ("Max_SR", (72, Range())), ("Min_SR", (73,\
+        Range())), ("kiCa", (74, Range())), ("kim", (75, Range())), ("koCa",\
+        (76, Range())), ("kom", (77, Range())), ("ks", (78, Range())),\
+        ("KSRleak", (79, Range())), ("H_Jpump", (80, Range())), ("Kmf", (81,\
+        Range())), ("Kmr", (82, Range())), ("Q10_SRCaP", (83, Range())),\
+        ("V_max_Jpump", (84, Range())), ("Bmax_Calsequestrin", (85,\
+        Range())), ("Bmax_SLB_SL", (86, Range())), ("Bmax_SLB_jct1", (87,\
+        Range())), ("Bmax_SLHigh_SL", (88, Range())), ("Bmax_SLHigh_jct1",\
+        (89, Range())), ("koff_Calsequestrin", (90, Range())), ("koff_SLB",\
+        (91, Range())), ("koff_SLHigh", (92, Range())), ("kon_Calsequestrin",\
+        (93, Range())), ("kon_SL", (94, Range())), ("Bmax_Calmodulin", (95,\
+        Range())), ("Bmax_Myosin_Ca", (96, Range())), ("Bmax_Myosin_Mg", (97,\
+        Range())), ("Bmax_SRB", (98, Range())), ("Bmax_TroponinC", (99,\
+        Range())), ("Bmax_TroponinC_Ca_Mg_Ca", (100, Range())),\
+        ("Bmax_TroponinC_Ca_Mg_Mg", (101, Range())), ("koff_Calmodulin",\
+        (102, Range())), ("koff_Myosin_Ca", (103, Range())),\
+        ("koff_Myosin_Mg", (104, Range())), ("koff_SRB", (105, Range())),\
+        ("koff_TroponinC", (106, Range())), ("koff_TroponinC_Ca_Mg_Ca", (107,\
+        Range())), ("koff_TroponinC_Ca_Mg_Mg", (108, Range())),\
+        ("kon_Calmodulin", (109, Range())), ("kon_Myosin_Ca", (110,\
+        Range())), ("kon_Myosin_Mg", (111, Range())), ("kon_SRB", (112,\
+        Range())), ("kon_TroponinC", (113, Range())),\
+        ("kon_TroponinC_Ca_Mg_Ca", (114, Range())),\
+        ("kon_TroponinC_Ca_Mg_Mg", (115, Range())), ("Bmax_SL", (116,\
+        Range())), ("Bmax_jct1", (117, Range())), ("koff", (118, Range())),\
+        ("kon", (119, Range())), ("stim_amplitude", (120, Range())),\
+        ("stim_duration", (121, Range())), ("stim_period", (122, Range())),\
+        ("stim_start", (123, Range()))])
 
     for param_name, value in values.items():
         if param_name not in param_ind:
@@ -226,39 +226,39 @@ def parameter_indices(*params):
     param_inds = dict([("Cao", 0), ("Cli", 1), ("Clo", 2), ("Cm", 3), ("F",\
         4), ("Ki", 5), ("Ko", 6), ("Mgi", 7), ("Nao", 8), ("Rgas", 9), ("T",\
         10), ("cell_length", 11), ("cell_radius", 12), ("Fx_Na_SL", 13),\
-        ("Fx_Na_jct1", 14), ("G_INa", 15), ("Fx_NaBk_SL", 16), ("Fx_NaBk_jct1",\
-        17), ("G_NaBk", 18), ("Fx_NaK_SL", 19), ("Fx_NaK_jct1", 20), ("H_NaK",\
-        21), ("I_NaK_max", 22), ("Km_Ko", 23), ("Km_Nai", 24), ("Fx_Ks_SL",\
-        25), ("Fx_Ks_jct1", 26), ("pKNa", 27), ("g_Kp", 28), ("G_tos", 29),\
-        ("G_tof", 30), ("Fx_Cl_SL", 31), ("Fx_Cl_jct1", 32), ("G_Cl", 33),\
-        ("Kd_ClCa", 34), ("G_ClBk", 35), ("Fx_ICaL_SL", 36), ("Fx_ICaL_jct1",\
-        37), ("PCa", 38), ("PK", 39), ("PNa", 40), ("Q10_CaL", 41),\
-        ("gamma_Cai", 42), ("gamma_Cao", 43), ("gamma_Ki", 44), ("gamma_Ko",\
-        45), ("gamma_Nai", 46), ("gamma_Nao", 47), ("Fx_NCX_SL", 48),\
-        ("Fx_NCX_jct1", 49), ("HNa", 50), ("K_mCai", 51), ("K_mCao", 52),\
-        ("K_mNai", 53), ("K_mNao", 54), ("Kd_act", 55), ("Q10_NCX", 56),\
-        ("V_max_INaCa", 57), ("eta", 58), ("ksat", 59), ("Fx_SLCaP_SL", 60),\
-        ("Fx_SLCaP_jct1", 61), ("H_ICap", 62), ("Km", 63), ("Q10_SLCaP", 64),\
-        ("V_maxAF", 65), ("Fx_CaBk_SL", 66), ("Fx_CaBk_jct1", 67), ("G_CaBk",\
-        68), ("EC50_SR", 69), ("HSR", 70), ("Max_SR", 71), ("Min_SR", 72),\
-        ("kiCa", 73), ("kim", 74), ("koCa", 75), ("kom", 76), ("ks", 77),\
-        ("KSRleak", 78), ("H_Jpump", 79), ("Kmf", 80), ("Kmr", 81),\
-        ("Q10_SRCaP", 82), ("V_max_Jpump", 83), ("Bmax_Calsequestrin", 84),\
-        ("Bmax_SLB_SL", 85), ("Bmax_SLB_jct1", 86), ("Bmax_SLHigh_SL", 87),\
-        ("Bmax_SLHigh_jct1", 88), ("koff_Calsequestrin", 89), ("koff_SLB",\
-        90), ("koff_SLHigh", 91), ("kon_Calsequestrin", 92), ("kon_SL", 93),\
-        ("Bmax_Calmodulin", 94), ("Bmax_Myosin_Ca", 95), ("Bmax_Myosin_Mg",\
-        96), ("Bmax_SRB", 97), ("Bmax_TroponinC", 98),\
-        ("Bmax_TroponinC_Ca_Mg_Ca", 99), ("Bmax_TroponinC_Ca_Mg_Mg", 100),\
-        ("koff_Calmodulin", 101), ("koff_Myosin_Ca", 102), ("koff_Myosin_Mg",\
-        103), ("koff_SRB", 104), ("koff_TroponinC", 105),\
-        ("koff_TroponinC_Ca_Mg_Ca", 106), ("koff_TroponinC_Ca_Mg_Mg", 107),\
-        ("kon_Calmodulin", 108), ("kon_Myosin_Ca", 109), ("kon_Myosin_Mg",\
-        110), ("kon_SRB", 111), ("kon_TroponinC", 112),\
-        ("kon_TroponinC_Ca_Mg_Ca", 113), ("kon_TroponinC_Ca_Mg_Mg", 114),\
-        ("Bmax_SL", 115), ("Bmax_jct1", 116), ("koff", 117), ("kon", 118),\
-        ("stim_amplitude", 119), ("stim_duration", 120), ("stim_period",\
-        121), ("stim_start", 122)])
+        ("Fx_Na_jct1", 14), ("G_INa", 15), ("Fx_NaBk_SL", 16),\
+        ("Fx_NaBk_jct1", 17), ("G_NaBk", 18), ("Fx_NaK_SL", 19),\
+        ("Fx_NaK_jct1", 20), ("H_NaK", 21), ("I_NaK_max", 22), ("Km_Ko", 23),\
+        ("Km_Nai", 24), ("Fx_Ks_SL", 25), ("Fx_Ks_jct1", 26), ("pKNa", 27),\
+        ("g_Kp", 28), ("G_tos", 29), ("G_tof", 30), ("Fx_Cl_SL", 31),\
+        ("Fx_Cl_jct1", 32), ("G_Cl", 33), ("Kd_ClCa", 34), ("G_ClBk", 35),\
+        ("Fx_ICaL_SL", 36), ("Fx_ICaL_jct1", 37), ("PCa", 38), ("PK", 39),\
+        ("PNa", 40), ("Q10_CaL", 41), ("gamma_Cai", 42), ("gamma_Cao", 43),\
+        ("gamma_Ki", 44), ("gamma_Ko", 45), ("gamma_Nai", 46), ("gamma_Nao",\
+        47), ("lccCaInact", 48), ("Fx_NCX_SL", 49), ("Fx_NCX_jct1", 50),\
+        ("HNa", 51), ("K_mCai", 52), ("K_mCao", 53), ("K_mNai", 54),\
+        ("K_mNao", 55), ("Kd_act", 56), ("Q10_NCX", 57), ("V_max_INaCa", 58),\
+        ("eta", 59), ("ksat", 60), ("Fx_SLCaP_SL", 61), ("Fx_SLCaP_jct1",\
+        62), ("H_ICap", 63), ("Km", 64), ("Q10_SLCaP", 65), ("V_maxAF", 66),\
+        ("Fx_CaBk_SL", 67), ("Fx_CaBk_jct1", 68), ("G_CaBk", 69), ("EC50_SR",\
+        70), ("HSR", 71), ("Max_SR", 72), ("Min_SR", 73), ("kiCa", 74),\
+        ("kim", 75), ("koCa", 76), ("kom", 77), ("ks", 78), ("KSRleak", 79),\
+        ("H_Jpump", 80), ("Kmf", 81), ("Kmr", 82), ("Q10_SRCaP", 83),\
+        ("V_max_Jpump", 84), ("Bmax_Calsequestrin", 85), ("Bmax_SLB_SL", 86),\
+        ("Bmax_SLB_jct1", 87), ("Bmax_SLHigh_SL", 88), ("Bmax_SLHigh_jct1",\
+        89), ("koff_Calsequestrin", 90), ("koff_SLB", 91), ("koff_SLHigh",\
+        92), ("kon_Calsequestrin", 93), ("kon_SL", 94), ("Bmax_Calmodulin",\
+        95), ("Bmax_Myosin_Ca", 96), ("Bmax_Myosin_Mg", 97), ("Bmax_SRB",\
+        98), ("Bmax_TroponinC", 99), ("Bmax_TroponinC_Ca_Mg_Ca", 100),\
+        ("Bmax_TroponinC_Ca_Mg_Mg", 101), ("koff_Calmodulin", 102),\
+        ("koff_Myosin_Ca", 103), ("koff_Myosin_Mg", 104), ("koff_SRB", 105),\
+        ("koff_TroponinC", 106), ("koff_TroponinC_Ca_Mg_Ca", 107),\
+        ("koff_TroponinC_Ca_Mg_Mg", 108), ("kon_Calmodulin", 109),\
+        ("kon_Myosin_Ca", 110), ("kon_Myosin_Mg", 111), ("kon_SRB", 112),\
+        ("kon_TroponinC", 113), ("kon_TroponinC_Ca_Mg_Ca", 114),\
+        ("kon_TroponinC_Ca_Mg_Mg", 115), ("Bmax_SL", 116), ("Bmax_jct1",\
+        117), ("koff", 118), ("kon", 119), ("stim_amplitude", 120),\
+        ("stim_duration", 121), ("stim_period", 122), ("stim_start", 123)])
 
     indices = []
     for param in params:
@@ -290,18 +290,19 @@ def monitor_indices(*monitored):
         ("tau_X_tof", 48), ("Y_tof_infinity", 49), ("tau_Y_tof", 50),\
         ("i_Cl_Ca", 51), ("i_Clb", 52), ("Q_CaL", 53), ("temp", 54),\
         ("i_CaL_Ca_jct1", 55), ("i_CaL_Na_jct1", 56), ("i_CaL_Ca_SL", 57),\
-        ("i_CaL_Na_SL", 58), ("i_CaL_K", 59), ("i_CaL", 60), ("d_infinity",\
-        61), ("tau_d", 62), ("f_infinity", 63), ("tau_f", 64), ("fCa_SL",\
-        65), ("fCa_jct1", 66), ("temp_jct1", 67), ("temp_SL", 68), ("Q_NCX",\
-        69), ("Ka_SL", 70), ("Ka_jct1", 71), ("i_NaCa_jct1", 72), ("i_NaCa_SL",\
-        73), ("i_NaCa", 74), ("Q_SLCaP", 75), ("i_Cap_jct1", 76), ("i_Cap_SL",\
-        77), ("i_Cap", 78), ("i_Cab_jct1", 79), ("i_Cab_SL", 80), ("i_Cab",\
-        81), ("kCaSR", 82), ("koSRCa", 83), ("kiSRCa", 84), ("RI", 85),\
-        ("j_rel_SR", 86), ("j_leak_SR", 87), ("Q_SRCaP", 88), ("j_pump_SR",\
-        89), ("dCalsequestrin", 90), ("dCa_SLB_SL", 91), ("dCa_SLB_jct1", 92),\
-        ("dCa_SLHigh_SL", 93), ("dCa_SLHigh_jct1", 94), ("dCa_jct1_tot_bound",\
-        95), ("dCa_SL_tot_bound", 96), ("i_Ca_jct1_tot", 97), ("i_Ca_SL_tot",\
-        98), ("dCa_TroponinC", 99), ("dCa_TroponinC_Ca_Mg", 100),\
+        ("i_CaL_Na_SL", 58), ("i_CaL_K", 59), ("i_CaL", 60), ("fCa_SL", 61),\
+        ("fCa_jct1", 62), ("d_infinity", 63), ("tau_d", 64), ("f_infinity",\
+        65), ("tau_f", 66), ("temp_jct1", 67), ("temp_SL", 68), ("Q_NCX",\
+        69), ("Ka_SL", 70), ("Ka_jct1", 71), ("i_NaCa_jct1", 72),\
+        ("i_NaCa_SL", 73), ("i_NaCa", 74), ("Q_SLCaP", 75), ("i_Cap_jct1",\
+        76), ("i_Cap_SL", 77), ("i_Cap", 78), ("i_Cab_jct1", 79),\
+        ("i_Cab_SL", 80), ("i_Cab", 81), ("kCaSR", 82), ("koSRCa", 83),\
+        ("kiSRCa", 84), ("RI", 85), ("j_rel_SR", 86), ("j_leak_SR", 87),\
+        ("Q_SRCaP", 88), ("j_pump_SR", 89), ("dCalsequestrin", 90),\
+        ("dCa_SLB_SL", 91), ("dCa_SLB_jct1", 92), ("dCa_SLHigh_SL", 93),\
+        ("dCa_SLHigh_jct1", 94), ("dCa_jct1_tot_bound", 95),\
+        ("dCa_SL_tot_bound", 96), ("i_Ca_jct1_tot", 97), ("i_Ca_SL_tot", 98),\
+        ("dCa_TroponinC", 99), ("dCa_TroponinC_Ca_Mg", 100),\
         ("dMg_TroponinC_Ca_Mg", 101), ("dCa_Calmodulin", 102), ("dCa_Myosin",\
         103), ("dMg_Myosin", 104), ("dCa_SRB", 105),\
         ("dCa_cytosol_tot_bound", 106), ("dNa_jct1_buf", 107), ("dNa_SL_buf",\
@@ -309,18 +310,19 @@ def monitor_indices(*monitored):
         ("E_Ca_jct1", 112), ("E_Ca_SL", 113), ("E_K", 114), ("E_Cl", 115),\
         ("G_K1", 116), ("i_K1", 117), ("alpha_K1", 118), ("beta_K1", 119),\
         ("K1_infinity", 120), ("J_Na_jct1_SL", 121), ("J_Na_SL_myo", 122),\
-        ("J_Ca_jct1_SL", 123), ("J_Ca_SL_myo", 124), ("dh_dt", 125), ("dj_dt",\
-        126), ("dm_dt", 127), ("dXr_dt", 128), ("dXs_dt", 129), ("dX_tos_dt",\
-        130), ("dY_tos_dt", 131), ("dR_tos_dt", 132), ("dX_tof_dt", 133),\
-        ("dY_tof_dt", 134), ("dd_dt", 135), ("df_dt", 136), ("dfCaB_SL_dt",\
-        137), ("dfCaB_jct1_dt", 138), ("dR_dt", 139), ("dO_dt", 140),\
-        ("dI_dt", 141), ("dCa_TroponinC_dt", 142), ("dCa_TroponinC_Ca_Mg_dt",\
-        143), ("dMg_TroponinC_Ca_Mg_dt", 144), ("dCa_Calmodulin_dt", 145),\
-        ("dCa_Myosin_dt", 146), ("dMg_Myosin_dt", 147), ("dCa_SRB_dt", 148),\
-        ("dNa_jct1_buf_dt", 149), ("dNa_SL_buf_dt", 150), ("dNa_jct1_dt", 151),\
-        ("dNa_SL_dt", 152), ("dNai_dt", 153), ("dCa_Calsequestrin_dt", 154),\
-        ("dCa_SLB_SL_dt", 155), ("dCa_SLB_jct1_dt", 156), ("dCa_SLHigh_SL_dt",\
-        157), ("dCa_SLHigh_jct1_dt", 158), ("dCa_SR_dt", 159), ("dCa_jct1_dt",\
+        ("J_Ca_jct1_SL", 123), ("J_Ca_SL_myo", 124), ("dh_dt", 125),\
+        ("dj_dt", 126), ("dm_dt", 127), ("dXr_dt", 128), ("dXs_dt", 129),\
+        ("dX_tos_dt", 130), ("dY_tos_dt", 131), ("dR_tos_dt", 132),\
+        ("dX_tof_dt", 133), ("dY_tof_dt", 134), ("dd_dt", 135), ("df_dt",\
+        136), ("dfCaB_SL_dt", 137), ("dfCaB_jct1_dt", 138), ("dR_dt", 139),\
+        ("dO_dt", 140), ("dI_dt", 141), ("dCa_TroponinC_dt", 142),\
+        ("dCa_TroponinC_Ca_Mg_dt", 143), ("dMg_TroponinC_Ca_Mg_dt", 144),\
+        ("dCa_Calmodulin_dt", 145), ("dCa_Myosin_dt", 146), ("dMg_Myosin_dt",\
+        147), ("dCa_SRB_dt", 148), ("dNa_jct1_buf_dt", 149),\
+        ("dNa_SL_buf_dt", 150), ("dNa_jct1_dt", 151), ("dNa_SL_dt", 152),\
+        ("dNai_dt", 153), ("dCa_Calsequestrin_dt", 154), ("dCa_SLB_SL_dt",\
+        155), ("dCa_SLB_jct1_dt", 156), ("dCa_SLHigh_SL_dt", 157),\
+        ("dCa_SLHigh_jct1_dt", 158), ("dCa_SR_dt", 159), ("dCa_jct1_dt",\
         160), ("dCa_SL_dt", 161), ("dCai_dt", 162), ("dV_dt", 163)])
 
     indices = []
@@ -351,31 +353,30 @@ def rhs(states, t, parameters, values=None):
         Ca_SL, Cai, V = states
 
     # Assign parameters
-    assert(len(parameters) == 123)
+    assert(len(parameters) == 124)
     Cao, Cli, Clo, Cm, F, Ki, Ko, Mgi, Nao, Rgas, T, cell_length,\
         cell_radius, Fx_Na_SL, Fx_Na_jct1, G_INa, Fx_NaBk_SL, Fx_NaBk_jct1,\
         G_NaBk, Fx_NaK_SL, Fx_NaK_jct1, H_NaK, I_NaK_max, Km_Ko, Km_Nai,\
         Fx_Ks_SL, Fx_Ks_jct1, pKNa, g_Kp, G_tos, G_tof, Fx_Cl_SL, Fx_Cl_jct1,\
-        G_Cl, Kd_ClCa, G_ClBk, Fx_NCX_SL, Fx_NCX_jct1, HNa, K_mCai, K_mCao,\
-        K_mNai, K_mNao, Kd_act, Q10_NCX, V_max_INaCa, eta, ksat, Fx_SLCaP_SL,\
-        Fx_SLCaP_jct1, H_ICap, Km, Q10_SLCaP, V_maxAF, Fx_CaBk_SL,\
-        Fx_CaBk_jct1, G_CaBk, EC50_SR, HSR, Max_SR, Min_SR, kiCa, kim, koCa,\
-        kom, ks, KSRleak, H_Jpump, Kmf, Kmr, Q10_SRCaP, V_max_Jpump,\
-        Bmax_Calmodulin, Bmax_Myosin_Ca, Bmax_Myosin_Mg, Bmax_SRB,\
-        Bmax_TroponinC, Bmax_TroponinC_Ca_Mg_Ca, Bmax_TroponinC_Ca_Mg_Mg,\
-        koff_Calmodulin, koff_Myosin_Ca, koff_Myosin_Mg, koff_SRB,\
-        koff_TroponinC, koff_TroponinC_Ca_Mg_Ca, koff_TroponinC_Ca_Mg_Mg,\
-        kon_Calmodulin, kon_Myosin_Ca, kon_Myosin_Mg, kon_SRB, kon_TroponinC,\
-        kon_TroponinC_Ca_Mg_Ca, kon_TroponinC_Ca_Mg_Mg, Fx_ICaL_SL,\
-        Fx_ICaL_jct1, PCa, PK, PNa, Q10_CaL, gamma_Cai, gamma_Cao, gamma_Ki,\
-        gamma_Ko, gamma_Nai, gamma_Nao, Bmax_SL, Bmax_jct1, koff, kon,\
-        Bmax_Calsequestrin, Bmax_SLB_SL, Bmax_SLB_jct1, Bmax_SLHigh_SL,\
-        Bmax_SLHigh_jct1, koff_Calsequestrin, koff_SLB, koff_SLHigh,\
-        kon_Calsequestrin, kon_SL, stim_amplitude, stim_duration,\
-        stim_period, stim_start = parameters
-  # PKH
-    Cao, Cli, Clo, Cm, F, Ki, Ko, Mgi, Nao, Rgas, T, cell_length, cell_radius, Fx_Na_SL, Fx_Na_jct1, G_INa, Fx_NaBk_SL, Fx_NaBk_jct1, G_NaBk, Fx_NaK_SL, Fx_NaK_jct1, H_NaK, I_NaK_max, Km_Ko, Km_Nai, Fx_Ks_SL, Fx_Ks_jct1, pKNa, g_Kp, G_tos, G_tof, Fx_Cl_SL, Fx_Cl_jct1, G_Cl, Kd_ClCa, G_ClBk, Fx_ICaL_SL, Fx_ICaL_jct1, PCa, PK, PNa, Q10_CaL, gamma_Cai, gamma_Cao, gamma_Ki, gamma_Ko, gamma_Nai, gamma_Nao, Fx_NCX_SL, Fx_NCX_jct1, HNa, K_mCai, K_mCao, K_mNai, K_mNao, Kd_act, Q10_NCX, V_max_INaCa, eta, ksat, Fx_SLCaP_SL, Fx_SLCaP_jct1, H_ICap, Km, Q10_SLCaP, V_maxAF, Fx_CaBk_SL, Fx_CaBk_jct1, G_CaBk, EC50_SR, HSR, Max_SR, Min_SR, kiCa, kim, koCa, kom, ks, KSRleak, H_Jpump, Kmf, Kmr, Q10_SRCaP, V_max_Jpump, Bmax_Calsequestrin, Bmax_SLB_SL, Bmax_SLB_jct1, Bmax_SLHigh_SL, Bmax_SLHigh_jct1, koff_Calsequestrin, koff_SLB, koff_SLHigh, kon_Calsequestrin, kon_SL, Bmax_Calmodulin, Bmax_Myosin_Ca, Bmax_Myosin_Mg, Bmax_SRB, Bmax_TroponinC, Bmax_TroponinC_Ca_Mg_Ca, Bmax_TroponinC_Ca_Mg_Mg, koff_Calmodulin, koff_Myosin_Ca, koff_Myosin_Mg, koff_SRB, koff_TroponinC, koff_TroponinC_Ca_Mg_Ca, koff_TroponinC_Ca_Mg_Mg, kon_Calmodulin, kon_Myosin_Ca, kon_Myosin_Mg, kon_SRB, kon_TroponinC, kon_TroponinC_Ca_Mg_Ca, kon_TroponinC_Ca_Mg_Mg, Bmax_SL, Bmax_jct1, koff, kon, stim_amplitude, stim_duration, stim_period, stim_start = parameters
-    #print parameters[75]
+        G_Cl, Kd_ClCa, G_ClBk, lccCaInact, Fx_NCX_SL, Fx_NCX_jct1, HNa,\
+        K_mCai, K_mCao, K_mNai, K_mNao, Kd_act, Q10_NCX, V_max_INaCa, eta,\
+        ksat, Fx_SLCaP_SL, Fx_SLCaP_jct1, H_ICap, Km, Q10_SLCaP, V_maxAF,\
+        Fx_CaBk_SL, Fx_CaBk_jct1, G_CaBk, EC50_SR, HSR, Max_SR, Min_SR, kiCa,\
+        kim, koCa, kom, ks, KSRleak, H_Jpump, Kmf, Kmr, Q10_SRCaP,\
+        V_max_Jpump, Bmax_Calmodulin, Bmax_Myosin_Ca, Bmax_Myosin_Mg,\
+        Bmax_SRB, Bmax_TroponinC, Bmax_TroponinC_Ca_Mg_Ca,\
+        Bmax_TroponinC_Ca_Mg_Mg, koff_Calmodulin, koff_Myosin_Ca,\
+        koff_Myosin_Mg, koff_SRB, koff_TroponinC, koff_TroponinC_Ca_Mg_Ca,\
+        koff_TroponinC_Ca_Mg_Mg, kon_Calmodulin, kon_Myosin_Ca,\
+        kon_Myosin_Mg, kon_SRB, kon_TroponinC, kon_TroponinC_Ca_Mg_Ca,\
+        kon_TroponinC_Ca_Mg_Mg, Fx_ICaL_SL, Fx_ICaL_jct1, PCa, PK, PNa,\
+        Q10_CaL, gamma_Cai, gamma_Cao, gamma_Ki, gamma_Ko, gamma_Nai,\
+        gamma_Nao, Bmax_SL, Bmax_jct1, koff, kon, Bmax_Calsequestrin,\
+        Bmax_SLB_SL, Bmax_SLB_jct1, Bmax_SLHigh_SL, Bmax_SLHigh_jct1,\
+        koff_Calsequestrin, koff_SLB, koff_SLHigh, kon_Calsequestrin, kon_SL,\
+        stim_amplitude, stim_duration, stim_period, stim_start = parameters
+    # PKH 
+    Cao, Cli, Clo, Cm, F, Ki, Ko, Mgi, Nao, Rgas, T, cell_length, cell_radius, Fx_Na_SL, Fx_Na_jct1, G_INa, Fx_NaBk_SL, Fx_NaBk_jct1, G_NaBk, Fx_NaK_SL, Fx_NaK_jct1, H_NaK, I_NaK_max, Km_Ko, Km_Nai, Fx_Ks_SL, Fx_Ks_jct1, pKNa, g_Kp, G_tos, G_tof, Fx_Cl_SL, Fx_Cl_jct1, G_Cl, Kd_ClCa, G_ClBk, Fx_ICaL_SL, Fx_ICaL_jct1, PCa, PK, PNa, Q10_CaL, gamma_Cai, gamma_Cao, gamma_Ki, gamma_Ko, gamma_Nai, gamma_Nao, lccCaInact, Fx_NCX_SL, Fx_NCX_jct1, HNa, K_mCai, K_mCao, K_mNai, K_mNao, Kd_act, Q10_NCX, V_max_INaCa, eta, ksat, Fx_SLCaP_SL, Fx_SLCaP_jct1, H_ICap, Km, Q10_SLCaP, V_maxAF, Fx_CaBk_SL, Fx_CaBk_jct1, G_CaBk, EC50_SR, HSR, Max_SR, Min_SR, kiCa, kim, koCa, kom, ks, KSRleak, H_Jpump, Kmf, Kmr, Q10_SRCaP, V_max_Jpump, Bmax_Calsequestrin, Bmax_SLB_SL, Bmax_SLB_jct1, Bmax_SLHigh_SL, Bmax_SLHigh_jct1, koff_Calsequestrin, koff_SLB, koff_SLHigh, kon_Calsequestrin, kon_SL, Bmax_Calmodulin, Bmax_Myosin_Ca, Bmax_Myosin_Mg, Bmax_SRB, Bmax_TroponinC, Bmax_TroponinC_Ca_Mg_Ca, Bmax_TroponinC_Ca_Mg_Mg, koff_Calmodulin, koff_Myosin_Ca, koff_Myosin_Mg, koff_SRB, koff_TroponinC, koff_TroponinC_Ca_Mg_Ca, koff_TroponinC_Ca_Mg_Mg, kon_Calmodulin, kon_Myosin_Ca, kon_Myosin_Mg, kon_SRB, kon_TroponinC, kon_TroponinC_Ca_Mg_Ca, kon_TroponinC_Ca_Mg_Mg, Bmax_SL, Bmax_jct1, koff, kon, stim_amplitude, stim_duration, stim_period, stim_start = parameters
 
     # Init return args
     if values is None:
@@ -401,7 +402,6 @@ def rhs(states, t, parameters, values=None):
     # Expressions for the INa component
     openProb = (m*m*m)*h*j
     i_Na_jct1 = Fx_Na_jct1*G_INa*(V - E_Na_jct1)*openProb
-    #print i_Na_jct1 , Fx_Na_jct1,G_INa, V , E_Na_jct1, openProb
     i_Na_SL = Fx_Na_SL*G_INa*(V - E_Na_SL)*openProb
     i_Na = i_Na_jct1 + i_Na_SL
 
@@ -424,7 +424,6 @@ def rhs(states, t, parameters, values=None):
     alpha_m = (15.0816 + 0.32*V)/(1 - 0.0089778037307*math.exp(-0.1*V))
     beta_m = 0.08*math.exp(-V/11.)
     values[2] = (1 - m)*alpha_m - beta_m*m
-    #print values[2] ,  1 , m, alpha_m , beta_m,m
 
     # Expressions for the INab component
     i_Nab_jct1 = Fx_NaBk_jct1*G_NaBk*(V - E_Na_jct1)
@@ -435,8 +434,8 @@ def rhs(states, t, parameters, values=None):
     sigma = -1/7. + math.exp(0.0148588410104*Nao)/7.
     f_NaK = 1.0/(1 + 0.0365*math.exp(-F*V/(Rgas*T))*sigma +\
         0.1245*math.exp(-0.1*F*V/(Rgas*T)))
-    i_NaK_jct1 = Fx_NaK_jct1*I_NaK_max*Ko*f_NaK/((1 + math.pow(Km_Nai/Na_jct1,\
-        H_NaK))*(Km_Ko + Ko))
+    i_NaK_jct1 = Fx_NaK_jct1*I_NaK_max*Ko*f_NaK/((1 +\
+        math.pow(Km_Nai/Na_jct1, H_NaK))*(Km_Ko + Ko))
     i_NaK_SL = Fx_NaK_SL*I_NaK_max*Ko*f_NaK/((1 + math.pow(Km_Nai/Na_SL,\
         H_NaK))*(Km_Ko + Ko))
     i_NaK = i_NaK_SL + i_NaK_jct1
@@ -446,7 +445,6 @@ def rhs(states, t, parameters, values=None):
     tau_Xr = 1.0/((0.0061 + 0.00061*V)/(-1 + 4.26311451517*math.exp(0.145*V))\
         + (0.00966 + 0.00138*V)/(1 - 0.422739131746*math.exp(-0.123*V)))
     values[3] = (Xr_infinity - Xr)/tau_Xr
-    #print values[3]
 
     # Expressions for the Rr gate component
     Rr = 1.0/(1 + 4.36323731689*math.exp(0.0446428571429*V))
@@ -478,10 +476,8 @@ def rhs(states, t, parameters, values=None):
 
     # Expressions for the X_gate component
     X_tos_infinity = 1.0/(1 + math.exp(-1/5. - V/15.))
-    #print "%f"%(-1/5. - V/15.)
     tau_X_tos = 0.5 + 9/(1 + math.exp(1/5. + V/15.))
     values[5] = (-X_tos + X_tos_infinity)/tau_X_tos
-    #print values[5], -X_tos, X_tos_infinity, tau_X_tos
 
     # Expressions for the Y_gate component
     Y_tos_infinity = 1.0/(1 + 28.5027336438*math.exp(V/10.))
@@ -500,7 +496,6 @@ def rhs(states, t, parameters, values=None):
     X_tof_infinity = 1.0/(1 + math.exp(-1/5. - V/15.))
     tau_X_tof = 1.5 + 3.5*math.exp(-(V*V)/900.)
     values[8] = (-X_tof + X_tof_infinity)/tau_X_tof
-    #print values[8],   -X_tof , X_tof_infinity, tau_X_tof
 
     # Expressions for the Itof Y gate component
     Y_tof_infinity = 1.0/(1 + 28.5027336438*math.exp(V/10.))
@@ -515,8 +510,8 @@ def rhs(states, t, parameters, values=None):
     K1_infinity = alpha_K1/(beta_K1 + alpha_K1)
 
     # Expressions for the ICl Ca component
-    i_Cl_Ca = G_Cl*(Fx_Cl_jct1/(1 + Kd_ClCa/Ca_jct1) + Fx_Cl_SL/(1 +\
-        Kd_ClCa/Ca_SL))*(V - E_Cl)
+    i_Cl_Ca = G_Cl*(Fx_Cl_SL/(1 + Kd_ClCa/Ca_SL) + Fx_Cl_jct1/(1 +\
+        Kd_ClCa/Ca_jct1))*(V - E_Cl)
 
     # Expressions for the IClb component
     i_Clb = G_ClBk*(V - E_Cl)
@@ -536,23 +531,25 @@ def rhs(states, t, parameters, values=None):
     # Expressions for the FCa gate component
     fCa_SL = 1 - fCaB_SL
     fCa_jct1 = 1 - fCaB_jct1
-    values[12] = -0.0119*fCaB_SL + 1.7*(1 - fCaB_SL)*Ca_SL
-    values[13] = -0.0119*fCaB_jct1 + 1.7*(1 - fCaB_jct1)*Ca_jct1
+    values[12] = -0.0119*fCaB_SL + lccCaInact*(1 - fCaB_SL)*Ca_SL
+    values[13] = lccCaInact*(1 - fCaB_jct1)*Ca_jct1 - 0.0119*fCaB_jct1
 
     # Expressions for the INaCa component
-    temp_jct1 = (-math.pow(Nao, HNa)*Ca_jct1*math.exp(F*(-1 + eta)*V/(Rgas*T))\
-        + Cao*math.pow(Na_jct1, HNa)*math.exp(F*eta*V/(Rgas*T)))/(1 +\
-        ksat*math.exp(F*(-1 + eta)*V/(Rgas*T)))
+    temp_jct1 = (-math.pow(Nao, HNa)*Ca_jct1*math.exp(F*(-1 +\
+        eta)*V/(Rgas*T)) + Cao*math.pow(Na_jct1,\
+        HNa)*math.exp(F*eta*V/(Rgas*T)))/(1 + ksat*math.exp(F*(-1 +\
+        eta)*V/(Rgas*T)))
     temp_SL = (-math.pow(Nao, HNa)*Ca_SL*math.exp(F*(-1 + eta)*V/(Rgas*T)) +\
         Cao*math.pow(Na_SL, HNa)*math.exp(F*eta*V/(Rgas*T)))/(1 +\
         ksat*math.exp(F*(-1 + eta)*V/(Rgas*T)))
     Q_NCX = math.pow(Q10_NCX, -31 + T/10.)
     Ka_SL = 1.0/(1 + (Kd_act*Kd_act*Kd_act)/(Ca_SL*Ca_SL*Ca_SL))
     Ka_jct1 = 1.0/(1 + (Kd_act*Kd_act*Kd_act)/(Ca_jct1*Ca_jct1*Ca_jct1))
-    i_NaCa_jct1 = Fx_NCX_jct1*V_max_INaCa*Ka_jct1*Q_NCX*temp_jct1/(math.pow(Nao,\
-        HNa)*Ca_jct1 + Cao*math.pow(Na_jct1, HNa) + K_mCai*math.pow(Nao,\
-        HNa)*(1 + math.pow(Na_jct1/K_mNai, HNa)) + math.pow(K_mNao, HNa)*(1 +\
-        Ca_jct1/K_mCai)*Ca_jct1 + K_mCao*math.pow(Na_jct1, HNa))
+    i_NaCa_jct1 =\
+        Fx_NCX_jct1*V_max_INaCa*Ka_jct1*Q_NCX*temp_jct1/(K_mCai*math.pow(Nao,\
+        HNa)*(1 + math.pow(Na_jct1/K_mNai, HNa)) + K_mCao*math.pow(Na_jct1,\
+        HNa) + Cao*math.pow(Na_jct1, HNa) + math.pow(Nao, HNa)*Ca_jct1 +\
+        math.pow(K_mNao, HNa)*(1 + Ca_jct1/K_mCai)*Ca_jct1)
     i_NaCa_SL = Fx_NCX_SL*V_max_INaCa*Ka_SL*Q_NCX*temp_SL/(math.pow(K_mNao,\
         HNa)*(1 + Ca_SL/K_mCai)*Ca_SL + math.pow(Nao, HNa)*Ca_SL +\
         Cao*math.pow(Na_SL, HNa) + K_mCao*math.pow(Na_SL, HNa) +\
@@ -561,7 +558,8 @@ def rhs(states, t, parameters, values=None):
 
     # Expressions for the ICap component
     Q_SLCaP = math.pow(Q10_SLCaP, -31 + T/10.)
-    i_Cap_jct1 = Fx_SLCaP_jct1*V_maxAF*Q_SLCaP/(1 + math.pow(Km/Ca_jct1, H_ICap))
+    i_Cap_jct1 = Fx_SLCaP_jct1*V_maxAF*Q_SLCaP/(1 + math.pow(Km/Ca_jct1,\
+        H_ICap))
     i_Cap_SL = Fx_SLCaP_SL*V_maxAF*Q_SLCaP/(1 + math.pow(Km/Ca_SL, H_ICap))
     i_Cap = i_Cap_SL + i_Cap_jct1
 
@@ -575,9 +573,11 @@ def rhs(states, t, parameters, values=None):
     koSRCa = koCa/kCaSR
     kiSRCa = kiCa*kCaSR
     RI = 1 - I - O - R
-    values[14] = -Ca_jct1*R*kiSRCa - (Ca_jct1*Ca_jct1)*R*koSRCa + kom*O + kim*RI
-    values[15] = kim*I - Ca_jct1*O*kiSRCa + (Ca_jct1*Ca_jct1)*R*koSRCa - kom*O
-    values[16] = -kim*I + (Ca_jct1*Ca_jct1)*RI*koSRCa + Ca_jct1*O*kiSRCa - kom*I
+    values[14] = -(Ca_jct1*Ca_jct1)*R*koSRCa + kom*O - Ca_jct1*R*kiSRCa +\
+        kim*RI
+    values[15] = -Ca_jct1*O*kiSRCa + kim*I + (Ca_jct1*Ca_jct1)*R*koSRCa - kom*O
+    values[16] = -kim*I + Ca_jct1*O*kiSRCa - kom*I +\
+        (Ca_jct1*Ca_jct1)*RI*koSRCa
     j_rel_SR = ks*(Ca_SR - Ca_jct1)*O
 
     # Expressions for the Jleak SR component
@@ -611,8 +611,6 @@ def rhs(states, t, parameters, values=None):
     dMg_Myosin = Mgi*kon_Myosin_Mg*(Bmax_Myosin_Mg - Mg_Myosin - Ca_Myosin) -\
         koff_Myosin_Mg*Mg_Myosin
     dCa_SRB = kon_SRB*(-Ca_SRB + Bmax_SRB)*Cai - koff_SRB*Ca_SRB
-    #print Bmax_SRB,Ca_SRB, Cai,kon_SRB,  Ca_SRB,koff_SRB
-    #print "---",dCa_SRB; 
     dCa_cytosol_tot_bound = dCa_SRB + dCa_Calmodulin + dMg_Myosin +\
         dMg_TroponinC_Ca_Mg + dCa_TroponinC + dCa_TroponinC_Ca_Mg +\
         dCa_Myosin
@@ -635,9 +633,9 @@ def rhs(states, t, parameters, values=None):
     # Expressions for the ICaL component
     Q_CaL = math.pow(Q10_CaL, -31 + T/10.)
     temp = 0.45*(F*F)*Q_CaL*V*d*f/(Rgas*T)
-    i_CaL_Ca_jct1 = 4*Fx_ICaL_jct1*PCa*(-Cao*gamma_Cao +\
-        gamma_Cai*Ca_jct1*math.exp(2*F*V/(Rgas*T)))*fCa_jct1*temp/(-1 +\
-        math.exp(2*F*V/(Rgas*T)))
+    i_CaL_Ca_jct1 =\
+        4*Fx_ICaL_jct1*PCa*(gamma_Cai*Ca_jct1*math.exp(2*F*V/(Rgas*T)) -\
+        Cao*gamma_Cao)*fCa_jct1*temp/(-1 + math.exp(2*F*V/(Rgas*T)))
     i_CaL_Na_jct1 = Fx_ICaL_jct1*PNa*(-Nao*gamma_Nao +\
         gamma_Nai*Na_jct1*math.exp(F*V/(Rgas*T)))*fCa_jct1*temp/(-1 +\
         math.exp(F*V/(Rgas*T)))
@@ -646,24 +644,21 @@ def rhs(states, t, parameters, values=None):
     i_CaL_Na_SL = Fx_ICaL_SL*PNa*(-Nao*gamma_Nao +\
         gamma_Nai*Na_SL*math.exp(F*V/(Rgas*T)))*fCa_SL*temp/(-1 +\
         math.exp(F*V/(Rgas*T)))
-    i_CaL_K = PK*(Fx_ICaL_jct1*fCa_jct1 + Fx_ICaL_SL*fCa_SL)*(-Ko*gamma_Ko +\
+    i_CaL_K = PK*(Fx_ICaL_SL*fCa_SL + Fx_ICaL_jct1*fCa_jct1)*(-Ko*gamma_Ko +\
         Ki*gamma_Ki*math.exp(F*V/(Rgas*T)))*temp/(-1 +\
         math.exp(F*V/(Rgas*T)))
-    i_CaL = i_CaL_Ca_SL + i_CaL_Na_jct1 + i_CaL_Ca_jct1 + i_CaL_Na_SL + i_CaL_K
+    i_CaL = i_CaL_Ca_jct1 + i_CaL_Ca_SL + i_CaL_Na_jct1 + i_CaL_K + i_CaL_Na_SL
 
     # Expressions for the Na buffer component
     dNa_jct1_buf = kon*(Bmax_jct1 - Na_jct1_buf)*Na_jct1 - koff*Na_jct1_buf
     dNa_SL_buf = -koff*Na_SL_buf + kon*(-Na_SL_buf + Bmax_SL)*Na_SL
     values[24] = dNa_jct1_buf
     values[25] = dNa_SL_buf
-    values[26] = -Cm*(i_Na_jct1 + i_CaL_Na_jct1 + 3*i_NaK_jct1 + i_Nab_jct1 +\
-        3*i_NaCa_jct1)/(F*Vol_jct1) - dNa_jct1_buf - J_Na_jct1_SL/Vol_jct1
-    #print values[26] , \
-    #print values[26] , \
-    #    i_NaK_jct1 
-    values[27] = -dNa_SL_buf - Cm*(3*i_NaCa_SL + i_Na_SL + i_CaL_Na_SL +\
-        i_Nab_SL + 3*i_NaK_SL)/(F*Vol_SL) + (-J_Na_SL_myo +\
-        J_Na_jct1_SL)/Vol_SL
+    values[26] = -dNa_jct1_buf - Cm*(3*i_NaCa_jct1 + 3*i_NaK_jct1 + i_Na_jct1 +\
+        i_CaL_Na_jct1 + i_Nab_jct1)/(F*Vol_jct1) - J_Na_jct1_SL/Vol_jct1
+    values[27] = -dNa_SL_buf + (-J_Na_SL_myo + J_Na_jct1_SL)/Vol_SL -\
+        Cm*(3*i_NaCa_SL + i_Na_SL + i_CaL_Na_SL + i_Nab_SL +\
+        3*i_NaK_SL)/(F*Vol_SL)
     values[28] = J_Na_SL_myo/Vol_myo
 
     # Expressions for the Ca buffer component
@@ -675,44 +670,35 @@ def rhs(states, t, parameters, values=None):
         koff_SLB*Ca_SLB_SL
     dCa_SLB_jct1 = -koff_SLB*Ca_SLB_jct1 +\
         kon_SL*(0.1*Bmax_SLB_jct1*Vol_myo/Vol_jct1 - Ca_SLB_jct1)*Ca_jct1
-
-    #print dCa_SLB_jct1 , -koff_SLB*Ca_SLB_jct1 ,\
-    #    kon_SL, 0.1,Bmax_SLB_jct1,Vol_myo,Vol_jct1 , Ca_SLB_jct1, Ca_jct1
     dCa_SLHigh_SL = -koff_SLHigh*Ca_SLHigh_SL +\
         kon_SL*(Bmax_SLHigh_SL*Vol_myo/Vol_SL - Ca_SLHigh_SL)*Ca_SL
-    dCa_SLHigh_jct1 = kon_SL*(0.1*Bmax_SLHigh_jct1*Vol_myo/Vol_jct1 -\
-        Ca_SLHigh_jct1)*Ca_jct1 - koff_SLHigh*Ca_SLHigh_jct1
+    dCa_SLHigh_jct1 = -koff_SLHigh*Ca_SLHigh_jct1 +\
+        kon_SL*(0.1*Bmax_SLHigh_jct1*Vol_myo/Vol_jct1 -\
+        Ca_SLHigh_jct1)*Ca_jct1
     values[30] = dCa_SLB_SL
     values[31] = dCa_SLB_jct1
     values[32] = dCa_SLHigh_SL
     values[33] = dCa_SLHigh_jct1
     dCa_jct1_tot_bound = dCa_SLHigh_jct1 + dCa_SLB_jct1
     dCa_SL_tot_bound = dCa_SLB_SL + dCa_SLHigh_SL
-    i_Ca_jct1_tot = i_Cab_jct1 + i_CaL_Ca_jct1 + i_Cap_jct1 - 2*i_NaCa_jct1
+    i_Ca_jct1_tot = i_CaL_Ca_jct1 - 2*i_NaCa_jct1 + i_Cap_jct1 + i_Cab_jct1
     i_Ca_SL_tot = i_Cap_SL + i_CaL_Ca_SL - 2*i_NaCa_SL + i_Cab_SL
-    values[34] = -Vol_myo*j_leak_SR/Vol_SR - dCalsequestrin - j_rel_SR +\
+    values[34] = -dCalsequestrin - Vol_myo*j_leak_SR/Vol_SR - j_rel_SR +\
         j_pump_SR
-    #print values[34] ,  Vol_myo,j_leak_SR,Vol_SR , dCalsequestrin , j_rel_SR ,\
-    #    j_pump_SR
-    #print values[34]
     values[35] = Vol_myo*j_leak_SR/Vol_jct1 + Vol_SR*j_rel_SR/Vol_jct1 -\
-        Cm*i_Ca_jct1_tot/(2*F*Vol_jct1) - J_Ca_jct1_SL/Vol_jct1 -\
+        J_Ca_jct1_SL/Vol_jct1 - Cm*i_Ca_jct1_tot/(2*F*Vol_jct1) -\
         dCa_jct1_tot_bound
     values[36] = (J_Ca_jct1_SL - J_Ca_SL_myo)/Vol_SL - dCa_SL_tot_bound -\
         Cm*i_Ca_SL_tot/(2*F*Vol_SL)
-    #print Ca_jct1, Ca_SL, J_Ca_jct1_SL          
-    #print J_Ca_jct1_SL/Vol_jct1, " [mM/ms]"
-    
     values[37] = -dCa_cytosol_tot_bound + J_Ca_SL_myo/Vol_myo -\
         Vol_SR*j_pump_SR/Vol_myo
-    #print J_Ca_SL_myo
 
     # Expressions for the Cell component
     i_Stim = (-stim_amplitude if -stim_period*math.floor(t/stim_period) + t\
         <= stim_start + stim_duration and\
         -stim_period*math.floor(t/stim_period) + t >= stim_start else 0)
-    values[38] = -i_NaCa - i_Clb - i_Cap - i_tos - i_Cl_Ca - i_Na - i_tof -\
-        i_Stim - i_Ks - i_Nab - i_CaL - i_Cab - i_Kr - i_K1 - i_Kp - i_NaK
+    values[38] = -i_CaL - i_Clb - i_tos - i_tof - i_Stim - i_Nab - i_Ks -\
+        i_Cab - i_NaCa - i_Na - i_Cap - i_Cl_Ca - i_NaK - i_Kr - i_K1 - i_Kp
 
     # Return results
     return values
@@ -735,29 +721,30 @@ def monitor(states, t, parameters, monitored=None):
         Ca_SL, Cai, V = states
 
     # Assign parameters
-    assert(len(parameters) == 123)
+    assert(len(parameters) == 124)
     Cao, Cli, Clo, Cm, F, Ki, Ko, Mgi, Nao, Rgas, T, cell_length,\
         cell_radius, Fx_Na_SL, Fx_Na_jct1, G_INa, Fx_NaBk_SL, Fx_NaBk_jct1,\
         G_NaBk, Fx_NaK_SL, Fx_NaK_jct1, H_NaK, I_NaK_max, Km_Ko, Km_Nai,\
         Fx_Ks_SL, Fx_Ks_jct1, pKNa, g_Kp, G_tos, G_tof, Fx_Cl_SL, Fx_Cl_jct1,\
-        G_Cl, Kd_ClCa, G_ClBk, Fx_NCX_SL, Fx_NCX_jct1, HNa, K_mCai, K_mCao,\
-        K_mNai, K_mNao, Kd_act, Q10_NCX, V_max_INaCa, eta, ksat, Fx_SLCaP_SL,\
-        Fx_SLCaP_jct1, H_ICap, Km, Q10_SLCaP, V_maxAF, Fx_CaBk_SL,\
-        Fx_CaBk_jct1, G_CaBk, EC50_SR, HSR, Max_SR, Min_SR, kiCa, kim, koCa,\
-        kom, ks, KSRleak, H_Jpump, Kmf, Kmr, Q10_SRCaP, V_max_Jpump,\
-        Bmax_Calmodulin, Bmax_Myosin_Ca, Bmax_Myosin_Mg, Bmax_SRB,\
-        Bmax_TroponinC, Bmax_TroponinC_Ca_Mg_Ca, Bmax_TroponinC_Ca_Mg_Mg,\
-        koff_Calmodulin, koff_Myosin_Ca, koff_Myosin_Mg, koff_SRB,\
-        koff_TroponinC, koff_TroponinC_Ca_Mg_Ca, koff_TroponinC_Ca_Mg_Mg,\
-        kon_Calmodulin, kon_Myosin_Ca, kon_Myosin_Mg, kon_SRB, kon_TroponinC,\
-        kon_TroponinC_Ca_Mg_Ca, kon_TroponinC_Ca_Mg_Mg, Fx_ICaL_SL,\
-        Fx_ICaL_jct1, PCa, PK, PNa, Q10_CaL, gamma_Cai, gamma_Cao, gamma_Ki,\
-        gamma_Ko, gamma_Nai, gamma_Nao, Bmax_SL, Bmax_jct1, koff, kon,\
-        Bmax_Calsequestrin, Bmax_SLB_SL, Bmax_SLB_jct1, Bmax_SLHigh_SL,\
-        Bmax_SLHigh_jct1, koff_Calsequestrin, koff_SLB, koff_SLHigh,\
-        kon_Calsequestrin, kon_SL, stim_amplitude, stim_duration,\
-        stim_period, stim_start = parameters
-    Cao, Cli, Clo, Cm, F, Ki, Ko, Mgi, Nao, Rgas, T, cell_length, cell_radius, Fx_Na_SL, Fx_Na_jct1, G_INa, Fx_NaBk_SL, Fx_NaBk_jct1, G_NaBk, Fx_NaK_SL, Fx_NaK_jct1, H_NaK, I_NaK_max, Km_Ko, Km_Nai, Fx_Ks_SL, Fx_Ks_jct1, pKNa, g_Kp, G_tos, G_tof, Fx_Cl_SL, Fx_Cl_jct1, G_Cl, Kd_ClCa, G_ClBk, Fx_ICaL_SL, Fx_ICaL_jct1, PCa, PK, PNa, Q10_CaL, gamma_Cai, gamma_Cao, gamma_Ki, gamma_Ko, gamma_Nai, gamma_Nao, Fx_NCX_SL, Fx_NCX_jct1, HNa, K_mCai, K_mCao, K_mNai, K_mNao, Kd_act, Q10_NCX, V_max_INaCa, eta, ksat, Fx_SLCaP_SL, Fx_SLCaP_jct1, H_ICap, Km, Q10_SLCaP, V_maxAF, Fx_CaBk_SL, Fx_CaBk_jct1, G_CaBk, EC50_SR, HSR, Max_SR, Min_SR, kiCa, kim, koCa, kom, ks, KSRleak, H_Jpump, Kmf, Kmr, Q10_SRCaP, V_max_Jpump, Bmax_Calsequestrin, Bmax_SLB_SL, Bmax_SLB_jct1, Bmax_SLHigh_SL, Bmax_SLHigh_jct1, koff_Calsequestrin, koff_SLB, koff_SLHigh, kon_Calsequestrin, kon_SL, Bmax_Calmodulin, Bmax_Myosin_Ca, Bmax_Myosin_Mg, Bmax_SRB, Bmax_TroponinC, Bmax_TroponinC_Ca_Mg_Ca, Bmax_TroponinC_Ca_Mg_Mg, koff_Calmodulin, koff_Myosin_Ca, koff_Myosin_Mg, koff_SRB, koff_TroponinC, koff_TroponinC_Ca_Mg_Ca, koff_TroponinC_Ca_Mg_Mg, kon_Calmodulin, kon_Myosin_Ca, kon_Myosin_Mg, kon_SRB, kon_TroponinC, kon_TroponinC_Ca_Mg_Ca, kon_TroponinC_Ca_Mg_Mg, Bmax_SL, Bmax_jct1, koff, kon, stim_amplitude, stim_duration, stim_period, stim_start = parameters
+        G_Cl, Kd_ClCa, G_ClBk, lccCaInact, Fx_NCX_SL, Fx_NCX_jct1, HNa,\
+        K_mCai, K_mCao, K_mNai, K_mNao, Kd_act, Q10_NCX, V_max_INaCa, eta,\
+        ksat, Fx_SLCaP_SL, Fx_SLCaP_jct1, H_ICap, Km, Q10_SLCaP, V_maxAF,\
+        Fx_CaBk_SL, Fx_CaBk_jct1, G_CaBk, EC50_SR, HSR, Max_SR, Min_SR, kiCa,\
+        kim, koCa, kom, ks, KSRleak, H_Jpump, Kmf, Kmr, Q10_SRCaP,\
+        V_max_Jpump, Bmax_Calmodulin, Bmax_Myosin_Ca, Bmax_Myosin_Mg,\
+        Bmax_SRB, Bmax_TroponinC, Bmax_TroponinC_Ca_Mg_Ca,\
+        Bmax_TroponinC_Ca_Mg_Mg, koff_Calmodulin, koff_Myosin_Ca,\
+        koff_Myosin_Mg, koff_SRB, koff_TroponinC, koff_TroponinC_Ca_Mg_Ca,\
+        koff_TroponinC_Ca_Mg_Mg, kon_Calmodulin, kon_Myosin_Ca,\
+        kon_Myosin_Mg, kon_SRB, kon_TroponinC, kon_TroponinC_Ca_Mg_Ca,\
+        kon_TroponinC_Ca_Mg_Mg, Fx_ICaL_SL, Fx_ICaL_jct1, PCa, PK, PNa,\
+        Q10_CaL, gamma_Cai, gamma_Cao, gamma_Ki, gamma_Ko, gamma_Nai,\
+        gamma_Nao, Bmax_SL, Bmax_jct1, koff, kon, Bmax_Calsequestrin,\
+        Bmax_SLB_SL, Bmax_SLB_jct1, Bmax_SLHigh_SL, Bmax_SLHigh_jct1,\
+        koff_Calsequestrin, koff_SLB, koff_SLHigh, kon_Calsequestrin, kon_SL,\
+        stim_amplitude, stim_duration, stim_period, stim_start = parameters
+    # PKH 
+    Cao, Cli, Clo, Cm, F, Ki, Ko, Mgi, Nao, Rgas, T, cell_length, cell_radius, Fx_Na_SL, Fx_Na_jct1, G_INa, Fx_NaBk_SL, Fx_NaBk_jct1, G_NaBk, Fx_NaK_SL, Fx_NaK_jct1, H_NaK, I_NaK_max, Km_Ko, Km_Nai, Fx_Ks_SL, Fx_Ks_jct1, pKNa, g_Kp, G_tos, G_tof, Fx_Cl_SL, Fx_Cl_jct1, G_Cl, Kd_ClCa, G_ClBk, Fx_ICaL_SL, Fx_ICaL_jct1, PCa, PK, PNa, Q10_CaL, gamma_Cai, gamma_Cao, gamma_Ki, gamma_Ko, gamma_Nai, gamma_Nao, lccCaInact, Fx_NCX_SL, Fx_NCX_jct1, HNa, K_mCai, K_mCao, K_mNai, K_mNao, Kd_act, Q10_NCX, V_max_INaCa, eta, ksat, Fx_SLCaP_SL, Fx_SLCaP_jct1, H_ICap, Km, Q10_SLCaP, V_maxAF, Fx_CaBk_SL, Fx_CaBk_jct1, G_CaBk, EC50_SR, HSR, Max_SR, Min_SR, kiCa, kim, koCa, kom, ks, KSRleak, H_Jpump, Kmf, Kmr, Q10_SRCaP, V_max_Jpump, Bmax_Calsequestrin, Bmax_SLB_SL, Bmax_SLB_jct1, Bmax_SLHigh_SL, Bmax_SLHigh_jct1, koff_Calsequestrin, koff_SLB, koff_SLHigh, kon_Calsequestrin, kon_SL, Bmax_Calmodulin, Bmax_Myosin_Ca, Bmax_Myosin_Mg, Bmax_SRB, Bmax_TroponinC, Bmax_TroponinC_Ca_Mg_Ca, Bmax_TroponinC_Ca_Mg_Mg, koff_Calmodulin, koff_Myosin_Ca, koff_Myosin_Mg, koff_SRB, koff_TroponinC, koff_TroponinC_Ca_Mg_Ca, koff_TroponinC_Ca_Mg_Mg, kon_Calmodulin, kon_Myosin_Ca, kon_Myosin_Mg, kon_SRB, kon_TroponinC, kon_TroponinC_Ca_Mg_Ca, kon_TroponinC_Ca_Mg_Mg, Bmax_SL, Bmax_jct1, koff, kon, stim_amplitude, stim_duration, stim_period, stim_start = parameters
 
     # Init return args
     if monitored is None:
@@ -896,30 +883,30 @@ def monitor(states, t, parameters, monitored=None):
     monitored[120] = monitored[118]/(monitored[118] + monitored[119])
 
     # Expressions for the ICl Ca component
-    monitored[51] = G_Cl*(-monitored[115] + V)*(Fx_Cl_jct1/(1 +\
-        Kd_ClCa/Ca_jct1) + Fx_Cl_SL/(1 + Kd_ClCa/Ca_SL))
+    monitored[51] = G_Cl*(-monitored[115] + V)*(Fx_Cl_SL/(1 + Kd_ClCa/Ca_SL)\
+        + Fx_Cl_jct1/(1 + Kd_ClCa/Ca_jct1))
 
     # Expressions for the IClb component
     monitored[52] = G_ClBk*(-monitored[115] + V)
 
     # Expressions for the d gate component
-    monitored[61] = 1.0/(1 + 0.0892185174093*math.exp(-V/6.))
-    monitored[62] = (1 -\
-        0.0892185174093*math.exp(-V/6.))*monitored[61]/(0.5075 + 0.035*V)
-    monitored[135] = (monitored[61] - d)/monitored[62]
+    monitored[63] = 1.0/(1 + 0.0892185174093*math.exp(-V/6.))
+    monitored[64] = (1 -\
+        0.0892185174093*math.exp(-V/6.))*monitored[63]/(0.5075 + 0.035*V)
+    monitored[135] = (monitored[63] - d)/monitored[64]
 
     # Expressions for the f gate component
-    monitored[63] = 0.6/(1 + math.exp(5/2. - V/20.)) + 1.0/(1 +\
+    monitored[65] = 0.6/(1 + math.exp(5/2. - V/20.)) + 1.0/(1 +\
         16964.681259*math.exp(0.277777777778*V))
-    monitored[64] = 1.0/(0.02 + 0.0197*math.exp(-((0.48865 +\
+    monitored[66] = 1.0/(0.02 + 0.0197*math.exp(-((0.48865 +\
         0.0337*V)*(0.48865 + 0.0337*V))))
-    monitored[136] = (monitored[63] - f)/monitored[64]
+    monitored[136] = (monitored[65] - f)/monitored[66]
 
     # Expressions for the FCa gate component
-    monitored[65] = 1 - fCaB_SL
-    monitored[66] = 1 - fCaB_jct1
-    monitored[137] = -0.0119*fCaB_SL + 1.7*(1 - fCaB_SL)*Ca_SL
-    monitored[138] = -0.0119*fCaB_jct1 + 1.7*(1 - fCaB_jct1)*Ca_jct1
+    monitored[61] = 1 - fCaB_SL
+    monitored[62] = 1 - fCaB_jct1
+    monitored[137] = -0.0119*fCaB_SL + lccCaInact*(1 - fCaB_SL)*Ca_SL
+    monitored[138] = lccCaInact*(1 - fCaB_jct1)*Ca_jct1 - 0.0119*fCaB_jct1
 
     # Expressions for the INaCa component
     monitored[67] = (-math.pow(Nao, HNa)*Ca_jct1*math.exp(F*(-1 +\
@@ -934,10 +921,10 @@ def monitor(states, t, parameters, monitored=None):
     monitored[70] = 1.0/(1 + (Kd_act*Kd_act*Kd_act)/(Ca_SL*Ca_SL*Ca_SL))
     monitored[71] = 1.0/(1 + (Kd_act*Kd_act*Kd_act)/(Ca_jct1*Ca_jct1*Ca_jct1))
     monitored[72] =\
-        Fx_NCX_jct1*V_max_INaCa*monitored[67]*monitored[69]*monitored[71]/(math.pow(Nao,\
-        HNa)*Ca_jct1 + Cao*math.pow(Na_jct1, HNa) + K_mCai*math.pow(Nao,\
-        HNa)*(1 + math.pow(Na_jct1/K_mNai, HNa)) + math.pow(K_mNao, HNa)*(1 +\
-        Ca_jct1/K_mCai)*Ca_jct1 + K_mCao*math.pow(Na_jct1, HNa))
+        Fx_NCX_jct1*V_max_INaCa*monitored[67]*monitored[69]*monitored[71]/(K_mCai*math.pow(Nao,\
+        HNa)*(1 + math.pow(Na_jct1/K_mNai, HNa)) + K_mCao*math.pow(Na_jct1,\
+        HNa) + Cao*math.pow(Na_jct1, HNa) + math.pow(Nao, HNa)*Ca_jct1 +\
+        math.pow(K_mNao, HNa)*(1 + Ca_jct1/K_mCai)*Ca_jct1)
     monitored[73] =\
         Fx_NCX_SL*V_max_INaCa*monitored[68]*monitored[69]*monitored[70]/(math.pow(K_mNao,\
         HNa)*(1 + Ca_SL/K_mCai)*Ca_SL + math.pow(Nao, HNa)*Ca_SL +\
@@ -964,12 +951,12 @@ def monitor(states, t, parameters, monitored=None):
     monitored[83] = koCa/monitored[82]
     monitored[84] = kiCa*monitored[82]
     monitored[85] = 1 - I - O - R
-    monitored[139] = -(Ca_jct1*Ca_jct1)*R*monitored[83] + kim*monitored[85] +\
-        kom*O - Ca_jct1*R*monitored[84]
-    monitored[140] = kim*I + (Ca_jct1*Ca_jct1)*R*monitored[83] -\
-        Ca_jct1*O*monitored[84] - kom*O
-    monitored[141] = (Ca_jct1*Ca_jct1)*monitored[83]*monitored[85] - kim*I +\
-        Ca_jct1*O*monitored[84] - kom*I
+    monitored[139] = -Ca_jct1*R*monitored[84] -\
+        (Ca_jct1*Ca_jct1)*R*monitored[83] + kim*monitored[85] + kom*O
+    monitored[140] = kim*I - Ca_jct1*O*monitored[84] +\
+        (Ca_jct1*Ca_jct1)*R*monitored[83] - kom*O
+    monitored[141] = -kim*I + Ca_jct1*O*monitored[84] - kom*I +\
+        (Ca_jct1*Ca_jct1)*monitored[83]*monitored[85]
     monitored[86] = ks*(Ca_SR - Ca_jct1)*O
 
     # Expressions for the Jleak SR component
@@ -1024,37 +1011,38 @@ def monitor(states, t, parameters, monitored=None):
     # Expressions for the ICaL component
     monitored[53] = math.pow(Q10_CaL, -31 + T/10.)
     monitored[54] = 0.45*(F*F)*V*d*f*monitored[53]/(Rgas*T)
-    monitored[55] = 4*Fx_ICaL_jct1*PCa*(-Cao*gamma_Cao +\
-        gamma_Cai*Ca_jct1*math.exp(2*F*V/(Rgas*T)))*monitored[54]*monitored[66]/(-1 +\
+    monitored[55] =\
+        4*Fx_ICaL_jct1*PCa*(gamma_Cai*Ca_jct1*math.exp(2*F*V/(Rgas*T)) -\
+        Cao*gamma_Cao)*monitored[54]*monitored[62]/(-1 +\
         math.exp(2*F*V/(Rgas*T)))
     monitored[56] = Fx_ICaL_jct1*PNa*(-Nao*gamma_Nao +\
-        gamma_Nai*Na_jct1*math.exp(F*V/(Rgas*T)))*monitored[54]*monitored[66]/(-1 +\
+        gamma_Nai*Na_jct1*math.exp(F*V/(Rgas*T)))*monitored[54]*monitored[62]/(-1 +\
         math.exp(F*V/(Rgas*T)))
     monitored[57] =\
         4*Fx_ICaL_SL*PCa*(gamma_Cai*Ca_SL*math.exp(2*F*V/(Rgas*T)) -\
-        Cao*gamma_Cao)*monitored[54]*monitored[65]/(-1 +\
+        Cao*gamma_Cao)*monitored[54]*monitored[61]/(-1 +\
         math.exp(2*F*V/(Rgas*T)))
     monitored[58] = Fx_ICaL_SL*PNa*(-Nao*gamma_Nao +\
-        gamma_Nai*Na_SL*math.exp(F*V/(Rgas*T)))*monitored[54]*monitored[65]/(-1 +\
+        gamma_Nai*Na_SL*math.exp(F*V/(Rgas*T)))*monitored[54]*monitored[61]/(-1 +\
         math.exp(F*V/(Rgas*T)))
-    monitored[59] = PK*(Fx_ICaL_jct1*monitored[66] +\
-        Fx_ICaL_SL*monitored[65])*(-Ko*gamma_Ko +\
+    monitored[59] = PK*(Fx_ICaL_SL*monitored[61] +\
+        Fx_ICaL_jct1*monitored[62])*(-Ko*gamma_Ko +\
         Ki*gamma_Ki*math.exp(F*V/(Rgas*T)))*monitored[54]/(-1 +\
         math.exp(F*V/(Rgas*T)))
-    monitored[60] = monitored[59] + monitored[56] + monitored[55] +\
-        monitored[57] + monitored[58]
+    monitored[60] = monitored[59] + monitored[58] + monitored[56] +\
+        monitored[55] + monitored[57]
 
     # Expressions for the Na buffer component
     monitored[107] = kon*(Bmax_jct1 - Na_jct1_buf)*Na_jct1 - koff*Na_jct1_buf
     monitored[108] = -koff*Na_SL_buf + kon*(-Na_SL_buf + Bmax_SL)*Na_SL
     monitored[149] = monitored[107]
     monitored[150] = monitored[108]
-    monitored[151] = -Cm*(3*monitored[72] + monitored[56] + 3*monitored[20] +\
-        monitored[6] + monitored[15])/(F*monitored[3]) -\
-        monitored[121]/monitored[3] - monitored[107]
+    monitored[151] = -monitored[107] - monitored[121]/monitored[3] -\
+        Cm*(monitored[15] + monitored[56] + monitored[6] + 3*monitored[72] +\
+        3*monitored[20])/(F*monitored[3])
     monitored[152] = (monitored[121] - monitored[122])/monitored[2] -\
-        monitored[108] - Cm*(monitored[16] + 3*monitored[21] +\
-        3*monitored[73] + monitored[58] + monitored[7])/(F*monitored[2])
+        Cm*(monitored[16] + monitored[58] + 3*monitored[21] + 3*monitored[73]\
+        + monitored[7])/(F*monitored[2]) - monitored[108]
     monitored[153] = monitored[122]/monitored[4]
 
     # Expressions for the Ca buffer component
@@ -1069,23 +1057,23 @@ def monitor(states, t, parameters, monitored=None):
     monitored[93] = -koff_SLHigh*Ca_SLHigh_SL +\
         kon_SL*(Bmax_SLHigh_SL*monitored[4]/monitored[2] -\
         Ca_SLHigh_SL)*Ca_SL
-    monitored[94] = kon_SL*(0.1*Bmax_SLHigh_jct1*monitored[4]/monitored[3] -\
-        Ca_SLHigh_jct1)*Ca_jct1 - koff_SLHigh*Ca_SLHigh_jct1
+    monitored[94] = -koff_SLHigh*Ca_SLHigh_jct1 + kon_SL*(-Ca_SLHigh_jct1 +\
+        0.1*Bmax_SLHigh_jct1*monitored[4]/monitored[3])*Ca_jct1
     monitored[155] = monitored[91]
     monitored[156] = monitored[92]
     monitored[157] = monitored[93]
     monitored[158] = monitored[94]
-    monitored[95] = monitored[94] + monitored[92]
+    monitored[95] = monitored[92] + monitored[94]
     monitored[96] = monitored[93] + monitored[91]
-    monitored[97] = monitored[79] + monitored[55] - 2*monitored[72] +\
-        monitored[76]
-    monitored[98] = monitored[80] + monitored[77] + monitored[57] -\
-        2*monitored[73]
+    monitored[97] = -2*monitored[72] + monitored[55] + monitored[76] +\
+        monitored[79]
+    monitored[98] = monitored[80] + monitored[77] - 2*monitored[73] +\
+        monitored[57]
     monitored[159] = -monitored[4]*monitored[87]/monitored[1] - monitored[86]\
         + monitored[89] - monitored[90]
-    monitored[160] = monitored[1]*monitored[86]/monitored[3] -\
-        monitored[123]/monitored[3] + monitored[4]*monitored[87]/monitored[3]\
-        - monitored[95] - Cm*monitored[97]/(2*F*monitored[3])
+    monitored[160] = -Cm*monitored[97]/(2*F*monitored[3]) +\
+        monitored[4]*monitored[87]/monitored[3] - monitored[95] -\
+        monitored[123]/monitored[3] + monitored[1]*monitored[86]/monitored[3]
     monitored[161] = -Cm*monitored[98]/(2*F*monitored[2]) - monitored[96] +\
         (-monitored[124] + monitored[123])/monitored[2]
     monitored[162] = -monitored[106] -\
@@ -1096,11 +1084,11 @@ def monitor(states, t, parameters, monitored=None):
         -stim_period*math.floor(t/stim_period) + t <= stim_start +\
         stim_duration and -stim_period*math.floor(t/stim_period) + t >=\
         stim_start else 0)
-    monitored[163] = -monitored[22] - monitored[78] - monitored[109] -\
-        monitored[17] - monitored[60] - monitored[51] - monitored[74] -\
-        monitored[8] - monitored[52] - monitored[81] - monitored[24] -\
-        monitored[46] - monitored[117] - monitored[39] - monitored[35] -\
-        monitored[38]
+    monitored[163] = -monitored[8] - monitored[109] - monitored[74] -\
+        monitored[81] - monitored[17] - monitored[35] - monitored[78] -\
+        monitored[60] - monitored[52] - monitored[22] - monitored[24] -\
+        monitored[46] - monitored[117] - monitored[39] - monitored[38] -\
+        monitored[51]
 
     # Return results
     return monitored

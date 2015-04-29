@@ -76,23 +76,18 @@ def GetInterval(case,pacingInterval,tstart=8000,  idx=0,getFlux=False,doPlot=Fal
     if getFlux==False:
       s = case['s']
     else:
-      print "AM I HERE" 
       s = case['j']
 
-    print idx
-    print "SDF", np.shape(s)
     if idx!= False: 
       sp = s[1:,idx]
     else: 
       sp = s 
-    print np.shape(sp)
     
     dt = t[1]-t[0]
     span = np.int(pacingInterval/dt)
 
     si =np.int(tstart/dt)
     sf = si + span
-    print si,span
 
 
     # assume period starts at max

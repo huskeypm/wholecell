@@ -119,6 +119,9 @@ parameters("ICl Ca",
 parameters("IClb",
            G_ClBk = ScalarParam(0.009, unit="mS*uF**-1"))
 
+parameters("ICaL","FCa gate",
+       lccCaInact = 1.7) 
+
 states("ICaL", "d gate",
        d = 7.175662e-6)
 
@@ -402,8 +405,8 @@ df_dt = (f_infinity - f)/tau_f
 component("ICaL", "FCa gate")
 fCa_SL = 1 - fCaB_SL
 fCa_jct1 = 1 - fCaB_jct1
-dfCaB_SL_dt = 1.7*Ca_SL*(1 - fCaB_SL) - 11.9e-3*fCaB_SL
-dfCaB_jct1_dt = 1.7*Ca_jct1*(1 - fCaB_jct1) - 11.9e-3*fCaB_jct1
+dfCaB_SL_dt = lccCaInact*Ca_SL*(1 - fCaB_SL) - 11.9e-3*fCaB_SL
+dfCaB_jct1_dt = lccCaInact*Ca_jct1*(1 - fCaB_jct1) - 11.9e-3*fCaB_jct1
 
 component("INaCa")
 temp_jct1 = (exp(eta*V*F/(Rgas*T))*Na_jct1**HNa*Cao - exp((eta - 1)*V*F/(Rgas*T))*Nao**HNa*Ca_jct1)/(1 + ksat*exp((eta - 1)*V*F/(Rgas*T))) # mM**4

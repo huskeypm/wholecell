@@ -213,10 +213,10 @@ import sys
 #       10.08.10 inception
 #
 
-def doit():
+def doit(caseName="default"):
   init()
-  (p,si,tsi,jsi) = runner(dt=1000)
-  plotting(p,si,tsi,jsi)
+  (p,si,tsi,jsi) = runner(dt=2000,dtn=1.0,stim_period=901,mxsteps=10000)
+  plotting(p,si,tsi,jsi,case=caseName)
   raise RuntimeError("Not actually a validation yet")
 
 def helpmsg():
@@ -247,10 +247,13 @@ if __name__ == "__main__":
   if(len(sys.argv)==3):
     print "arg"
 
+  caseName = "default"
   for i,arg in enumerate(sys.argv):
+    if(arg=='caseName'):
+      caseName=sys.argv[i+1]
     if(arg=="-validation"):
       #arg1=sys.argv[i+1] 
-      doit()
+      doit(caseName=caseName)
       quit()
   
 

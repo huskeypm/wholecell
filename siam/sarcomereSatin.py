@@ -62,15 +62,17 @@ class sarcomereSatin(SarcomereBase):
     # geometric considerations 
     # WARNING: need to make sure these preserve the aspect ratio 
     # of the original image 
-    self.nLongitudinalSarc = 2.25   # sarcomeres in longitudinal direction (by eyeball)  
+    self.nLongitudinalSarc = 2   # sarcomeres in longitudinal direction (by eyeball)  
     self.nAxialSarc = 3   # sarcomeres in axial direction (by eyeball)  
-    self.lenSarc = 2.0 # sarcomere leng [um]
+    self.lenSarc = 2.25 # sarcomere leng [um]
     self.widSarc = 1.0659 # sarcomere width [um] (to fit aspect ratio)
+    self.nSarcomeres = self.nLongitudinalSarc*self.nAxialSarc 
 
   def GetMesh(self):
     return self.mesh 
 
-
+  def CalcSSLVol(self):
+    self.params.volSSL = self.area * self.params.SSLWidth 
 
   def RescaleMesh(self):
     # computee dim 
@@ -94,7 +96,6 @@ class sarcomereSatin(SarcomereBase):
     #print np.max(c,axis=0)
     
     self.mesh.coordinates()[:] = c 
-    quit()
 
   def Init(self):
     self.mesh = Mesh(self.fileName)
@@ -108,14 +109,14 @@ class sarcomereSatin(SarcomereBase):
     boundary = TT()
     boundary.mmin = np.min(mesh.coordinates(),axis=0)
     boundary.mmax = np.max(mesh.coordinates(),axis=0)
-    lMarker = 2
+    lMarker = self.params.lMarker
     boundary.mark(subdomains,lMarker)
 
-    rMarker = False 
+    rMarker = self.params.rMarker
 
     boundary = OuterSarcolemma()
     boundary.mmax = np.max(mesh.coordinates(),axis=0)
-    slMarker = 4
+    slMarker = self.params.slMarker
     boundary.mark(subdomains,slMarker)
 
     # To double check BCs
