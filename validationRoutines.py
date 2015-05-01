@@ -67,6 +67,36 @@ def validationSERCA():
   assert( (concsFinal[idxCa] - refFinal) < 1e-4 ),  "SERCA test failed" 
   print "PASS SERCA test"
 
+# Consistency check 
+def validationTestGeom(): 
+  params = Params()
+  idxCaCleft = 4
+  idxCaSSL   = 3
+  idxCa = 0
+  idxCaBuff = 1
+  idxCaFluo = 2
+
+  params.ryrOffset = 0.
+
+  withBuffers = True
+  if withBuffers:
+    refFinal = 0.07233 # PKH 150501
+  else: 
+    params.sercaVmax = 5e-3
+    refFinal = 0.0832763346023#PKH 150501
+
+  params.T = 500  
+  params.dt = 1.0 # ms
+  
+  reactions = "simple"
+  concsFinal= tsolve(mode="2D_SSL",
+                       params=params,reactions=reactions,buffers=withBuffers)
+#                       existsCleft=False,existsSSL=False)
+  
+  myassert( concsFinal[idxCa] , refFinal ,  1e-4 )
+  print "PASS SERCA test"
+
+
 
 # Test that addition of Ca2+ via RyR is approximately offset by SERCA 
 # uptake 
@@ -113,10 +143,10 @@ def validationStepwise(withBuffers=False,ryrDebug=False):
   finaldCa+= params.cInits[idxCa] # add in init conc 
   print "Tot expected ", finaldCa
 
-  step1=True  
-  step2=True  
+  step1=False 
+  step2=False 
   step3Test=False 
-  step3 = True
+  step3 = True  
   #########
   ## 1) release RyR Ca2+ into partitioned cleft 
   if step1:
@@ -135,8 +165,8 @@ def validationStepwise(withBuffers=False,ryrDebug=False):
 
   if step2:
     ## 2) Open cleft and release Ca2+ into cyto 
-    params.T = 30  
-    params.dt = 10
+    params.T = 40  
+    params.dt = 10 # smaller steps will usually fail for nobuffer case 
     params.cInits[idxCaCleft] = caCleftInit 
     #params.jTest = 0.
     params.D_SSLCyto = 1
@@ -151,7 +181,11 @@ def validationStepwise(withBuffers=False,ryrDebug=False):
       print "Tot expected ", finaldCa
 
   else:
-      finalConc = 41.3290105182
+      if withBuffers:
+        finalConc = 0.72071# PKH est 
+      else:
+        finalConc = 41.3290105182
+      
       concsFinal= np.array([finalConc,0,0,finalConc,finalConc])
 
   # verify that constant flux ok rthrough SERCA pexression  
@@ -222,10 +256,10 @@ def validationStepwise(withBuffers=False,ryrDebug=False):
   # Note too that dt=1.; otherwise SERCA overshoots cai=0
   params = Params()
   if withBuffers:
-    refFinal = 0.11636
+    refFinal = 0.07233 # PKH 150501
   else: 
-    params.sercaVmax = 5e-3
-    refFinal = 0.0832763346023#PKH 150501
+    params.sercaVmax = 5e-1
+    refFinal = 0.07235294124753 #PKH 150501
 
   if step3:
     idxCa = 0
@@ -233,8 +267,7 @@ def validationStepwise(withBuffers=False,ryrDebug=False):
     params.dt = 1.0 # ms
     params.ryrOffset = 1500
   
-    concCaAfterRyR = 0.2 
-    params.cInits[idxCa] = concCaAfterRyR  #CES
+    params.cInits[idxCa] = finalConc 
     #refFinal = params.cInits[idxCa] + dCa
     params.D_SSLCyto = 0.
     params.D_CleftSSL = 0.
@@ -244,12 +277,10 @@ def validationStepwise(withBuffers=False,ryrDebug=False):
                        params=params,reactions=reactions,buffers=withBuffers,
                        existsCleft=False,existsSSL=False)
   
-    jSERCAAvg = (concCaAfterRyR - concsFinal[idxCa])/params.T
-    print "Avg jSERCA ", jSERCAAvg
     myassert( concsFinal[idxCa] , refFinal ,  1e-4 )
     print "PASS SERCA test"
 
-  print "PASSED STEPWISE"
+  print "PASSED STEPWISE with buffer=",withBuffers
 
 def validationRyR(reactions="ryrOnly"):
 
@@ -310,7 +341,7 @@ def validationRyR(reactions="ryrOnly"):
 
 
   ## 2) 
-  params.T = 100
+  params.T = 30  
   params.dt = 10
   params.cInits[idxCaCleft] = caCleftInit
   #params.jTest = 0.
@@ -572,9 +603,11 @@ def validationBuffering():
 def validation(test=1):
   test = int(test)
   
+  # PKH PASS  
   if test==1:
     validationRyR()
-  #raise RuntimeError("NOT FINISHED VALID") 
+
+  # PKH PASS  
   if test==13: 
     validationStepwise(withBuffers=False)
 
@@ -582,23 +615,33 @@ def validation(test=1):
     validationStepwise(withBuffers=True)
 
   #quit()
+  ## FAIL FAIL FAIL 
   if test==2:
+    print "WARNING: BROKEN!!!!" 
     validationMergingSSLCyto()
 
   ## validate fast/slow diffusion
+  # PKH PASS 
   if test==3:
     validationRapidDiffusion()
 
   ## flux conversions 
+  # PKH PASS 
   if test==4:
     validation_Conversions()
 
+  # PKH PASS
   if test==5:
     validationConservation()
     validationBuffering()
 
+  # PKH PASS
   if test==6:
     validationSERCA()
+
+
+  if test==7:
+    validationTestGeom()
   
 
 if __name__ == "__main__":
