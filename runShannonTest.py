@@ -10,7 +10,7 @@ runner.init()
 idxNCX = runner.model.monitor_indices("i_NaCa")
 
 #def namer(PCa,ks,vMax=None,stim=None):
-def namer(var1Name, var1Val, var2Name=None,var2Val=None,stim_period=1000):
+def namer(var1Name, var1Val, var2Name=None,var2Val=None,stim_period=1000,tag=None):
     #loc = "/u1/huskeypm/srcs/wholecell/"
     loc = "./"
     name =  loc+"run"
@@ -19,6 +19,9 @@ def namer(var1Name, var1Val, var2Name=None,var2Val=None,stim_period=1000):
       name+=  "_%s%3.2f"%(var2Name,var2Val)
 
     name+="_stim%d"%stim_period
+
+    if tag!=None:
+      name+= "_"+tag
 
     return name 
 
@@ -69,8 +72,10 @@ def runParams(
   output.close()
 
 # Print's command lines for running param sweep
-#def GenSweptParams(var1Name,var1Vals,var2Name=None,var2Vals=None):
-def GenSweptParams(varDict,stim_period=1000,T=10000):
+# FixedParm is used to pass in a modified parameter that is not being swept
+# over. Could probably be generalized into another varDict
+def GenSweptParams(varDict,\
+    stim_period=1000,T=10000,fixedParm=None,fixedParmVal=None,nameTag=None):
 
   # create list of input args (for command line) 
   allArgs=[]
@@ -91,12 +96,19 @@ def GenSweptParams(varDict,stim_period=1000,T=10000):
       args1.append("-var %s %f"%(key,rvar1))
     allArgs.append(args1)
     #print args1
+
+
     
 
   # cmd and timing 
   cmdpre = "python runShannonTest.py"
   cmdpre+= " -stim %d" % stim_period
-  cmdpre+= " -T %d" % T                 
+  cmdpre+= " -T %d" % T                     
+
+
+  cmdFixedParms = ""
+  if fixedParm!=None:
+    cmdFixedParms = " -var %s %f" % (fixedParm,fixedParmVal)
     
 
 
@@ -105,9 +117,10 @@ def GenSweptParams(varDict,stim_period=1000,T=10000):
   if len(allArgs)==1:
     for i, arg1 in enumerate(allArgs[0]): 
         var1 = (allVars[0])[i]
-        name = namer(keys[0],var1,stim_period=stim_period)
+        name = namer(keys[0],var1,stim_period=stim_period,tag=nameTag)
         cmd = cmdpre
         cmd+= " "+arg1 
+        cmd+= cmdFixedParms
         cmd+= " -name "+name 
         cmd+= " &"
         print cmd
@@ -119,10 +132,11 @@ def GenSweptParams(varDict,stim_period=1000,T=10000):
       for j, arg2 in enumerate(allArgs[1]):
         var1 = (allVars[0])[i]
         var2 = (allVars[1])[j]
-        name = namer(keys[0],var1,keys[1],var2,stim_period=stim_period)
+        name = namer(keys[0],var1,keys[1],var2,stim_period=stim_period,tag=nameTag)
         cmd = cmdpre
         cmd+= " "+arg1 
         cmd+= " "+arg2 
+        cmd+= cmdFixedParms
         cmd+= " -name "+name 
         cmd+= " &"
         print cmd
