@@ -18,6 +18,7 @@
 # Standard units
 # time [ms]
 # volume fluxes [uM/ms]
+# length [um] 
 # currents [A/F]?
 
 from dolfin import *
@@ -27,6 +28,11 @@ class empty:pass
 import sys
 sys.path.append("./siam/")
 
+
+## Constants 
+#cm4_o_sum_to_L_o_ms = 1e-2  # [cm^4/(s um)] --> [L/ms]
+um3_o_ms_to_L_ms = 1e-15
+L_to_um3 = 1e15
 
 
 # [CaB] = [Btot]/(KD/[Ca]+1)
@@ -49,11 +55,10 @@ class Params(object):
     self.T = 200.  # Total simulation time [ms]
     self.dt = 1. # time-step size [ms] 
   
-    self.DCompart = 1 # [um/ms]
-    self.CaitlinsNewVariabvle = 1 # [INITS!!]
+    self.DCompart = 1 # [um^2/ms]
     self.D_SSLCyto = self.DCompart # Diffusion rate between SSL/Cyto compartments (if SSL exists) [um/ms]
-    self.D_CleftSSL = self.DCompart #  Diffusion rate between Cleft/SSL compartments (if SSL exists)
-    self.D_CleftCyto= self.DCompart #  Diffusion rate between Cleft/Cyto compartments (if SSL does not exist)
+    self.D_CleftSSL = 1.64e-6 * 1e5 #  Diffusion rate between Cleft/SSL compartments (if SSL exists) [cm^2/s] --> [um^2/ms] 
+    self.D_CleftCyto= 1.64e-6 * 1e5 #  Diffusion rate between Cleft/Cyto compartments (if SSL does not exist) [cm^2/s] --> [um^2/ms] 
     self.dist = 0.05 # distance between compartments [um] 
   
     # diffusion params 
@@ -63,7 +68,9 @@ class Params(object):
     #Ds = [DCa,DBuff,DFluo]
     self.DCa_SSL = 0.6 * self.DCa # Diff const within SSL region (of cytosol) 
   
-    ## geom 
+    # geom 
+    self.volSSL = 1. # Volume of SSL domain [um^3]
+    self.volCleft = 1.77904268656e-14 * 1e15 # Volume, from Bers code  [L] --> [um^3] 
     # seee sharelatex geometric considerations 
     # https://www.sharelatex.com/project/5511ddf1f70989723e7a2dfc
     self.nCRUs_per_sarco = 25. # see share latex/
@@ -71,7 +78,15 @@ class Params(object):
     
     self.volPerCRU = 8.13e-4 # um^3 
     self.volSSL = False # Volume of SSL domain [um^3] (overridden by sarcomere files)
-    self.volCleft = False # [um^3]; solved later  
+    self.volCleft = False # [um^3]; solved later      
+
+    self.area_CleftSSL = 301. #CES, Bers 2004 [um2]
+    self.area_CleftSSL = 2.5e-5 * 1e8 # Area consistent with 
+                                      # Bers -code- (see sharelatex)
+                                      # [cm^2] --> [um^2] 
+    self.area_SSLCyto = 13000. #CES, Bers 2004 [um2]
+    self.delx_CleftSSL = 0.5 #CES, Bers 2004 [um]
+    self.delx_SSLCyto = 0.45 #CES, Bers 2004 [um]
   
     # buffer (mostly TnC) 
     self.alphabuff=0.04 # kon verified [1/uMms] 
@@ -201,6 +216,7 @@ def tsolve(pvdName=None,\
   dims =mesh.ufl_cell().geometric_dimension()
   #print cm.volume
 
+
   ## 
   print 'WARNING: will need to updated these'
   idxCa = 0 # PDE 
@@ -262,13 +278,10 @@ def tsolve(pvdName=None,\
   dt = params.dt 
   tstop = params.T
   
-  ## volume/area info 
-  #print "WARNING: HACKED TRHIS"
-  #params.volCyto = 1.; params.volSSL = 1.; params.volCleft = 1.
+  # volume/area info 
   volCyto = params.volCyto
   #volCyto = Constant(assemble(Constant(1.0)*dx()))
   areaCyto = Constant(assemble(Constant(1.0)*ds(lMarker)))
-
   volSSL = params.volSSL
   volCleft= params.volCleft
   volFrac_CytoSSL= volCyto/np.max([1e-9,volSSL])
@@ -277,6 +290,12 @@ def tsolve(pvdName=None,\
   volFrac_CleftSSL= 1/np.max([1e-9,volFrac_SSLCleft])
   volFrac_CleftCyto= volCleft/volCyto
   volFrac_CytoCleft= 1/np.max([1e-9,volFrac_CleftCyto])
+  area_CleftSSL = params.area_CleftSSL #CES, Bers 2004 [um2]
+  area_SSLCyto = params.area_SSLCyto #CES, Bers 2004 [um2]
+  delx_CleftSSL =  params.delx_CleftSSL #CES, Bers 2004 [um]
+  delx_SSLCyto = params.delx_SSLCyto #CES, Bers 2004 [um]
+
+
   if existsCleft==False:
     params.D_CleftCyto=0.
     volFrac_CleftCyto= 0.
@@ -293,10 +312,6 @@ def tsolve(pvdName=None,\
 
   if ssl!=True:
     params.volSSL = 1e-9   # needed for validaton stuff
-
-  print "Vol Cyto/SSL/Cleft"
-  print volCyto,volSSL,volCleft
-  quit()
 
 
   # intercompartment transport 
@@ -342,7 +357,18 @@ def tsolve(pvdName=None,\
     F += jFlux_SSLCyto*volFrac_CytoSSL*vCaSSL*ds(lMarker)
   
     # flux to scalar domain r to s
-    jFlux_CleftSSL =D_CleftSSL*(cCaCleft_n-cCaSSL_n)/dist 
+    jFlux_CleftSSL =D_CleftSSL*area_CleftSSL*(cCaCleft_n-cCaSSL_n)/(delx_CleftSSL)
+    # PKH validated with sharelatex to show that deltaCa = 0.07 uM between 
+    # cleft and SSL at t0 --> [3.26 uM/ms]
+    #jFlux_CleftSSL =D_CleftSSL*area_CleftSSL*(0.9)/(delx_CleftSSL)
+    # jFlux_CleftSSL =D_CleftSSL*area_CleftSSL*(0.07 )/(delx_CleftSSL)
+    # FOR SANITY-CHECKING UNITS jFlux_CleftSSL *= um3_o_ms_to_L_ms
+    # FOR SANITY-CHECKING UNITS print "cleftssl %e [L uM / ms]" % jFlux_CleftSSL # PKH checks out w Bers paper area 
+    # FOR SANITY-CHECKING UNITS jFlux_CleftSSL *= L_to_um3
+    # FOR SANITY-CHECKING UNITS print "cleftssl %e [um^3 uM / ms]" % jFlux_CleftSSL 
+#    print "cleftssl %f " % (D_CleftSSL*area_CleftSSL*(1.0-.1)/delx_CleftSSL) 
+    #print "cleftssl %e [uM / ms]" % (jFlux_CleftSSL/volCleft)
+    #quit()
     F += -jFlux_CleftSSL*volFrac_CytoSSL*vCaSSL*dx()
   else:
     1 # do nothing 
@@ -409,7 +435,6 @@ def tsolve(pvdName=None,\
       reactions.Init(params)
       itoJ = wholeCellI_to_wholeCellJ(1.) # rescale 1 [A/F] --> [uM/ms]
       itoj = wholeCellJ_to_jCleft(itoJ,params) 
-      print "rescale", itoJ, itoj
       RHS += reactions.iryr*itoj*vCaCleft*dx()
 
     elif reactions=="caitlinSERCA": #CES
@@ -860,18 +885,7 @@ if __name__ == "__main__":
       quit()
     elif(arg=="-testsatin"):
       tag = "satin"
-      #tag = "2D_noSSL"
-      reactions = "simple"
-      params.T = 1000
-      params.dt = 5 
-      #reactions = "ryrOnlySwitch"
-      #params.ryrAmp = 0.1
-      #reactions = None
-      #buffers = False
-      buffers = True 
-      tsolve(pvdName=pvdName,debug=False,params=params,\
-             reactions = reactions, buffers = buffers,
-             hdfName=tag+".h5",mode=tag)
+      tsolve(debug=False,params=params,hdfName=tag+".h5",mode=tag)
       quit()
     elif(arg=="-test2"):
       tag = "sachse2TT"
