@@ -80,7 +80,7 @@ def ProcessOneDOutputs(var1Name,names,allVars,state="Cai",xlim=None,ylim=None,of
   name = state+"transients%s"%(var1Name)
   plt.gcf().savefig(name+".png")
 
-def ProcessTwoDOutputs(allKeys,allVars,state="Cai",ylims=None,stim_period=1000):
+def ProcessTwoDOutputs(allKeys,allVars,state="Cai",ylims=None,stim_period=1000,nameTag=None):
   vars1 = allVars[0]
   var1Name = allKeys[0]
   vars2 = allVars[1]
@@ -97,7 +97,7 @@ def ProcessTwoDOutputs(allKeys,allVars,state="Cai",ylims=None,stim_period=1000):
     plt.title("%s=%3.2f"%(var1Name,var1Val))
     #for j, ks in enumerate(kss):
     for j, var2Val in enumerate(vars2):
-        name =namer(var1Name,var1Val,var2Name,var2Val,stim_period=stim_period)+".pickle"
+        name =namer(var1Name,var1Val,var2Name,var2Val,stim_period=stim_period,tag=nameTag)+".pickle"
         #print name
         try: 
           d = readPickle(name) 

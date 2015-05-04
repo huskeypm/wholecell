@@ -76,7 +76,11 @@ def validationTestGeom():
   idxCaBuff = 1
   idxCaFluo = 2
 
-  params.ryrOffset = 0.
+  params.ryrOffset = 20.
+
+  params.D_SSLCyto = 100.
+  params.D_CleftSSL = 1e-1
+  #params.D_CleftCyto = 0.
 
   withBuffers = True
   if withBuffers:
@@ -85,13 +89,27 @@ def validationTestGeom():
     params.sercaVmax = 5e-3
     refFinal = 0.0832763346023#PKH 150501
 
-  params.T = 500  
-  params.dt = 1.0 # ms
+  params.T = 200 
+  #params.T = 20  
+  params.dt = 0.25 # ms
   
-  reactions = "simple"
-  concsFinal= tsolve(mode="2D_SSL",
+  testNum = 1
+  if testNum==1: 
+    # rapid diffusion / unstable  
+    params.D_SSLCyto = 1e4
+    params.D_CleftSSL = 1e2
+    reactions = "simple"
+  elif testNum==2: 
+    # slow diffusion 
+    params.D_SSLCyto = 10.
+    params.D_CleftSSL = 1e-3
+    reactions = "simple"
+
+  else: 
+    reactions = "simple"
+  tag = "2D_SSL"
+  concsFinal= tsolve(mode=tag,hdfName="validation"+tag+".h5",
                        params=params,reactions=reactions,buffers=withBuffers)
-#                       existsCleft=False,existsSSL=False)
   
   myassert( concsFinal[idxCa] , refFinal ,  1e-4 )
   print "PASS SERCA test"

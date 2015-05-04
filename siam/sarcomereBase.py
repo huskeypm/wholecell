@@ -51,7 +51,7 @@ class SarcomereBase(object):
     #self.volume  = assemble(Constant(1.)*dx(domain=self.mesh))
     self.volume  = assemble(Constant(1.)*dx)
 
-    print "Area ", self.area, " Vol " , self.volume
+    print "(Active) Area ", self.area, " Vol " , self.volume
 
     # compute total volume of CRUs
     self.nCRUs = self.params.nCRUs_per_sarco * self.nSarcomeres

@@ -101,7 +101,7 @@ def GenSweptParams(varDict,\
     
 
   # cmd and timing 
-  cmdpre = "python runShannonTest.py"
+  cmdpre = "nohup python runShannonTest.py"
   cmdpre+= " -stim %d" % stim_period
   cmdpre+= " -T %d" % T                     
 
