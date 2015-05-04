@@ -69,8 +69,8 @@ class Params(object):
     self.DCa_SSL = 0.6 * self.DCa # Diff const within SSL region (of cytosol) 
   
     # geom 
-    self.volSSL = 1. # Volume of SSL domain [um^3]
-    self.volCleft = 1.77904268656e-14 * 1e15 # Volume, from Bers code  [L] --> [um^3] 
+    #self.volSSL = 1. # Volume of SSL domain [um^3]
+    #self.volCleft = 1.77904268656e-14 * 1e15 # Volume, from Bers code  [L] --> [um^3] 
     # seee sharelatex geometric considerations 
     # https://www.sharelatex.com/project/5511ddf1f70989723e7a2dfc
     self.nCRUs_per_sarco = 25. # see share latex/
@@ -105,18 +105,19 @@ class Params(object):
     self.betafluo = 0.17 # koff fluo [1/ms] verified
   
     # RyR
-    # from Torres
-    # self.ryrAmp = 9.5 # [pA/pF] #CES
-    self.ryrAmp = 4.5 # [pA/pF] #CES
+    # NOTE: this represents combined contributions of RyR, LCC, 
+    # etc. See fitting.ipynb for more details 
+    # originally from Torres, modified according to fitting.ipynb
+    self.ryrAmp = 44. # [pA/pF] 
     self.ryrOffset = 5 # [ms]
-##    self.ryrTau = -50/np.log(1/2.) # half-max amp at 50 ms  #CES
-    self.ryrTau = 274.243089 #CES
-    self.ryrKm = 0.2 # uM (made this up)  
+    self.ryrTau = 40. # [ms]
+    self.ryrTerminate = 10. # [ms] used for switch mode
 
-    # from Soeller
-    self.sercaVmax = 0.2 # uM/ms
-    self.sercaKmf = 0.184 # uM
-    self.sercaH = 4.  # Hill coeff 
+    # originally from Soeller, modified according to fitting.ipynb
+    self.sercaVmax = 5.411 # [uM/ms]
+    self.sercaKmf = 0.246 # [uM]
+    self.sercaH = 1.787  # Hill coeff 
+    self.sercaCaSRTerm = 0.112265722393 #  to account for reverse flux. See simple.py serca expression PKH
   
     # init concs 
     self.cCaInit =0.1  # Initial Ca concentration in Cleft compartment [uM] 
@@ -216,7 +217,6 @@ def tsolve(pvdName=None,\
   dims =mesh.ufl_cell().geometric_dimension()
   #print cm.volume
 
-
   ## 
   print 'WARNING: will need to updated these'
   idxCa = 0 # PDE 
@@ -241,7 +241,7 @@ def tsolve(pvdName=None,\
 
 
 
-  # Boundaries and measures 
+  ## Boundaries and measures 
   # problem specific          
   subdomains = MeshFunction("size_t",mesh,dims-1)
   subdomains.set_all(0)
@@ -278,10 +278,13 @@ def tsolve(pvdName=None,\
   dt = params.dt 
   tstop = params.T
   
-  # volume/area info 
+  ## volume/area info 
+  #print "WARNING: HACKED TRHIS"
+  #params.volCyto = 1.; params.volSSL = 1.; params.volCleft = 1.
   volCyto = params.volCyto
   #volCyto = Constant(assemble(Constant(1.0)*dx()))
   areaCyto = Constant(assemble(Constant(1.0)*ds(lMarker)))
+
   volSSL = params.volSSL
   volCleft= params.volCleft
   volFrac_CytoSSL= volCyto/np.max([1e-9,volSSL])
@@ -312,6 +315,10 @@ def tsolve(pvdName=None,\
 
   if ssl!=True:
     params.volSSL = 1e-9   # needed for validaton stuff
+
+  #print "Vol Cyto/SSL/Cleft"
+  #print volCyto,volSSL,volCleft
+  #quit()
 
 
   # intercompartment transport 
@@ -477,6 +484,7 @@ def tsolve(pvdName=None,\
 
   # here we revise the init conds
   if ssl==False:
+    print "WARNING: this needs to be double checked" 
     f = Function(V)
     #f.interpolate(Constant(params.cInits[idxBuff]))
     pFunc = cm.pCyto
@@ -554,6 +562,7 @@ def tsolve(pvdName=None,\
   if pvdName!=None:
     pvdFile = File(pvdName,"compressed")
     pvdFile << (U_n.sub(idxCa),t)     
+  # Hdf stuff 
   hdf=HDF5File(mesh.mpi_comm(), hdfName, "w")
   hdf.write(mesh, "mesh")
   # temp hack for storing volume 
@@ -576,8 +585,10 @@ def tsolve(pvdName=None,\
       conserved_ti = conservation(t=t)
 
       ## store 
+      # store pvd 
       if pvdName != None:
         pvdFile << (U_n.sub(idxCa),t)
+
       # store hdf 
 
       writeHdf=True
@@ -597,6 +608,9 @@ def tsolve(pvdName=None,\
         uCaCleft.vector()[:]/=volCyto
         #print assemble(uCaCleft*dx())
         hdf.write(uCaCleft,"uCaCleft",ctr)
+
+        x.vector()[0] = t
+        hdf.write(x,"t",ctr)
 
 
   
@@ -794,8 +808,21 @@ def validationMergingSSLCyto():
   print "PASSED (but worth a couple check)" + msg 
 
 # In[19]:
-def whosalive():
-  print "I'm alive!"
+def testSatin(pvdName=None):
+      tag = "satin"
+      #tag = "2D_noSSL"
+      reactions = "simple"
+      params.T = 500
+      params.dt = 5 
+      #reactions = "ryrOnlySwitch"
+      params.ryrAmp = 20.
+      #reactions = None
+      #buffers = False
+      buffers = True 
+      tsolve(pvdName=pvdName,debug=False,params=params,\
+             reactions = reactions, buffers = buffers,
+             #hdfName=tag+".h5",mode=tag)
+             hdfName="test.h5",mode=tag)
 
 #!/usr/bin/env python
 import sys
@@ -884,8 +911,7 @@ if __name__ == "__main__":
       tsolve(debug=False,params=params,hdfName=tag+".h5",mode=tag)
       quit()
     elif(arg=="-testsatin"):
-      tag = "satin"
-      tsolve(debug=False,params=params,hdfName=tag+".h5",mode=tag)
+      testSatin(pvdName = pvdName)
       quit()
     elif(arg=="-test2"):
       tag = "sachse2TT"
@@ -893,6 +919,10 @@ if __name__ == "__main__":
       quit()
     elif(arg=="-test4"):
       tag = "sachse4TT"
+      reactions = "simple"
+      params.T = 100
+      params.dt = 5 
+      buffers = True 
       tsolve(debug=False,params=params,hdfName=tag+".h5",mode=tag)
       quit()
     elif(arg=="-test4TT"):

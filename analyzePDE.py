@@ -114,7 +114,7 @@ def ReadHdf(hdfFile,ssl=False,verbose=False):
   concsCaCleft = np.zeros(nsteps) 
 
   
-  ts = np.arange(nsteps)
+  ts = np.zeros(nsteps)
   for i in range(nsteps):
     # uCa Field
     dataset = "uCa/vector_%d"%i
@@ -140,9 +140,16 @@ def ReadHdf(hdfFile,ssl=False,verbose=False):
     #print "Assemble %d/%f" % (i,assemble(ur*dx))
     concsCaCleft[i]= assemble(ur*dx) # /volCleft
 
+    # ts 
+    dataset = "t/vector_%d"%i
+    attr = hdf.attributes(dataset)
+    hdf.read(x, dataset)
+    t = x.vector()[0]
+    ts[i] = t 
+
     # 
     if verbose:
-      print concsCaCleft[i], concsCaSSL[i], concsCa[i]
+      print t,concsCaCleft[i], concsCaSSL[i], concsCa[i]
 
   hdf.close()
   return ts,concsCaCleft, concsCaSSL, concsCa

@@ -84,6 +84,9 @@ class Sarcomere2DSSL(SarcomereBase):
 
     # below-listing things are broken for now 
     # rigorously unit-test before checking in 
+    #raise RuntimeError("Not supported just yet") 
+    else:
+      return 1
 
     # replace Constant diffusion constant with expression 
     sc = 0.01

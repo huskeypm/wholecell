@@ -5,17 +5,36 @@ from reactionsBase import ReactionsBase
 
 # TODO implmenet me 
 
-# based on Soeller 
+# based on Soeller but revised to match with shannon (see fitting.ipynb) 
 # [1]	C. Soeller, I. D. Jayasinghe, P. Li, A. V. Holden, and M. B. Cannell, 2009
+mM_to_uM = 1e3
 def SERCAExpression(cai=0.1,   
-  Vmax = 0.200,# uM/ms
-  Kmf = 0.184,# uM
-  H = 4.  # Hill coeff 
-  ):
-  mystr = "-Vmax * pow(cai,H) / (pow(Kmf,H) + pow(cai,H))"
-  print "REWRITE ME" 
-  expr = Expression(mystr,
+  # CellML values
+  Vmax= 5.311e-3*mM_to_uM,# uM/ms
+  Kmf = 0.246,# uM
+  #Kmr = 1.7e3 # mu (note: Shannon uses 1.7 mM, which I believe is for total Ca. However, free SR Ca seems to track exactly with total Ca)
+  H = 1.787,
+  casrTerm = 0.112265722393 #  math.pow(Ca_SR/Kmr, H_Jpump)  --> 0.112265722393 
+  ): 
+  #Q10 = 2.6
+    
+  # Grabbing cellML stuff   
+  #T = 310
+  #Ca_SR = casr  
+  #Cai = cai   
+  #H_Jpump = H  
+  Q_SRCaP = 1 # math.pow(Q10, -31 + T/10.)
+  #casr=500  
+
+ # print casrTerm
+  #j_pump_SR = Vmax*(-casrTerm +math.pow(cai/Kmf, H))*Q_SRCaP/(1 + casrTerm + math.pow(cai/Kmf, H))
+  #j_pump_SR = Vmax*(-casrTerm +math.pow(cai/Kmf, H))/(1 + casrTerm + math.pow(cai/Kmf, H))
+
+  #mystr = "-Vmax * pow(cai,H) / (pow(Kmf,H) + pow(cai,H))"
+  j_pump_SR = "-Vmax*(-casrTerm +pow(cai/Kmf, H))/(1 + casrTerm + pow(cai/Kmf, H))"
+  expr = Expression(j_pump_SR,
     Vmax=Vmax,
+    casrTerm=casrTerm,
     Kmf=Kmf,
     cai=cai,
     H = H)
@@ -23,44 +42,9 @@ def SERCAExpression(cai=0.1,
 
 # uM/mso
 # cai [uM]
+# Removed, since simplified according to strategy in fitting.ipynb
 def SERCAShannonExpression(cai=0.1, casr=500):
-  Vmax=286. # uM/s
-  Kmf = 0.246 # uM
-  Kmr = 1.7e3 # mu (note: Shannon uses 1.7 mM, which I believe is for total Ca. However, free SR Ca seems to track exactly with total Ca)
-  H = 1.787
-  #Q10 = 2.6
-
-  # PKH params 
-  #Vmax=320. # uM/s (by setting Vmax to zero and rescaling so that maxcai/mincasr gives J=205 uM/s)
-  Vmax = 300
-  Kmf = 0.100 # uM # if set to the normal value, the pump goes in reverse
-  Kmr = 0.55e3 # uM (this is my adjusted value based on free Ca)
-  H = 1.0
-  Q10=1 # PKH
-
-  # cai = 0.45 #uM
-  # casr = 0.55 #mM
-  caiK = cai/Kmf
-  caiK = caiK**H
-  casrK = casr/Kmr
-  casrK = casrK**H
-  J = (caiK - casrK) / (1 + caiK + casrK)
-  J = Q10 * Vmax * J
-
-  # reverse so flowing INTO SR
-  J = -1 * J
-  #str = "-1 * Q10*Vmax*((cai/Kmf)**H - (casr/Kmr)**H)/(1+(cai/Kmf)**H - (casr/Kmr)**H)"
-  str = "-1 * Q10*Vmax*(pow((cai*s/Kmf),H) - casrK)/(1+pow((cai*s/Kmf),H) + casrK)"
-  str = "-1 * is_to_ims * Vmax*(cai/Kmf - casrK)/(1+cai/Kmf + casrK)"
-  #str = "-1 * is_to_ims * Vmax*(x[0]/Kmf - casrK)/(1+x[0]/Kmf + casrK)"
-  #str = "-1 * Q10*Vmax*(pow((cai/Kmf),H))"
-  is_to_ims= 1e-3 # 1/s --> 1/ms 
-  J = Expression(str,Q10=Q10,Vmax=Vmax,casrK=casrK,Kmf =Kmf,H=H,\
-    cai=cai,is_to_ims = is_to_ims)
-
-
-  #J = Expression("-0.00+t*0", t=0)
-  return J
+  raise RuntimeError("Antiquated") 
 
 
 
@@ -69,6 +53,7 @@ class Simple(ReactionsBase):
     ReactionsBase.__init__(self)
     self.noSERCA=noSERCA
     self.ryrOnlySwitch=ryrOnlySwitch
+    self.ryrTerminate = 10
     self.caitlinSERCA=caitlinSERCA #CES
 
   def Init(self,params):
@@ -76,10 +61,13 @@ class Simple(ReactionsBase):
     # RyR [A/F]???
     # term 'before' a is the dirac function, which turns on the ryr term
     # continuously after time to. The term 'after' a is the ryr term 
-    dirac = "1/(1+exp(-(t-to)/v))*"
-    self.iryr = Expression(dirac+"a*exp(-(t-to)/tau)",
-                             v = 0.05,\
-                             a=params.ryrAmp,\
+    def RyRExpression(v = 0.05,a=9.5,to=1,tau=50,t=0):
+      dirac = "1/(1+exp(-(t-to)/v))*"
+      myiryr = Expression(dirac+"a*exp(-(t-to)/tau)",
+                             v = v,a=a, to=to,tau=tau,t=t)
+      return myiryr
+
+    self.iryr = RyRExpression(a=params.ryrAmp,\
                              to=params.ryrOffset,\
                              tau=params.ryrTau,\
                              t=0)
@@ -87,6 +75,7 @@ class Simple(ReactionsBase):
     # shuts off after time interval (see Update) 
     if self.ryrOnlySwitch:
       self.iryr = Expression("a+t*0",a=params.ryrAmp,t=0)
+      self.ryrTerminate = params.ryrTerminate
   #  elif self.caitlinSerca:
   #    self.iryr = Expression("0+t*0")
   #    params.flux = 0.2 # [uM/ms]
@@ -105,7 +94,7 @@ class Simple(ReactionsBase):
       self.jSERCA = Expression("a+t*0",a=params.sercaVmax,t=0)
     else:
       self.jSERCA= SERCAExpression(Vmax=params.sercaVmax,\
-                                   H=params.sercaH,Kmf=params.sercaKmf)
+                                   H=params.sercaH,Kmf=params.sercaKmf,casrTerm=params.sercaCaSRTerm)
     
     if self.noSERCA:
       self.jSERCA = Expression("t*0",t=0)
@@ -115,7 +104,7 @@ class Simple(ReactionsBase):
 
     # apply  10 ms pulse 
     if self.ryrOnlySwitch:
-      if t>10: 
+      if t>self.ryrTerminate: 
         self.iryr.a= 0.
 
     # Need hooks for V, NCX, SERCA 

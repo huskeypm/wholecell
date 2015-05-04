@@ -579,6 +579,7 @@ def rhs(states, t, parameters, values=None):
     values[16] = -kim*I + Ca_jct1*O*kiSRCa - kom*I +\
         (Ca_jct1*Ca_jct1)*RI*koSRCa
     j_rel_SR = ks*(Ca_SR - Ca_jct1)*O
+    #print "%f %f %f" % (j_rel_SR,(Ca_SR - Ca_jct1),O)
 
     # Expressions for the Jleak SR component
     j_leak_SR = KSRleak*(Ca_SR - Ca_jct1)
@@ -588,6 +589,10 @@ def rhs(states, t, parameters, values=None):
     j_pump_SR = V_max_Jpump*(-math.pow(Ca_SR/Kmr, H_Jpump) +\
         math.pow(Cai/Kmf, H_Jpump))*Q_SRCaP/(1 + math.pow(Ca_SR/Kmr, H_Jpump)\
         + math.pow(Cai/Kmf, H_Jpump))
+
+    #print Cai,Ca_SR,T,j_pump_SR , V_max_Jpump,(-math.pow(Ca_SR/Kmr, H_Jpump) ,   
+    #    math.pow(Cai/Kmf, H_Jpump)),Q_SRCaP/(1 + math.pow(Ca_SR/Kmr, H_Jpump)\
+    #    + math.pow(Cai/Kmf, H_Jpump))
 
     # Expressions for the Ion diffusion component
     J_Na_jct1_SL = -1.8313e-14*Na_SL + 1.8313e-14*Na_jct1

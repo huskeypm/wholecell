@@ -4,12 +4,18 @@ Validation routines for sachse.py
 NOTE: successful unit checking is don through validation.py
 """
 from sachse import * 
+def myassert(ref,actual,eps):
+    msg = ref , "!=" , actual 
+    assert( np.abs(ref-actual) < eps), msg
+    print "PASS!"
 
 def validationSERCA():
   # just spot checks on fluxes
   
   import simple 
   mpi=True
+  mpi=False
+  params = Params()
   if mpi==False:
     jSERCA  = simple.SERCAExpression()
     mesh = UnitIntervalMesh(200)
@@ -18,15 +24,16 @@ def validationSERCA():
 
     # at cai 
     #mystr = "vPump * pow(cai,m) / (KmPump + pow(cai,m))"
-    def expr(cai,vPump=200,KmPump=0.184,m=4):
-       return -vPump * pow(cai,m) / (KmPump + pow(cai,m))
+    def expr(cai,Vmax=params.sercaVmax,Kmf=params.sercaKmf,H=params.sercaH, casrTerm=params.sercaCaSRTerm):
+       return -Vmax*(-casrTerm +pow(cai/Kmf, H))/(1 + casrTerm + pow(cai/Kmf, H))
 
-    cai = 0.2
+    cai = 0.4
  
     jSERCA.cai = cai # uM
     f.interpolate(jSERCA)
     evaled = np.asarray(f.vector())[0]
-    assert( (expr(cai) - evaled ) < 1e-4 ), "SERCA failed"
+    #assert( (expr(cai) - evaled ) < 1e-4 ), "SERCA failed"
+    myassert( expr(cai) , evaled , 1e-1 )                  
 
 
   # verify that constant flux ok rthrough SERCA pexression  
@@ -34,14 +41,14 @@ def validationSERCA():
   # Km = 0 
   # Vma = 0.1 
   #########
-  params = Params()
   idxCa = 0
-  params.T = 10
+  params.T = 10.        
   params.dt = 1.0 # ms
   params.ryrOffset = 500
   params.sercaVmax = 0.1 # uM/ms
   params.sercaKmf = 0.000 # uM
   params.sercaH = 0.  # Hill coeff 
+  params.sercaCaSRTerm = 0. # cancel out backflux 
   # for these params, jSERCA = -0.1 [uM/ms]
   jSERCA = params.sercaVmax / 2. # (since Expression is Vmax/(km^0+ca^0)=V/2.
   dCa = params.T  * jSERCA  
@@ -60,52 +67,108 @@ def validationSERCA():
   assert( (concsFinal[idxCa] - refFinal) < 1e-4 ),  "SERCA test failed" 
   print "PASS SERCA test"
 
-def validationCaitlinRoutine(withBuffers=False):
-  reactions=None  
+# Consistency check 
+def validationTestGeom(): 
   params = Params()
   idxCaCleft = 4
-  idxCaSSL  = 3
-  #jFlux_CleftSSL =D_CleftSSL*area_CleftSSL*(0.9)/(delx_CleftSSL)
-  params.cInits[idxCaCleft] = 1.
-  params.cInits[idxCaSSL]   = 0.1
-  params.D_SSLCyto = 0
-  params.T = 1.
-  params.dt = 1.0 # ms
-  #params.D_SSLCyto = 0.122 #From Bers 2004 paper.
-  concsFinal= tsolve(
-                    params=params,reactions=reactions,buffers=withBuffers)
-  print concsFinal
+  idxCaSSL   = 3
+  idxCa = 0
+  idxCaBuff = 1
+  idxCaFluo = 2
+
+  params.ryrOffset = 10.
+
+  params.D_SSLCyto = 100.
+  params.D_CleftSSL = 1e-1
+  #params.D_CleftCyto = 0.
+
+  withBuffers = True
+  if withBuffers:
+    refFinal = 0.07233 # PKH 150501
+  else: 
+    params.sercaVmax = 5e-3
+    refFinal = 0.0832763346023#PKH 150501
+
+  params.T = 100 
+  #params.T = 20  
+  params.dt = 0.25 # ms
+  
+  testNum = 1
+  if testNum==1: 
+    # rapid diffusion / unstable  
+    params.D_SSLCyto = 1e3
+    params.D_CleftSSL = 1e2
+    reactions = "ryrOnly"
+  elif testNum==2: 
+    # slow diffusion 
+    params.D_SSLCyto = 10.
+    params.D_CleftSSL = 1e-3
+    reactions = "simple"
+
+  else: 
+    reactions = "simple"
+  tag = "2D_SSL"
+  concsFinal= tsolve(mode=tag,hdfName="validation"+tag+".h5",
+                       params=params,reactions=reactions,buffers=withBuffers)
+  
+  myassert( concsFinal[idxCa] , refFinal ,  1e-4 )
+  print "PASS SERCA test"
+
+
 
 # Test that addition of Ca2+ via RyR is approximately offset by SERCA 
 # uptake 
-def validationCaitlinSERCA(withBuffers=False): 
-  reactions="ryrOnly"
+#def validationStepwise(withBuffers=False): 
+def validationStepwise(withBuffers=False,ryrDebug=False): 
   params = Params()
   idxCaCleft = 4
+  idxCaSSL   = 3
   idxCa = 0
   idxCaBuff = 1
   idxCaFluo = 2
 
   # ryr stuff 
   si=0; fi=300; st = fi
-  ts = np.linspace(si,fi,st+1)
+  dt = 1.0 
+  ts = np.linspace(si,fi,(fi-si)/dt+1)  
   ts = ts[1:]
   params.ryrOffset = 0.
-  i_s = params.ryrAmp*np.exp(-ts/params.ryrTau)
-  eps = 1e-1   # generous b.c. of use of dirac function and 
 
+  # First option tests for constant RyR flux 
+  # Second uses usual exponential decay 
+  if ryrDebug:
+    reactions="ryrOnlySwitch"
+    params.ryrAmp = 0.1
+    params.ryrTau = 1e9
+    params.ryrTerminate = 300.
+    i_s = params.ryrAmp*np.ones(np.shape(ts))
+    eps = 1e-2  
+  else:
+    reactions="ryrOnly"
+    i_s = params.ryrAmp*np.exp(-ts/params.ryrTau)
+    eps = 1  # generous b.c. of use of dirac function and 
+
+
+
+
+  # For simple numerical estimate of total added Ca2+ due to RyR
   params.T = fi - si
   js = wholeCellI_to_wholeCellJ(i_s)
   dt = ts[1]-ts[0]
   dCas = js*dt
   totDCa = np.cumsum(dCas)
   finaldCa  = totDCa[-1]
+  finaldCa+= params.cInits[idxCa] # add in init conc 
   print "Tot expected ", finaldCa
-#  quit()
+  #quit()
 
+  step1=False 
+  step2=False 
+  step3Test=False 
+  step3 = True  
   #########
   ## 1) release RyR Ca2+ into partitioned cleft 
-  if 1: 
+  if step1:
     params.dt = dt # ms
   
     params.D_SSLCyto = 0.
@@ -113,119 +176,132 @@ def validationCaitlinSERCA(withBuffers=False):
     params.D_CleftCyto = 0.
   
     concsFinal= tsolve(
-                    params=params,reactions=reactions,buffers=withBuffers)
+                         params=params,reactions=reactions,buffers=withBuffers)
     caCleftInit = concsFinal[idxCaCleft]
+  else: 
+    caCleftInit = 1.24556843e+04 # PKH 
   
 
+  if step2:
     ## 2) Open cleft and release Ca2+ into cyto 
-    params.T = 100
-    params.dt = 0.5
+    params.T = 40  
+    params.dt = 10 # smaller steps will usually fail for nobuffer case 
     params.cInits[idxCaCleft] = caCleftInit 
     #params.jTest = 0.
-    params.D_SSLCyto = 117.48 #Calculated from TTheight and SSL and Bers model
-    params.D_CleftSSL = 3.29093 #See above 
+    params.D_SSLCyto = 1
+    params.D_CleftSSL = 1
+    params.D_CleftCyto = 1
     concsFinal= tsolve(doAssert="conservation",\
-                         params=params,hdfName="openCleft_test1.h5",reactions=None,buffers=withBuffers)
+                         params=params,reactions=None,buffers=withBuffers)
+    finalConc = concsFinal[idxCa] 
     print "concsFinal idx: ",concsFinal[idxCa] #CES
+    if withBuffers==False:
+      myassert(finaldCa,concsFinal[idxCa],eps)
+      print "Tot expected ", finaldCa
+
+  else:
+      if withBuffers:
+        finalConc = 0.72071# PKH est 
+      else:
+        finalConc = 41.3290105182
+      
+      concsFinal= np.array([finalConc,0,0,finalConc,finalConc])
 
   # verify that constant flux ok rthrough SERCA pexression  
   #########
   ## 3) suck up cyto Ca via SERCA  
   print "CAITLIN - add a flag for me" 
 
-  ### Constant rate, but WITHOUT using RyR/SERCA expressions  
-  if 0: 
-    params = Params()
-    params.T = 90 # ms 
-    params.dt = 10.0 # ms
-    params.ryrOffset = 500
-    # for these params, jSERCA = -0.2 [uM/ms]
-    jSERCA = -0.2  # [uM/ms]
-    params.sercaVmax = jSERCA
-    dCa = params.T  * jSERCA
-  
-  #  params.cInits[idxCa] = 20.1 #CES
-    params.cInits[idxCa] = concsFinal[idxCa] #CES
-    refFinal = params.cInits[idxCa] + dCa
-    params.D_SSLCyto = 0.
-    params.D_CleftSSL = 0.
-    params.D_CleftCyto = 0.
-
-    reactions = "caitlinSERCA"
-    concsFinal= tsolve(mode="2D_noSSL",
-                     params=params,reactions=reactions,buffers=False,
-                     existsCleft=False,existsSSL=False)
-
-    assert( (concsFinal[idxCa] - refFinal) < 1e-4 ),  "SERCA test failed"
-
+#  ### Constant rate, but WITHOUT using RyR/SERCA expressions  
+#  if step3:
+#    params = Params()
+#    params.T = 90 # ms 
+#    params.dt = 10.0 # ms
+#    params.ryrOffset = 500
+#    # for these params, jSERCA = -0.2 [uM/ms]
+#    jSERCA = -0.2  # [uM/ms]
+#    params.sercaVmax = jSERCA
+#    dCa = params.T  * jSERCA
+#  
+#  #  params.cInits[idxCa] = 20.1 #CES
+#    params.cInits[idxCa] = concsFinal[idxCa] #CES
+#    refFinal = params.cInits[idxCa] + dCa
+#    params.D_SSLCyto = 0.
+#    params.D_CleftSSL = 0.
+#    params.D_CleftCyto = 0.
+#
+#    reactions = "caitlinSERCA"
+#    concsFinal= tsolve(mode="2D_noSSL",
+#                     params=params,reactions=reactions,buffers=withBuffers,
+#                     existsCleft=False,existsSSL=False)
+#
+#    assert( (concsFinal[idxCa] - refFinal) < 1e-4 ),  "SERCA test failed"
+ 
   ### Constant SERCA rate, but through using expressions in Simple
   # Equivalent to a constant flux for serca, since we remove cai dependence 
-  if 1: 
+  if step3Test:
     params = Params()
     idxCa = 0
     params.T = 100
     params.dt = 10.0 # ms
-    #params.ryrOffset = 1500 # delay firing of Ryr until long after the sim
-    params.ryrOffset = 1500 #fire ryr CES 
+    params.ryrOffset = 1500 # delay firing of Ryr until long after the sim
     params.sercaVmax = 0.4 # uM/ms
-    #params.sercaKmf = 0.000 # uM
+    params.sercaKmf = 0.000 # uM
     params.sercaH = 0.  # Hill coeff 
+    params.sercaCaSRTerm = 0. # cancel out backflux 
     # for these params, jSERCA = -0.1 [uM/ms]
     jSERCA = -params.sercaVmax / 2. # (since Expression is Vmax/(km^0+ca^0)=V/2.
     dCa = params.T  * jSERCA
   
   
-    concCaAfterRyR = 20. # CES
-    ##concCaAfterRyR = concsFinal[idxCa]
-    params.cInits[idxCa] = concCaAfterRyR  #CES
+    params.cInits[idxCa] = finalConc                  
     refFinal = params.cInits[idxCa] + dCa
     params.D_SSLCyto = 0.
     params.D_CleftSSL = 0.
     params.D_CleftCyto = 0.
     reactions = "simple"
-  #  concsFinal= tsolve(mode="2D_noSSL",
-    concsFinal= tsolve(hdfName = "out_test1_const.h5",
+    concsFinal= tsolve(mode="2D_noSSL",
                        params=params,reactions=reactions,buffers=False,
                        existsCleft=False,existsSSL=False)
   
-    jSERCAAvg = (concCaAfterRyR - concsFinal[idxCa])/params.T
+    jSERCAAvg = (finalConc - concsFinal[idxCa])/params.T
     print "Avg jSERCA ", jSERCAAvg
-    assert( (concsFinal[idxCa] - refFinal) < 1e-4 ),  "SERCA test failed"
+
+    if withBuffers==False:
+      #assert( (concsFinal[idxCa] - refFinal) < 1e-4 ),  "SERCA test failed"
+      myassert(concsFinal[idxCa],refFinal, 1e-4)
 
   ### Uses usual, Ca-dependent SERCA model 
   # Uses a serca model that will be nonzero until the cellular conc is 0. 
   # therefore, we stop this t some time T s.t. conc is reasonable.
   # Note too that dt=1.; otherwise SERCA overshoots cai=0
+  params = Params()
   if withBuffers:
-    refFinal = 0.11636
+    refFinal = 0.07233 # PKH 150501
   else: 
-    refFinal = 0.02635 # from PKH 150330
+    params.sercaVmax = 5e-1
+    refFinal = 0.07235294124753 #PKH 150501
 
-  if 1: 
-    params = Params()
+  if step3:
     idxCa = 0
     params.T = 200
     params.dt = 1.0 # ms
     params.ryrOffset = 1500
-    #params.ryrOffset = 0 #CES
-
-    concCaAfterRyR = 20.
-    params.cInits[idxCa] = concCaAfterRyR  #CES
+  
+    params.cInits[idxCa] = finalConc 
     #refFinal = params.cInits[idxCa] + dCa
     params.D_SSLCyto = 0.
     params.D_CleftSSL = 0.
     params.D_CleftCyto = 0.
     reactions = "simple"
-#    concsFinal= tsolve(mode="2D_noSSL",
-    concsFinal= tsolve( 
-                       params=params,hdfName = "out_test1.h5",reactions=reactions,buffers=withBuffers,
+    concsFinal= tsolve(mode="2D_noSSL",
+                       params=params,reactions=reactions,buffers=withBuffers,
                        existsCleft=False,existsSSL=False)
   
-    jSERCAAvg = (concCaAfterRyR - concsFinal[idxCa])/params.T
-    print "Avg jSERCA ", jSERCAAvg
-    assert( (concsFinal[idxCa] - refFinal) < 1e-4 ),  "SERCA test failed"
+    myassert( concsFinal[idxCa] , refFinal ,  1e-4 )
+    print "PASS SERCA test"
 
-  print "PASS SERCA test"
+  print "PASSED STEPWISE with buffer=",withBuffers
 
 def validationRyR(reactions="ryrOnly"):
 
@@ -286,7 +362,7 @@ def validationRyR(reactions="ryrOnly"):
 
 
   ## 2) 
-  params.T = 100
+  params.T = 30  
   params.dt = 10
   params.cInits[idxCaCleft] = caCleftInit
   #params.jTest = 0.
@@ -520,9 +596,6 @@ def validation(test=1):
   if test==14: 
     validationCaitlinSERCA(withBuffers=True)
 
-  if test==15:
-    validationCaitlinRoutine(withBuffers=False)
-
   #quit()
   if test==2:
     validationMergingSSLCyto()
@@ -551,6 +624,7 @@ def validationsMisc():
   print "Passed conservation test"
 
   ## Reactions
+def validationBuffering():
   params = Params()
   params.dt =10
   params.T = 100 
