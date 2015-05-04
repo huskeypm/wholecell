@@ -81,14 +81,23 @@ def WritePickle(tsteps,states,params,fileName='data.pickle'):
   pickle.dump(data1, output)
   output.close()
 
-def ReadPickle(fileName='data.pickle'):
+def ReadPickle(fileName='data.pickle',oldMode=False):
   
   pkl_file = open(fileName, 'rb')
   data1 = pickle.load(pkl_file)
-  states = data1['states']
-  params = data1['params']  
-  tsteps = data1['tsteps']  
-  pkl_file.close()
+
+  if oldMode==False: 
+    states = data1['states']
+    params = data1['params']  
+    tsteps = data1['tsteps']  
+    pkl_file.close()
+  else: 
+    t = data1['t']
+    j = data1['j']
+    s = data1['s']
+    pkl_file.close()
+    return t,j,s  
+
   return tsteps,states, params
     
 

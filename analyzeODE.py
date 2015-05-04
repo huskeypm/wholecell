@@ -10,7 +10,7 @@ runner.init()
 
 mM_to_uM=1e3
 
-def readOut(name = "PCa0.75kss0.25.pickle"):
+def readPickle(name = "PCa0.75kss0.25.pickle"):
   print "Reading " + name  
   pkl_file = open(name, 'rb')
   data1 = pickle.load(pkl_file)  
@@ -41,18 +41,29 @@ def analyOut(data1,state="Cai",label=""):
   return (PCa,ks,minCai,maxCai)
     
 #name =  "/tmp/PCa1.00ks1.00.pickle"      
-#d = readOut(name)
+#d = readPickle(name)
 #pca,ks,minCai,maxCai = analyOut(d)
 
-def ProcessOneDOutputs(var1Name,names,allVars,state="Cai",xlim=None,ylim=None):
+def ProcessOneDOutputs(var1Name,names,allVars,state="Cai",xlim=None,ylim=None,offsetMin=False):
   print "WARNING: does not include time steps" 
   for i,name in enumerate(names):               
       print name
-      d = readOut(name+".pickle")
+      d = readPickle(name+".pickle")
       print np.shape(d['s'])
       s = d['s']
-      caSR = s[:,runner.model.state_indices(state)]         
-      plt.plot(caSR*mM_to_uM,label="%s=%4.2f"%(var1Name,allVars[i]))  
+      si = s[:,runner.model.state_indices(state)]         
+     
+      # recenter each to minimum
+      if offsetMin:
+        # assume last third is in steady state
+        inds  = np.shape(si)[0]
+        inds = np.int(inds/3.)
+        si = si - np.min(si[-inds:])
+          
+      plt.plot(si*mM_to_uM,label="%s=%4.2f"%(var1Name,allVars[i]))  
+
+  if offsetMin:
+    plt.title("Minima offset to 0. uM")
 
   plt.legend(loc=2)
 
@@ -60,6 +71,9 @@ def ProcessOneDOutputs(var1Name,names,allVars,state="Cai",xlim=None,ylim=None):
     plt.xlim(xlim)
   if ylim!=None:
     plt.ylim(ylim)
+
+
+
   plt.ylabel("[%s] [uM]" % state)  
   plt.xlabel("timesteps []") # t [ms]") 
   name = state+"transients%s"%(var1Name)
@@ -84,7 +98,7 @@ def ProcessTwoDOutputs(allKeys,allVars,state="Cai",ylims=None):
     for j, var2Val in enumerate(vars2):
         name =namer(var1Name,var1Val,var2Name,var2Val)+".pickle"
         #print name
-        d = readOut(name) 
+        d = readPickle(name) 
         #print np.shape(d['s'])
         dummy,dummy,minCai,maxCai = analyOut(d,state=state,label="%s=%3.2f"%(var2Name,var2Val))
         outsMin[i,j]= minCai 
@@ -155,8 +169,11 @@ def PlotFluxes(t,j,idx1,label1="flux1",idx2=None,label2="flux2"):
     rect2 = ax2.plot(t,j[:,idx2],'k--',label=label2)
     rects.append(rect2[0])
     ax2.set_ylabel(label2)
+    leg = ax2.legend( (rects) , (labels), loc=2, fancybox=True)
+  else: 
+    leg = ax1.legend( (rects) , (labels), loc=2, fancybox=True)
   
   
   
-  ax1.legend( (rects) , (labels), loc=2 )
+  leg.get_frame().set_alpha(1.0) 
 

@@ -1,4 +1,4 @@
-
+#
 # Time dependent solver, multiple species 
 # 
 # TODO 
@@ -177,13 +177,9 @@ def tsolve(pvdName=None,\
       import sarcomere4TT
       cm = sarcomere4TT.sarcomere4TT(params=params,geom="2D")
 
-    else: #CES
-      import sarcomere2TT #CES
-      cm = sarcomere2TT.sarcomere2TT(params=params) #CES
-
-  #  else: #CES
-  #    import sarcomere2TT #CES
-  #    cm = sarcomere2TT.sarcomere2TT(params=params,geom="2D") #CES
+    else: 
+      import sarcomere2TT
+      cm = sarcomere2TT.sarcomere2TT(params=params)
 
   elif "satin" in mode:
     import sarcomereSatin
@@ -321,10 +317,6 @@ def tsolve(pvdName=None,\
   if ssl:
     # Flux to mesh domain from scalar domain s 
     jFlux_SSLCyto = D_SSLCyto*(cCaSSL_n-cCa_n)/dist # note that this is multiplied by ds(lMarker) below
-   # jFlux_SSLCyto = D_SSLCyto*area_SSLCyto*(cCaSSL_n-cCa_n)/delx_SSLCyto  #CES
-  #  print "%f" % ( D_SSLCyto*area_SSLCyto*(1.0 - 0.1)/delx_SSLCyto)  #CES
-#    print "%f" % ( D_SSLCyto*area_SSLCyto*(1.0-0.1)/delx_SSLCyto)  #CES
-    #quit() 
     F += -jFlux_SSLCyto*vCa*ds(lMarker)
   else: 
     # Flux to mesh domain from scalar domain s 

@@ -69,18 +69,30 @@ def FitExp(tsub,caisub,doPlot=False):
 ## 
 
 # pacing interval 701
-def GetInterval(case,pacingInterval,tstart=8000,  idx=0,doPlot=False):
+# Dafaults to grabbing state data, but can grab fluxes instead
+def GetInterval(case,pacingInterval,tstart=8000,  idx=0,getFlux=False,doPlot=False):
 
     t = case['t']
-    s = case['s']
-    sp = s[1:,idx]
+    if getFlux==False:
+      s = case['s']
+    else:
+      print "AM I HERE" 
+      s = case['j']
+
+    print idx
+    print "SDF", np.shape(s)
+    if idx!= False: 
+      sp = s[1:,idx]
+    else: 
+      sp = s 
+    print np.shape(sp)
     
     dt = t[1]-t[0]
     span = np.int(pacingInterval/dt)
 
-    #print span
     si =np.int(tstart/dt)
     sf = si + span
+    print si,span
 
 
     # assume period starts at max
