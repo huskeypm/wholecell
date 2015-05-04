@@ -76,7 +76,7 @@ def validationTestGeom():
   idxCaBuff = 1
   idxCaFluo = 2
 
-  params.ryrOffset = 20.
+  params.ryrOffset = 10.
 
   params.D_SSLCyto = 100.
   params.D_CleftSSL = 1e-1
@@ -89,16 +89,16 @@ def validationTestGeom():
     params.sercaVmax = 5e-3
     refFinal = 0.0832763346023#PKH 150501
 
-  params.T = 200 
+  params.T = 100 
   #params.T = 20  
   params.dt = 0.25 # ms
   
   testNum = 1
   if testNum==1: 
     # rapid diffusion / unstable  
-    params.D_SSLCyto = 1e4
+    params.D_SSLCyto = 1e3
     params.D_CleftSSL = 1e2
-    reactions = "simple"
+    reactions = "ryrOnly"
   elif testNum==2: 
     # slow diffusion 
     params.D_SSLCyto = 10.
