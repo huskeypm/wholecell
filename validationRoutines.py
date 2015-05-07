@@ -68,7 +68,8 @@ def validationSERCA():
   print "PASS SERCA test"
 
 # Consistency check 
-def validationTestGeom(): 
+def validationTestGeom(tag="2D_SSL" # "satin" 
+  ): 
   params = Params()
   idxCaCleft = 4
   idxCaSSL   = 3
@@ -89,17 +90,22 @@ def validationTestGeom():
     params.sercaVmax = 5e-3
     refFinal = 0.0832763346023#PKH 150501
 
-  params.T = 100 
-  #params.T = 20  
+  params.T = 200 
+  params.T = 50  
   params.dt = 0.25 # ms
   
   testNum = 1
-  if testNum==1: 
-    # rapid diffusion / unstable  
-    params.D_SSLCyto = 1e3
-    params.D_CleftSSL = 1e2
-    reactions = "ryrOnly"
-  elif testNum==2: 
+  if testNum==1: # looks pretty good 
+    params.D_SSLCyto = 5e1
+    params.D_CleftSSL = 1e-5  
+    params.ryrAmp*=7.5
+    reactions = "simple"   
+  if testNum==2: # somewhat works  
+    params.D_SSLCyto = 1e2
+    params.D_CleftSSL = 1e-5  
+    params.ryrAmp*=5 
+    reactions = "simple"   
+  elif testNum==3: 
     # slow diffusion 
     params.D_SSLCyto = 10.
     params.D_CleftSSL = 1e-3
@@ -107,8 +113,12 @@ def validationTestGeom():
 
   else: 
     reactions = "simple"
-  tag = "2D_SSL"
-  concsFinal= tsolve(mode=tag,hdfName="validation"+tag+".h5",
+
+  if tag=="satin":
+    pvdName = tag+".pvd"
+  else:
+    pvdName = None
+  concsFinal= tsolve(mode=tag,pvdName=pvdName,hdfName="validation"+tag+".h5",
                        params=params,reactions=reactions,buffers=withBuffers)
   
   myassert( concsFinal[idxCa] , refFinal ,  1e-4 )
@@ -590,29 +600,37 @@ def validation(test=1):
   if test==1:
     validationRyR()
   #raise RuntimeError("NOT FINISHED VALID") 
-  if test==13: 
+  elif test==13: 
     validationCaitlinSERCA()
 
-  if test==14: 
+  elif test==14: 
     validationCaitlinSERCA(withBuffers=True)
 
   #quit()
-  if test==2:
+  elif test==2:
     validationMergingSSLCyto()
 
   ## validate fast/slow diffusion
-  if test==3:
+  elif test==3:
     validationRapidDiffusion()
 
   ## flux conversions 
-  if test==4:
+  elif test==4:
     validation_Conversions()
 
-  if test==5:
+  elif test==5:
     validationsMisc()
 
-  if test==6:
+  elif test==6:
     validationSERCA()
+
+  elif test==7:
+    validationTestGeom(tag="2D_SSL")
+  elif test==71:
+    validationTestGeom(tag="satin")
+
+  else:
+    raise RuntimeError("Validation mode not understood" ) 
 
 
 def validationsMisc():
