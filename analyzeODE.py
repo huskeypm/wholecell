@@ -9,8 +9,13 @@ from runShannonTest import *
 import taufitting as tf
 runner.init()
 
-mM_to_uM=1e3
+class empty:pass
+mM_to_uM = 1e3
+ms_to_s = 1e-3
 
+### 
+### I/O 
+###  
 def readPickle(name = "PCa0.75kss0.25.pickle"):
   print "Reading " + name  
   pkl_file = open(name, 'rb')
@@ -18,8 +23,17 @@ def readPickle(name = "PCa0.75kss0.25.pickle"):
   pkl_file.close()
      
   return data1  
+
+def LoadPickles(caseDict):
+  for key,case in caseDict.iteritems():
+    print "# ", key
+    print "Loading "  , case.name
+    case.data = readPickle(case.name)
     
 
+###
+### Mostly plotting 
+### 
 def analyOut(data1,state="Cai",label=""):
   si = data1['s']
   pi = data1['p']
@@ -186,33 +200,6 @@ idxCai = runner.model.state_indices("Cai")
 idxCaSR = runner.model.state_indices("Ca_SR")
 idxjRyR = runner.model.monitor_indices("j_rel_SR")
 
-# Compute quantities of interest from transient data
-def ProcessTransients(case,pacingInterval,tstart=8000):
-    # compute rate of \catwo transient decline 
-    tau = tf.GetTau(case,pacingInterval,tstart=tstart,idxCai=idxCai)
-    
-    
-    # get transient amplitudes 
-    # grab suitable spot for statistics 
-    tsub, caisub= tf.GetInterval(case,pacingInterval,tstart=tstart,idx=idxCai)
-    delCa = (np.max(caisub) - np.min(caisub))*mM_to_uM
-    
-    # get SR transient amplitudes 
-    tsub, casrsub= tf.GetInterval(case,pacingInterval,tstart=tstart,idx=idxCaSR)
-    delCaSR = (np.max(casrsub) - np.min(casrsub))*mM_to_uM
-    
-    # get max RyR
-    tsub, jRyRsub= tf.GetInterval(case,pacingInterval,tstart=tstart,getFlux=True, idx=idxjRyR)
-    #plt.figure()
-    #plt.plot(jRyRsub)
-    #jRyR = j[:, runner.model.monitor_indices(idx) ]
-    maxRyR = np.max(jRyRsub)*mM_to_uM
-    
-    print tau, delCa, delCaSR, maxRyR
-    #pctChg = GetExtreme(t,cai,subMin=7900,subMax=8500,si=7910)
-    #pctChgSR = GetExtreme(t,casr,subMin=7900,subMax=8500,si=7910)
-    
-    return tau,delCa, delCaSR, maxRyR
 
 def TransientBarPlots(cases,caseNames,resultsA,resultsB=False,tag=""):
     plt.subplot(1,3,1)
@@ -225,13 +212,25 @@ def TransientBarPlots(cases,caseNames,resultsA,resultsB=False,tag=""):
     plt.ylabel('$\Delta$ Ca [uM]')
     plt.xticks(idxs+0.5*width, (caseNames),rotation=70)
 
+    plotAsDelta=False
+   
     plt.subplot(1,3,2)
-    plt.bar(idxs,resultsA.pctChgSRs,width)
-    if resultsB:
-     plt.bar(idxs+width,resultsB.pctChgSRs,width,color="r")
-    plt.title("$\Delta Ca_{SR}^{2+}$")
-    plt.ylabel('$\Delta$ Ca [uM]')
-    plt.xticks(idxs+0.5*width, (caseNames),rotation=70)
+    if plotAsDelta:
+      plt.bar(idxs,resultsA.pctChgSRs,width)
+      if resultsB:
+       plt.bar(idxs+width,resultsB.pctChgSRs,width,color="r")
+      plt.title("$\Delta Ca_{SR}^{2+}$")
+      plt.ylabel('$\Delta$ Ca [uM]')
+      plt.xticks(idxs+0.5*width, (caseNames),rotation=70)
+    else:
+      plt.bar(idxs,resultsA.minCaSRs,width,color='b')
+      plt.bar(idxs,resultsA.pctChgSRs,width,color='g',bottom=resultsA.minCaSRs)
+      #print resultsA.maxCaSRs
+      #if resultsB:
+      # plt.bar(idxs+width,resultsB.pctChgSRs,width,color="r")
+      plt.title("$Ca_{SR}^{2+}$")
+      plt.ylabel("Min/$\Delta Ca^{2+}$ [uM]")
+      plt.xticks(idxs+0.5*width, (caseNames),rotation=70)
 
 
     ax = plt.subplot(1,3,3)
@@ -263,31 +262,33 @@ def TransientBarPlots(cases,caseNames,resultsA,resultsB=False,tag=""):
     plt.tight_layout()
     plt.gcf().savefig(tag+"jRyRmiscdata.png",dpi=300)
 
-class empty:pass
-mM_to_uM = 1e3
-ms_to_s = 1e-3
 # Collect all data 
-def ProcessAllTransients(cases,caseTags,pacingInterval,tag="",cols=[],name=None):
-    
-    baseline = readPickle(caseTags[0]+tag+".pickle")
-    caseA = readPickle(caseTags[1]+tag+".pickle")
-    caseB= readPickle(caseTags[2]+tag+".pickle")
+def ProcessAllTransients(cases,caseTags,pacingInterval,tag="",\
+                         cols=[],name=None,root=""):
+    baseline = readPickle(root+caseTags[0]+tag+".pickle")
+    caseA = readPickle(root+caseTags[1]+tag+".pickle")
+    caseB= readPickle(root+caseTags[2]+tag+".pickle")
     #pca1p25vmax1p25 = readOut("PCa1.25ks1.00vMax1.25"+tag+".pickle")
     if len(cases)>3:
-      caseC = readPickle(caseTags[3]+tag+".pickle")
+      caseC = readPickle(root+caseTags[3]+tag+".pickle")
 
     
     taus=[]
     pctChgs=[]
     pctChgSRs=[]
     maxRyRs=[]
+    minCaSRs=[]
+    maxCaSRs=[]
     for i, case in enumerate(cases):
       var = eval(case)
-      tau,pctChg,pctChgSR,maxRyR  = ProcessTransients(var,pacingInterval)
+      tau,pctChg,pctChgSR,minCaSR,maxCaSR,maxRyR  = ProcessTransients(var,pacingInterval)
+      print minCaSR, maxCaSR
       taus.append(tau)
       pctChgs.append(pctChg)
       pctChgSRs.append(pctChgSR)  
       maxRyRs.append(maxRyR)    
+      minCaSRs.append(minCaSR)    
+      maxCaSRs.append(maxCaSR)    
 
     plt.figure()    
     plt.subplot(1,2,1) 
@@ -345,8 +346,164 @@ def ProcessAllTransients(cases,caseTags,pacingInterval,tag="",cols=[],name=None)
     results.pctChgs = pctChgs; 
     results.pctChgSRs = pctChgSRs
     results.maxRyRs = maxRyRs
+    results.maxCaSRs = maxCaSRs
+    results.minCaSRs = minCaSRs
     
     return results
+
+
+# for despa data 
+def DespaPlots(caseDict, stateName=None, monitorName=None,doLegend=True,label="",loadPickle=False,xlim=[7000,10000]):
+    if loadPickle:
+      LoadPickles(caseDicts)
+#print "python runShannonTest.py "+" ".join(healthyArgs)+" -name "+healthyName+" &"
+
+    ylim=[1e9,-1e9]
+    for key, case in caseDict.iteritems():
+      t = case.data['t']
+      j = case.data['j']
+      s = case.data['s']
+       
+      if stateName!=None:  
+        idxCai = runner.model.state_indices(stateName)
+        #sca = s[1:,idxCai] - np.min(s[-ind:,idxCai])
+        sca = s[1:,idxCai]  
+        plt.plot(t,sca,label=case.label)
+      elif monitorName!=None:
+        idxCai = runner.model.monitor_indices(monitorName)
+        #sca = s[1:,idxCai] - np.min(s[-ind:,idxCai])
+        sca = j[:,idxCai]  
+        plt.plot(t,sca,label=case.label)
+            
+      # determine bounds   
+      ylim[0] = np.min([ylim[0],np.min(sca)])
+      ylim[1] = np.max([ylim[1],np.max(sca)])
+
+    #plt.title("%s transients (offset by diastolic [%s])" %(stateName,stateName))    
+   # plt.ylabel("[%s] - min([%s])" %(stateName,stateName))
+    if stateName!=None:  
+      plt.title("%s transients" %(stateName))    
+      plt.ylabel("[%s] [mM])" %(stateName))
+      fileName = stateName  
+    elif monitorName!=None:
+      plt.title("%s " %(monitorName))    
+      plt.ylabel(label)
+      fileName = monitorName
+        
+    if doLegend:
+      plt.legend(loc=0)    
+    plt.xlabel("t [ms]")
+    if xlim!=None:
+      plt.xlim(xlim)
+    plt.ylim(ylim)
+    plt.gcf().savefig("despa_%s.png"%fileName,dpi=300)
+
+###
+### Data processing 
+###
+
+## Compute quantities of interest from transient data
+# transient decay rates, 
+# changes in SR calcium 
+# ryr flux rates 
+def ProcessTransients(case,pacingInterval,tstart=8000):
+    # compute rate of \catwo transient decline 
+    tau = tf.GetTau(case,pacingInterval,tstart=tstart,idxCai=idxCai)
+    
+    
+    # get transient amplitudes 
+    # grab suitable spot for statistics 
+    tsub, caisub= tf.GetInterval(case,pacingInterval,tstart=tstart,idx=idxCai)
+    delCa = (np.max(caisub) - np.min(caisub))*mM_to_uM
+    
+    # get SR transient amplitudes 
+    tsub, casrsub= tf.GetInterval(case,pacingInterval,tstart=tstart,idx=idxCaSR)
+    delCaSR = (np.max(casrsub) - np.min(casrsub))*mM_to_uM
+    minCaSRsub = (np.min(casrsub))*mM_to_uM
+    maxCaSRsub = (np.max(casrsub))*mM_to_uM
+    
+    # get max RyR
+    tsub, jRyRsub= tf.GetInterval(case,pacingInterval,tstart=tstart,getFlux=True, idx=idxjRyR)
+    #plt.figure()
+    #plt.plot(jRyRsub)
+    #jRyR = j[:, runner.model.monitor_indices(idx) ]
+    maxRyR = np.max(jRyRsub)*mM_to_uM
+    
+    print tau, delCa, delCaSR, maxRyR
+    #pctChg = GetExtreme(t,cai,subMin=7900,subMax=8500,si=7910)
+    #pctChgSR = GetExtreme(t,casr,subMin=7900,subMax=8500,si=7910)
+    
+    return tau,delCa, delCaSR, minCaSRsub,maxCaSRsub,maxRyR
+
+## Power spectral density stuff 
+        
+import scipy.fftpack as fftp
+def doPSD(sca):
+  dm = sca - np.mean(sca,axis=0)
+  M = fftp.fft(dm,axis=0)
+  psd = np.abs(M)**2
+  return psd  
+
+
+#psd = doPSD(sca)
+#plt.plot(psd)
+
+def PlotFrequencies(s1,statei=0):
+    # real domain 
+    plt.figure()
+    plt.pcolormesh(s1.T)
+    plt.figure()
+    plt.plot(s1[:,statei],label="%d"%statei)
+    plt.legend()
+    
+    # get PSD
+ #   dm = s1 - np.mean(s1)
+ #   S = fftp.fft(dm,axis=0)
+ #   psd2 = np.abs(S*S)
+    
+    psd2 = doPSD(s1)
+    
+    plt.figure()
+    plt.pcolormesh(psd2.T)
+    plt.figure()
+
+    energy = np.sum(psd2,axis=0)
+    psdScaled = psd2/energy
+#plt.plot(psd2[:,0])
+    plt.plot(psdScaled[:,statei],label="%d"%statei)
+
+    return psdScaled
+
+# Compute quantities of interest from transient data
+# DUPE # def ProcessTransients(case,pacingInterval,tstart=8000):
+# DUPE #     # compute rate of \catwo transient decline 
+# DUPE #     tau = tf.GetTau(case,pacingInterval,tstart=tstart,idxCai=idxCai)
+# DUPE #     
+# DUPE #     
+# DUPE #     # get transient amplitudes 
+# DUPE #     # grab suitable spot for statistics 
+# DUPE #     tsub, caisub= tf.GetInterval(case,pacingInterval,tstart=tstart,idx=idxCai)
+# DUPE #     delCa = (np.max(caisub) - np.min(caisub))*mM_to_uM
+# DUPE #     
+# DUPE #     # get SR transient amplitudes 
+# DUPE #     tsub, casrsub= tf.GetInterval(case,pacingInterval,tstart=tstart,idx=idxCaSR)
+# DUPE #     delCaSR = (np.max(casrsub) - np.min(casrsub))*mM_to_uM
+# DUPE #     
+# DUPE #     # get max RyR
+# DUPE #     tsub, jRyRsub= tf.GetInterval(case,pacingInterval,tstart=tstart,getFlux=True, idx=idxjRyR)
+# DUPE #     #plt.figure()
+# DUPE #     #plt.plot(jRyRsub)
+# DUPE #     #jRyR = j[:, runner.model.monitor_indices(idx) ]
+# DUPE #     maxRyR = np.max(jRyRsub)*mM_to_uM
+# DUPE #     
+# DUPE #     print tau, delCa, delCaSR, maxRyR
+# DUPE #     #pctChg = GetExtreme(t,cai,subMin=7900,subMax=8500,si=7910)
+# DUPE #     #pctChgSR = GetExtreme(t,casr,subMin=7900,subMax=8500,si=7910)
+# DUPE #     
+# DUPE #     return tau,delCa, delCaSR, maxRyR
+# DUPE # 
+# DUPE # 
+
 
 
 
