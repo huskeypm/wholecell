@@ -353,12 +353,18 @@ def ProcessAllTransients(cases,caseTags,pacingInterval,tag="",\
 
 
 # for despa data 
-def DespaPlots(caseDict, stateName=None, monitorName=None,doLegend=True,label="",loadPickle=False,xlim=[7000,10000]):
+def DespaPlots(caseDict, stateName=None, monitorName=None,doLegend=True,label="",loadPickle=False,\
+               xlim=[7000,10000],ylim=None,
+               root=None,normalize=False):
     if loadPickle:
       LoadPickles(caseDicts)
 #print "python runShannonTest.py "+" ".join(healthyArgs)+" -name "+healthyName+" &"
 
-    ylim=[1e9,-1e9]
+    if ylim:
+      ylimUpdate=False
+    else:
+      ylim=[1e9,-1e9]
+      ylimUpdate=True
     for key, case in caseDict.iteritems():
       t = case.data['t']
       j = case.data['j']
@@ -368,16 +374,24 @@ def DespaPlots(caseDict, stateName=None, monitorName=None,doLegend=True,label=""
         idxCai = runner.model.state_indices(stateName)
         #sca = s[1:,idxCai] - np.min(s[-ind:,idxCai])
         sca = s[1:,idxCai]  
-        plt.plot(t,sca,label=case.label)
       elif monitorName!=None:
         idxCai = runner.model.monitor_indices(monitorName)
         #sca = s[1:,idxCai] - np.min(s[-ind:,idxCai])
         sca = j[:,idxCai]  
-        plt.plot(t,sca,label=case.label)
+
+      print "%s Diast/Systolic %f/%f " % \
+            (case.tag,np.min(sca[xlim[0]:xlim[1]]),np.max(sca[xlim[0]:xlim[1]]))
+
+      
+      if normalize:
+        sca = sca - np.min(sca[xlim[0]:xlim[1]])
+        sca = sca/np.max(sca[xlim[0]:xlim[1]])
+      plt.plot(t,sca,label=case.label)
             
       # determine bounds   
-      ylim[0] = np.min([ylim[0],np.min(sca)])
-      ylim[1] = np.max([ylim[1],np.max(sca)])
+      if ylimUpdate:
+        ylim[0] = np.min([ylim[0],np.min(sca)])
+        ylim[1] = np.max([ylim[1],np.max(sca)])
 
     #plt.title("%s transients (offset by diastolic [%s])" %(stateName,stateName))    
    # plt.ylabel("[%s] - min([%s])" %(stateName,stateName))
@@ -396,7 +410,14 @@ def DespaPlots(caseDict, stateName=None, monitorName=None,doLegend=True,label=""
     if xlim!=None:
       plt.xlim(xlim)
     plt.ylim(ylim)
-    plt.gcf().savefig("despa_%s.png"%fileName,dpi=300)
+    if root==None:
+      root=""
+  
+    if normalize:
+      normalize="Norm"
+    else:
+      normalize=""        
+    plt.gcf().savefig(root+"despa_%s%s.png"%(fileName,normalize),dpi=300)
 
 ###
 ### Data processing 
@@ -473,6 +494,47 @@ def PlotFrequencies(s1,statei=0):
     plt.plot(psdScaled[:,statei],label="%d"%statei)
 
     return psdScaled
+
+def PSDAnaly(s1,ranger=[2,200]):
+    ## raw data 
+    #plt.figure()
+    #plt.plot(s1)
+    
+    #plt.figure()
+    #pcolormesh(s1.T,cmap=cm.gray)
+    #plt.colorbar()
+    
+    ## Demeaned
+    dc = np.mean(s1,axis=0)
+    dm = s1 - dc
+    dm /= np.max(s1,axis=0)   
+    plt.figure()
+    plt.bar(np.arange(np.shape(dc)[0]),dc)
+    #plt.figure()
+    #pcolormesh(dm.T,cmap=cm.gray)
+    #plt.colorbar()
+    
+    # Power Spectral Density 
+    S = fftp.fft(dm,axis=0)
+    psd2 = np.abs(S*S)
+    # log to make peaks more observable 
+    psd2 = np.log(psd2)
+    print np.shape(psd2)
+    # grab low freq 
+    psd2 = psd2[ranger[0]:ranger[1],:]
+    
+    plt.figure()
+    from matplotlib import cm 
+    plt.pcolormesh(psd2.T,cmap=cm.gray)
+    plt.colorbar()
+    
+    
+    #plt.figure()
+    #plt.plot(psd2[ranger[0]:ranger[1],0])
+    return dc, psd2
+
+
+
 
 # Compute quantities of interest from transient data
 # DUPE # def ProcessTransients(case,pacingInterval,tstart=8000):
