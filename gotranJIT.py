@@ -116,7 +116,7 @@ def main(filename, params):
                                     for i in range(int(len(parameter_values)/2))]:
         
         user_params[param_name] = float(param_value)
-        print user_params[param_name], float(param_value)
+        #print param_name, float(param_value)
 
     user_ic = dict()
     for state_name, state_value in [(init_conditions[i*2], init_conditions[i*2+1]) \
@@ -250,9 +250,13 @@ def plotit(resultsFile="results.txt"):
   plt.plot(results)
   plt.gcf().savefig("poop.png")  
 
-def doit(resultsFile="results.txt"):
+def doit(resultsFile="results.txt",tstop=5000,ks=16.,KSRleak=5.3e-6):
   params = init()
+  params.tstop = tstop 
+
+   
   file_name = "shannon_2004.ode"
+  params.parameters = ['ks',ks,'KSRleak',KSRleak]
   results,module=main(file_name, params)
 
   # save cai 
@@ -300,6 +304,9 @@ if __name__ == "__main__":
     # calls 'doit' with the next argument following the argument '-validation'
     if(arg=="-doit"):
       doit()
+      quit()
+    if(arg=="-2"):
+      doit(resultsFile="mod.txt",ks=14,KSRleak=5.2e-6)
       quit()
     if(arg=="-plotit"):
       plotit()
