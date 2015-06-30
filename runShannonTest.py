@@ -147,6 +147,89 @@ def GenSweptParams(varDict,\
 
   return names,keys,allVars 
 
+###
+### JIT support  
+###
+
+import gotranJIT 
+# Shamelessly snagged from gotranrun.py 
+def GetMonitored(module, ode,tsteps,results,model_params):
+    monitored = []
+    for expr in sorted(ode.intermediates+ode.state_expressions):
+        #print expr.name
+        if expr.name not in monitored: # safety
+            monitored.append(expr.name)
+
+    monitored_plot = []        
+    for expr in sorted(ode.intermediates):
+        #print expr.name
+        if expr.name not in monitored_plot: # safety
+            monitored_plot.append(expr.name)
+
+    monitor_inds = np.array([monitored.index(monitor) \
+                             for monitor in monitored_plot], dtype=int)
+    monitored_get_values = np.zeros(len(monitored), dtype=np.float_)
+
+    # Allocate memory
+    plot_values = np.zeros((len(monitored_plot), len(results)))  
+    
+    for ind, (time, res) in enumerate(zip(tsteps, results)):
+        module.monitor(res, time, model_params, monitored_get_values)
+        plot_values[:,ind] = monitored_get_values[ monitor_inds ]    
+    
+    return monitored_plot, plot_values
+
+#tstop=20000 # works 
+#tstop=180000 # kicks the bucket after 130 s
+#dt = 0.1
+#stim_period = 1000.  # works (after adjusting odeint params)
+#stim_period = 500.
+# WARNING: here that parameters are SET, not rescaled, in contrast to runParams function
+def runParamsFast(odeName = "shannon_2004.ode",name="out",varDict=None,dt=0.1,dtn=2000,stim_period=1000.,mxsteps=None):
+
+  params = gotranJIT.init()
+  params.tstop = dtn
+  params.dt = dt
+
+  # SET Params
+  params.parameters = ['stim_period',stim_period]  
+  if varDict!=None:
+    for key, value in varDict.iteritems():
+      params.parameters.extend([key,value])  
+    
+  
+  ## JIT compile module, simulate  
+  #ks=25. # default  [1/ms]
+  #KSRleak=5.348e-6 # default [1/ms]
+  #params.parameters = ['ks',ks,'KSRleak',KSRleak]  
+  #print params.parameters    
+  results,module,tsteps,model_params,ode=gotranJIT.main(odeName, params)  
+  
+  # to ensure consistency with old code 
+  s = results
+  t = tsteps
+  p = model_params
+  s_idx = [state.name for state in ode.full_states]
+  p_idx = [param.name for param in ode.parameters]
+  assert(len(s_idx)==len(results[0,:])),"Error in state vector. Ask PKH"
+  assert(len(p_idx)==len(model_params)),"Error in parameter vector. Ask PKH"
+
+  # get monitored fluxes   
+  j_idx,j = GetMonitored(module, ode,tsteps,results,model_params)  
+  
+  # store to pickle
+  data1 = {'p':p,'s':s,'t':t,'j':j,\
+           'p_idx':p_idx,'s_idx':s_idx,'j_idx':j_idx} 
+  import cPickle as pickle
+  if ".pickle" not in name:
+    name += ".pickle"
+  output = open(name, 'wb')
+  pickle.dump(data1, output)
+  output.close()
+    
+
+
+
 
 
 #!/usr/bin/env python
@@ -240,8 +323,8 @@ if __name__ == "__main__":
     GenSweptParams(varDict)# var1Name,var1Vals)
   else: 
     if useJIT:
-      runParams(runner=runner,varDict=varDict,\
-              name=name,deltaT=deltaT,dt=dt, stim_period = stim)
+      runParamsFast(varDict=varDict,\
+              name=name,dtn=deltaT,dt=dt, stim_period = stim)
     else:
       runParams(runner=runner,varDict=varDict,\
               name=name,deltaT=deltaT,dt=dt, stim_period = stim)
