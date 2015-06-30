@@ -206,6 +206,7 @@ if __name__ == "__main__":
   name="out"
   deltaT = 10000 # [ms] 
   sweep = False
+  useJIT=False
   varDict = dict()              
   for i,arg in enumerate(sys.argv):
     # calls 'runParams' with the next argument following the argument '-validation'
@@ -229,10 +230,19 @@ if __name__ == "__main__":
     if(arg=="-stim"):
       stim=sys.argv[i+1] 
 
+    if(arg=="-jit"):
+      useJIT = True
+
   # execute
   if sweep:
+    if useJIT:
+      raise RuntimeError("Not yet supported") 
     GenSweptParams(varDict)# var1Name,var1Vals)
   else: 
-    runParams(runner=runner,varDict=varDict,\
+    if useJIT:
+      runParams(runner=runner,varDict=varDict,\
+              name=name,deltaT=deltaT,dt=dt, stim_period = stim)
+    else:
+      runParams(runner=runner,varDict=varDict,\
               name=name,deltaT=deltaT,dt=dt, stim_period = stim)
   

@@ -155,7 +155,14 @@ def main(filename, params):
             from scipy.integrate import odeint
         except Exception, e:
             error("Problem importing scipy.integrate.odeint. {}".format(e))
-        results = odeint(rhs, y0, tsteps, Dfun=jac, args=(model_params,))
+        # OLD 
+        #results = odeint(rhs, y0, tsteps, Dfun=jac, args=(model_params,))
+        print "Using revised params from runner.py"
+        mxsteps = 1000
+        results = odeint(rhs, y0, tsteps, Dfun=jac, args=(model_params,),\
+                         mxstep=mxsteps,hmax=.03,rtol=1e-12, atol=1e-12)
+        
+
     else:
 
         # Get generated forward method
@@ -172,10 +179,10 @@ def main(filename, params):
             results.append(states.copy())
 
     # Plot results
-    if not (plot_states or monitored):
-        return
+    #if not (plot_states or monitored):
+    #    return
     
-    return results,module 
+    return results,module,tsteps,model_params,ode 
 
 #if __name__ == "__main__":
 def init():
