@@ -23,7 +23,6 @@
 
 from dolfin import *
 import numpy as np
-import matplotlib.pylab as plt
 class empty:pass 
 import sys
 sys.path.append("./siam/")
