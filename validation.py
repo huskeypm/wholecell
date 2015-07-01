@@ -13,9 +13,9 @@ validationRoutines.validation(3)
 validationRoutines.validation(4)
 validationRoutines.validation(5)
 validationRoutines.validation(6)
+validationRoutines.validation(61)
 validationRoutines.validation(7)             
-validationRoutines.validation(13)
-validationRoutines.validation(14)
+validationRoutines.validation(71)             
 
 
 print "All ValidationRoutines passed"
