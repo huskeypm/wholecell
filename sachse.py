@@ -54,7 +54,7 @@ class Params(object):
     self.T = 200.  # Total simulation time [ms]
     self.dt = 1. # time-step size [ms] 
   
-    self.DCompart = 1 # [um^2/ms]
+    self.DCompart = 1e-2 # [um^2/ms]
     self.D_SSLCyto = self.DCompart # Diffusion rate between SSL/Cyto compartments (if SSL exists) [um/ms]
     self.D_CleftSSL = 1.64e-6 * 1e5 #  Diffusion rate between Cleft/SSL compartments (if SSL exists) [cm^2/s] --> [um^2/ms] 
     self.D_CleftCyto= 1.64e-6 * 1e5 #  Diffusion rate between Cleft/Cyto compartments (if SSL does not exist) [cm^2/s] --> [um^2/ms] 

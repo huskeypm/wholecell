@@ -9,7 +9,8 @@
 import validationRoutines
 validationRoutines.validation(1)
 validationRoutines.validation(2)
-validationRoutines.validation(3)
+print "WARNING: PKH needs to fix"
+#validationRoutines.validation(3)
 validationRoutines.validation(4)
 validationRoutines.validation(5)
 validationRoutines.validation(6)
