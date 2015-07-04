@@ -226,6 +226,7 @@ def runParamsFast(odeName = "shannon_2004.ode",name="out",varDict=None,dt=0.1,dt
   output = open(name, 'wb')
   pickle.dump(data1, output)
   output.close()
+  print "SUCCESS! Wrote output to ", name 
     
 
 
