@@ -264,7 +264,7 @@ def doit(resultsFile="results.txt",tstop=5000,ks=16.,KSRleak=5.3e-6):
    
   file_name = "shannon_2004.ode"
   params.parameters = ['ks',ks,'KSRleak',KSRleak]
-  results,module=main(file_name, params)
+  results,module,tsteps,model_params,ode=main(file_name, params)
 
   # save cai 
   Cai_idx =  module.state_indices( "Cai" )
