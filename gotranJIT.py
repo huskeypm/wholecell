@@ -96,8 +96,9 @@ def main(filename, params):
     module = compile_module(ode, params.code.language, monitored, generation)
 
     parameter_values = params.parameters
-    print params.parameters
+    #print "Opt. params", params.parameters
     init_conditions = params.init_conditions
+    #print "Opt. inits", params.init_conditions
 
     if len(parameter_values) == 1 and parameter_values[0] == "":
         parameter_values = []

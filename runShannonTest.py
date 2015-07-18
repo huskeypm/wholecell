@@ -64,12 +64,16 @@ def runParams(
   data1 = {'p':p,'s':s,'t':t,'j':j}
   #print np.shape(data1['s'])
 
+  # Print pickle file of all states 
   import cPickle as pickle 
   if ".pickle" not in name:
     name += ".pickle"
   output = open(name, 'wb')
   pickle.dump(data1, output)
   output.close()
+
+  
+  
 
 # Print's command lines for running param sweep
 # FixedParm is used to pass in a modified parameter that is not being swept
@@ -102,6 +106,7 @@ def GenSweptParams(varDict,\
 
   # cmd and timing 
   cmdpre = "nohup python runShannonTest.py"
+  cmdpre = " -jit "
   cmdpre+= " -stim %d" % stim_period
   cmdpre+= " -T %d" % T                     
 
@@ -185,7 +190,8 @@ def GetMonitored(module, ode,tsteps,results,model_params):
 #stim_period = 1000.  # works (after adjusting odeint params)
 #stim_period = 500.
 # WARNING: here that parameters are SET, not rescaled, in contrast to runParams function
-def runParamsFast(odeName = "shannon_2004.ode",name="out",varDict=None,dt=0.1,dtn=2000,stim_period=1000.,mxsteps=None):
+def runParamsFast(odeName = "shannon_2004.ode",name="out",\
+                  varDict=None,stateDict=None,dt=0.1,dtn=2000,stim_period=1000.,mxsteps=None):
 
   params = gotranJIT.init()
   params.tstop = dtn
@@ -196,6 +202,14 @@ def runParamsFast(odeName = "shannon_2004.ode",name="out",varDict=None,dt=0.1,dt
   if varDict!=None:
     for key, value in varDict.iteritems():
       params.parameters.extend([key,value])  
+
+  # SET states 
+  if stateDict!=None:   
+    params.init_conditions=[]
+    for key, value in stateDict.iteritems():
+      #print key, value 
+      params.init_conditions.extend([key,value])  
+    
     
   
   ## JIT compile module, simulate  
@@ -227,6 +241,7 @@ def runParamsFast(odeName = "shannon_2004.ode",name="out",varDict=None,dt=0.1,dt
   pickle.dump(data1, output)
   output.close()
   print "SUCCESS! Wrote output to ", name 
+
     
 
 
