@@ -76,105 +76,7 @@ def init():
   return caseDict
 
 
-def process(caseDict, wanted1="baseline",wanted2="incrleak"):  
-  wanted =[wanted1,wanted2]
-  
-     
 
-      
-      
-  # we want to compare only two of the cases, so select these here    
-  #wanted =["baseline1Hz","baseline0.25Hz"]# ,"2xincrleak0.25Hz"]
-  #wanted =["baseline0.25Hz","2xincrleak0.25Hz"]
-  indSS = 2e3 # collect statistics after this time point [ms] (looking for steady state)
-  stateName = "Ca_SR"
-  subCaseDict = dict()
-  for key, case in caseDict.iteritems():
-    if key in wanted:
-        print "Selecting ", key      
-        subCaseDict[ case.tag ]  = case
-        #print np.shape(case.data['s']) 
-
-  ao.LoadPickles(subCaseDict)
-
-  # for two cases, perform psd analysis to obtain mean and PSD
-  caseComp = []
-  maxTimeStep = -1
-  for key, case in subCaseDict.iteritems():
-      print case.name
-      t = case.data['t']
-      j = case.data['j']
-      s = case.data['s']
-
-      #sub = s[1e4:5e4,0:10]
-      #sub = s[1e4:5e4,]
-      sub = s[indSS:maxTimeStep,]
-      case.dc, case.psd2 = ao.PSDAnaly(sub)
-      caseComp.append(case)
-  
-  
-  stateChg = (caseComp[1].dc-caseComp[0].dc)/caseComp[0].dc
-  sort_index = (np.argsort(np.abs(stateChg)))[::-1]
-  #### CUT AND PASTE FROM GOTRANNED CODE (shannon_2004.ode)
-  if 1:
-      print "SHOULD BE ABLE TO SURMISE THIS DIRECTLY FROM NEW PICKLE FILES"
-      state_inds = dict([("h", 0), ("j", 1), ("m", 2), ("Xr", 3), ("Xs", 4),        ("X_tos", 5), ("Y_tos", 6), ("R_tos", 7), ("X_tof", 8), ("Y_tof", 9),        ("d", 10), ("f", 11), ("fCaB_SL", 12), ("fCaB_jct1", 13), ("R", 14),        ("O", 15), ("I", 16), ("Ca_TroponinC", 17), ("Ca_TroponinC_Ca_Mg",        18), ("Mg_TroponinC_Ca_Mg", 19), ("Ca_Calmodulin", 20), ("Ca_Myosin",        21), ("Mg_Myosin", 22), ("Ca_SRB", 23), ("Na_jct1_buf", 24),        ("Na_SL_buf", 25), ("Na_jct1", 26), ("Na_SL", 27), ("Nai", 28),        ("Ca_Calsequestrin", 29), ("Ca_SLB_SL", 30), ("Ca_SLB_jct1", 31),        ("Ca_SLHigh_SL", 32), ("Ca_SLHigh_jct1", 33), ("Ca_SR", 34),        ("Ca_jct1", 35), ("Ca_SL", 36), ("Cai", 37), ("V", 38)])
-  
-  #### END
-  
-  # create reverse lookup
-  revDict = dict()
-  for key, case in state_inds.iteritems():
-    #print key, case
-    revDict[case]=key  
-  idx=1
-  
-  # grabbing top-twenty modulated states
-  num=20
-  bestidx = sort_index[0:num]
-  beststates = []
-  for i,idx in enumerate(bestidx):
-          if idx not in revDict:
-              raise ValueError("Unknown state: '{0}'".format(idx))
-              
-          print revDict[idx],"pct %4.2f"%stateChg[idx],                           "0 %4.1e"% caseComp[0].dc[idx],"1 %4.1e"% caseComp[1].dc[idx]    
-          beststates.append(revDict[idx])
-          print beststates[i]
-          #indices.append(state_inds[state])
-          
-  
-  
-  # Plot comparative data 
-  
-  # In[50]:
-  
-  width=0.3        
-  fig, ax = plt.subplots()
-  ind = np.arange(num)        
-  
-  dc0s = caseComp[0].dc
-  norm = 1/dc0s[bestidx]
-  rects1 = ax.bar(ind, dc0s[bestidx]*norm, width,color='r')
-  
-  dc1s = caseComp[1].dc
-  rects2 = ax.bar(ind+width, dc1s[bestidx]*norm, width,color='b')
-  
-  ax.set_xticks(ind+width)
-  ax.set_xticklabels( beststates,rotation=90 )
-  
-  
-  lb1 =caseComp[0].label 
-  lb2= caseComp[1].label
-  plt.title("%s vs %s" % (wanted1,wanted2))
-  ax.legend( (rects1[0], rects2[0]), (lb1,lb2),loc=0 )
-  ax.set_ylabel("%chg wrt WT")
-  
-  
-  #plt.gcf().savefig(root+versionPrefix+"comparative.png",dpi=300)
-  plt.gcf().savefig("comparative_%s_%s.png"%(wanted1,wanted2),dpi=300)
-  
-  
-  # In[ ]:
   
   
 #!/usr/bin/env python
@@ -235,7 +137,7 @@ if __name__ == "__main__":
       exit()
     if(arg=="-process"):
       caseDict=init()
-      process(caseDict,sys.argv[i+1],sys.argv[i+2])
+      ao.ProcessDecomp(caseDict,sys.argv[i+1],sys.argv[i+2])
       exit()
   
 
