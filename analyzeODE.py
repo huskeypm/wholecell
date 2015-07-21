@@ -539,7 +539,9 @@ def PSDAnaly(s1,ranger=[2,200],verbose=True):
 def ProcessDecomp(caseDict, \
                   wanted1="baseline",wanted2="incrleak",
                   indSS=2e3, # [ms]
-                  root="./"
+                  xlimV=[89e3,90e3],
+                  root="./",
+                  ranked=20
                  ):  
   wanted =[wanted1,wanted2]
   
@@ -574,7 +576,7 @@ def ProcessDecomp(caseDict, \
       caseComp.append(case)
 
 
-  # display comparison of transients 
+  ## display comparison of transients 
   plt.figure()
   label1 = "Cai"
   label2 = "Ca_SR"
@@ -600,11 +602,34 @@ def ProcessDecomp(caseDict, \
   ax1.set_xlim([indSS,lastT])
   ax2.set_ylim([0.0,0.6])
   ax2.set_xlim([indSS,lastT])
-  plt.title("Ca2 transients") 
+  plt.title("Ca2+ transients") 
   ax1.set_ylabel("%s [mM]"%label1)
   ax2.set_ylabel("%s [mM]"%label2)
   plt.legend()
   plt.gcf().savefig(root+"transients_%s_%s.png"%(wanted1,wanted2),dpi=300)
+
+  ## action potential 
+  plt.figure()
+  label1 = "V"
+  fig, ax1 = plt.subplots()
+  i=0
+  cols = ["r","b"]
+  for key, case in subCaseDict.iteritems():
+      print case.name
+      ti = case.data['t']
+      si = case.data['s']
+      s_idx = case.data['s_idx']
+      idx1 = s_idx.index(label1)
+      ax1.plot(ti,si[:,idx1],cols[i]+"-",label = case.label)
+      i+=1
+
+  lastT = ti[-1]
+  #ax1.set_ylim([0,1.5e-3])
+  ax1.set_xlim(xlimV)
+  plt.title("Action potential") 
+  ax1.set_ylabel("%s [V]"%label1)
+  plt.legend()
+  plt.gcf().savefig(root+"AP_%s_%s.png"%(wanted1,wanted2),dpi=300)
 
   
   
@@ -626,8 +651,7 @@ def ProcessDecomp(caseDict, \
   idx=1
   
   # grabbing top-twenty modulated states
-  num=20
-  bestidx = sort_index[0:num]
+  bestidx = sort_index[0:ranked]
   beststates = []
   for i,idx in enumerate(bestidx):
           if idx not in revDict:
@@ -647,7 +671,7 @@ def ProcessDecomp(caseDict, \
   width=0.3        
   plt.figure()
   fig, ax = plt.subplots()
-  ind = np.arange(num)        
+  ind = np.arange(ranked)        
   
   dc0s = caseComp[0].dc
   norm = 1/dc0s[bestidx]
