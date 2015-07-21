@@ -305,7 +305,7 @@ if __name__ == "__main__":
   name="out"
   deltaT = 10000 # [ms] 
   sweep = False
-  useJIT=False
+  useJIT=True # There shouldn't be a compelling reason to set this to false 
   varDict = dict()              
   for i,arg in enumerate(sys.argv):
     # calls 'runParams' with the next argument following the argument '-validation'
