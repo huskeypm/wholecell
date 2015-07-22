@@ -8,6 +8,7 @@ root = "/net/share/pmke226/data/150609_despa/"
 versionPrefix = "150609_"
   
 def init():
+  # params applying to all cases. 
   pacing = 1.0 # Hz
   stim_period = 1000/pacing # [ms]
   T_sec = 5
