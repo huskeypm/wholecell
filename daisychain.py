@@ -213,7 +213,7 @@ if __name__ == "__main__":
       stim_period= np.float(sys.argv[i+1])
   
     if(arg=="-outBase" or arg=="-name"):
-      outBase = outBase
+      outBase = sys.argv[i+1]
 
     # calls 'doit' with the next argument following the argument '-validation'
     if(arg=="-validation"):

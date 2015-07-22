@@ -14,6 +14,7 @@ class Case:
     self.label = label
     self.args = args
     self.name = name 
+    self.prefix=name # store as prefix, since 'name' gets rewritten in daisychain
 
     self.CommandLine(T,nIntervals)
 
