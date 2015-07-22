@@ -7,6 +7,7 @@ import matplotlib.pylab as plt
 root = "/net/share/pmke226/data/150609_despa/"
 versionPrefix = "150609_"
   
+
 def init():
   # params applying to all cases. 
   pacing = 1.0 # Hz
@@ -71,7 +72,7 @@ def init():
   
   for key,case in caseDict.iteritems():
       print "# ", key
-      print "python runShannonTest.py "+" -jit ".join(case.args)+" -name "+case.name+" &"
+      print "python runShannonTest.py -jit "+" ".join(case.args)+" -name "+case.name+" &"
   #print "python runShannonTest.py "+" ".join(healthyArgs)+" -name "+healthyName+" &"
 
   return caseDict

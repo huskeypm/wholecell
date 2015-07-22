@@ -12,7 +12,6 @@ class Case:
                name="test.pickle"):
     self.tag = tag
     self.label = label
-    args.append("-T %f"% T)
     self.args = args
     self.name = name 
 
@@ -20,7 +19,29 @@ class Case:
 
 
   def CommandLine(self,T,nIntervals):
-    execName = "python runShannonTest.py -jit"
-    cmdLine = execName+" "  +" ".join(self.args)+" -name "+self.name+" &"
+   
+    #
+    Ti = T/nIntervals
+    if Ti>1.:
+      execName = "python daisychain.py " 
+      self.args.append("-iters %d"%nIntervals) 
+      pickleName = self.name.replace(".pickle","_%d.pickle"%nIntervals)
+      
+    else: 
+      execName = "python runShannonTest.py -jit"
+      Ti = T
+      pickleName = self.name 
+
+  
+        
+    self.args.append("-T %f"%Ti)
+    self.args.append("-name %s"%self.name)   
+
+    cmdLine = execName+" " 
+    cmdLine+= " ".join(self.args)+" " 
+    cmdLine+= " &"
     self.cmdLine = cmdLine 
+
+    # update name so we read last file 
+    self.name = pickleName 
 

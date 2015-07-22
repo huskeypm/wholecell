@@ -1,3 +1,4 @@
+import numpy as np 
 import analyzeODE as ao
 # Grabs stuff from previous run 
 #prevOut = "run_G_CaBk1.00_G_NaBk1.00_stim2000_1.pickle"
@@ -40,19 +41,30 @@ def daisychain(\
     iters = 3,   
     stim_period=1000.,
     mxsteps=None,
-    outBase = "run_G_CaBk1.00_G_NaBk1.00_stim2000"):
+    outBase = "run_stim1000",
+    paramDict = None,   
+    namesOnly=False):
+  # remove pickle
+  outBase = outBase.replace(".pickle","")
   
-  
-  
+
   ### sample param dictionary, can add specific parameters here
-  paramDict = dict() 
+  if paramDict==None:
+    paramDict = dict() 
+  else: 
+    for key,value in sorted(paramDict.items()):
+      if key=="stim_period":
+        stim_period = value 
+  
   paramDict["stim_period"] = stim_period
   
   # stateDict
   stateDict = None # use defaults for first iter 
-  #if 1:
-  #  rs.runParamsFast(odeName=odeName,name=nextName,
-  #                 paramDict=None,stateDict=stateDict,dt=dt,dtn=dtn,stim_period=stim_period,mxsteps=mxsteps)
+  # create list of pickle names 
+  daiters = range(iters) 
+  pickleNames = [ outBase+"_%d.pickle"%(i+1) for i in daiters ]
+  if namesOnly:
+    return pickleNames
   
   # subsequent runs     
   for i in range(iters):
@@ -75,16 +87,12 @@ def daisychain(\
                        varDict=paramDict,stateDict=stateDict,dt=dt,dtn=dtn,\
                        stim_period=stim_period,mxsteps=mxsteps)
 
-  # create list of pickle names 
-  daiters = range(iters) 
-  pickleNames = [ outBase+"_%d.pickle"%(i+1) for i in daiters ]
 
   return pickleNames
 
 
-
+# concatenates frajectories 
 def concatenateTrajs(pickleNames):
-  import numpy as np 
   
   allsi = []
   allt = []
@@ -130,9 +138,103 @@ def concatenateTrajs(pickleNames):
       sisi = np.ndarray.flatten(sis[:,:,i])    
       allsisi[:,i] = sisi
 
-  return ts, allsisi
+  return ts, allsisi, s_idx
   
       
   
   
+
+#!/usr/bin/env python
+import sys
+##################################
+#
+# Revisions
+#       10.08.10 inception
+#
+##################################
+
+
+
+#
+# Message printed when program run without arguments 
+#
+def helpmsg():
+  scriptName= sys.argv[0]
+  msg="""
+Purpose: 
+ 
+Usage:
+"""
+  msg+="  %s -validation" % (scriptName)
+  msg+="""
+  
+ 
+Notes:
+
+"""
+  return msg
+
+#
+# MAIN routine executed when launching this script from command line 
+#
+if __name__ == "__main__":
+  import sys
+  msg = helpmsg()
+  remap = "none"
+
+  if len(sys.argv) < 2:
+      raise RuntimeError(msg)
+
+  #fileIn= sys.argv[1]
+  #if(len(sys.argv)==3):
+  #  1
+  #  #print "arg"
+
+  # Loops over each argument in the command line 
+  varDict = dict()
+  iters = 3
+  dtn = 10e3
+  stim_period = 1000.
+  outBase = "test.pickle"
+  for i,arg in enumerate(sys.argv):
+    # calls 'runParams' with the next argument following the argument '-validation'
+    if("-var" in arg):
+      varName =sys.argv[i+1]
+      varVal =sys.argv[i+2]
+      varDict[varName] = np.float(varVal)
+  
+    if(arg=="-dtn" or arg=="-T" ): 
+      dtn = np.float(sys.argv[i+1])
+
+    if(arg=="-iters"): 
+      iters= np.int(sys.argv[i+1])
+
+    if(arg=="-stim_period"): 
+      stim_period= np.float(sys.argv[i+1])
+  
+    if(arg=="-outBase" or arg=="-name"):
+      outBase = outBase
+
+    # calls 'doit' with the next argument following the argument '-validation'
+    if(arg=="-validation"):
+      daisychain()
+      print "PASS!" 
+      quit()
+
+  daisychain(\
+    dtn=dtn, # elapsed time [ms]
+    iters = iters,
+    outBase = outBase,       
+    paramDict = varDict)
+    
+  
+
+
+
+
+
+  #raise RuntimeError("Arguments not understood")
+
+
+
 
