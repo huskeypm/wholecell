@@ -36,7 +36,7 @@ import runShannonTest as rs
 def daisychain(\
     odeName = "shannon_2004.ode",
     dt=0.1,
-    dtn=10e3,
+    dtn=10e3, # elapsed time [ms]
     iters = 3,   
     stim_period=1000.,
     mxsteps=None,
