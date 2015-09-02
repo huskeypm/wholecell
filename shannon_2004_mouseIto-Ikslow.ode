@@ -86,6 +86,22 @@ parameters("IKs",
 states("IKs", "Xs gate",
        Xs = 5.412034e-3)
 
+states("IKur", "Xkur_gate",
+       X_Kur_slow = 0.0074)
+
+states("IKur", "Ykur_gate",
+       Y_Kur_slow1 = 0.9909,
+       Y_Kur_slow2 = 0.9949)
+
+parameters("IKur",
+       Gkur1 = ScalarParam(0.176, unit="nS*pF**-1" ), # fast
+       Gkur2 = ScalarParam(0.14, unit="nS*pF**-1" ), # slow
+       Kcoeff = 1,
+       fIKurp0 = 0.437635,
+       fIKurpISO = 0.718207,
+       i_KurtotBA = 0.025, # MOUSE
+       y174 = 0.9998)
+
 parameters("IKp",
            g_Kp = ScalarParam(0.001, unit="mS*uF**-1"))
 
@@ -334,19 +350,41 @@ component("IKr", "Rr gate")
 Rr = 1/(1 + exp((33 + V)/22.4))
 
 component("IKs")
-pCa_jct1 = -log(Ca_jct1/1) + 3
-pCa_SL = -log(Ca_SL/1) + 3
-G_Ks_jct1 = 0.07*(0.057 + 0.19/(1 + exp((-7.2 + pCa_jct1)/0.6))) # mS*uF**-1
-G_Ks_SL = 0.07*(0.057 + 0.19/(1 + exp((-7.2 + pCa_SL)/0.6))) # mS*uF**-1
-E_Ks = Rgas*T/F*log((Ko + pKNa*Nao)/(Ki + pKNa*Nai)) # mV
-i_Ks_jct1 = Fx_Ks_jct1*G_Ks_jct1*Xs**2*(V - E_Ks) # uA*uF**-1
-i_Ks_SL = Fx_Ks_SL*G_Ks_SL*Xs**2*(V - E_Ks) # uA*uF**-1
+pCa_jct1 = -log(Ca_jct1/1) + 3 # For rabbits only
+pCa_SL = -log(Ca_SL/1) + 3 # For rabbits only
+G_Ks_jct1 = 0.07*(0.057 + 0.19/(1 + exp((-7.2 + pCa_jct1)/0.6))) # mS*uF**-1 # For rabbits only
+G_Ks_SL = 0.07*(0.057 + 0.19/(1 + exp((-7.2 + pCa_SL)/0.6))) # mS*uF**-1 # For rabbits only
+E_Ks = Rgas*T/F*log((Ko + pKNa*Nao)/(Ki + pKNa*Nai)) # mV # For rabbits only
+i_Ks_jct1 = Fx_Ks_jct1*G_Ks_jct1*Xs**2*(V - E_Ks) # uA*uF**-1 # Rabbit version
+i_Ks_SL = Fx_Ks_SL*G_Ks_SL*Xs**2*(V - E_Ks) # uA*uF**-1 # Rabbit version
+i_Ks_jct1 = 0*Fx_Ks_jct1*G_Ks_jct1*Xs**2*(V - E_Ks) # uA*uF**-1 # Mouse version CES 9/1/15
+i_Ks_SL = 0*Fx_Ks_SL*G_Ks_SL*Xs**2*(V - E_Ks) # uA*uF**-1 # Mouse version CES 9/1/15
 i_Ks = i_Ks_jct1 + i_Ks_SL # uA*uF**-1
 
 component("IKs", "Xs gate")
 Xs_infinity = 1/(1 + exp(-(V - 1.5)/16.7))
 tau_Xs = 1/(7.19e-5*(V + 30)/(1 - exp(-0.148*(V + 30))) + 1.31e-4*(V + 30)/(-1 + exp(0.0687*(V + 30)))) # ms
 dXs_dt = (Xs_infinity - Xs)/tau_Xs
+
+component("IKur", "Xkur_gate")
+X_Kur_slowss = 1/(1+exp(-(V+15)/14))
+tau_Xkur = 0.95+0.05*exp(-0.08*V)
+dX_Kur_slow_dt = (X_Kur_slowss - X_Kur_slow)/tau_Xkur
+
+component("IKur", "Ykur_gate")
+Y_Kur_slowss = 1/(1+exp((V+48)/6.2))
+tau_Ykur1 = 400+900*exp(-((V+55)/16)**2)-250/(1+exp(-(V+60)/8))
+dY_Kur_slow1_dt = (Y_Kur_slowss - Y_Kur_slow1)/tau_Ykur1
+tau_Ykur2 = 400+900*exp(-((V+55)/16)**2)+550/(1+exp(-(V+60)/8))
+dY_Kur_slow2_dt = (Y_Kur_slowss - Y_Kur_slow2)/tau_Ykur2
+
+component("IKur")
+i_Kur_PKAp = y174/i_KurtotBA
+a_Kur=(1.20-1.0)/(fIKurpISO/fIKurp0-1)
+fIKuravail = (1-a_Kur)+a_Kur*(i_Kur_PKAp/fIKurp0)
+i_kur1 = Kcoeff*fIKuravail*Gkur1*X_Kur_slow*Y_Kur_slow1*(V-E_K) 
+i_kur2 = Kcoeff*Gkur2*X_Kur_slow*Y_Kur_slow2*(V-E_K)
+i_kur = i_kur1 + i_kur2
 
 component("IKp")
 i_Kp = g_Kp*(V - E_K)/(1 + exp(7.488 - V/5.98)) # uA*uF**-1
@@ -525,5 +563,5 @@ dCai_dt = -j_pump_SR*Vol_SR/Vol_myo + J_Ca_SL_myo/Vol_myo - 1*dCa_cytosol_tot_bo
 
 component("Cell")
 i_Stim = Conditional(And(Ge(time - floor(time/stim_period)*stim_period, stim_start), Le(time - floor(time/stim_period)*stim_period, stim_start + stim_duration), ), -stim_amplitude, 0) # uA*uF**-1
-dV_dt = -(i_Na + i_Nab + i_NaK + i_Kr + i_Ks + i_tos + i_tof + i_K1 + i_NaCa + i_Cl_Ca + i_Clb + i_CaL + i_Cab + i_Cap + i_Kp + i_Stim)
+dV_dt = -(i_Na + i_Nab + i_NaK + i_Kr + i_Ks + i_tos + i_tof + i_K1 + i_NaCa + i_Cl_Ca + i_Clb + i_CaL + i_Cab + i_Cap + i_Kp + i_Stim + i_kur)
 

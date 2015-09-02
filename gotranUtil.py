@@ -38,13 +38,13 @@ def GetMonitored(case,model,tsteps,mlabel="J_Ca_SL_myo"):
 ##
 import gotranJIT
 from gotran.model.loadmodel import load_ode
-def PrintStates(odeName="shannon_2004.ode"):
+def PrintStates(odeName="shannon_2004_mouseIto-Ikslow.ode"):
   ode = load_ode(odeName)
   
   for state in ode.full_states:
     print state.name,state.value
 
-def PrintParams(odeName="shannon_2004.ode"):
+def PrintParams(odeName="shannon_2004_mouseIto-Ikslow.ode"):
   ode = load_ode(odeName)
 
   for param in ode.parameters:    

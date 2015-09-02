@@ -35,7 +35,7 @@ def InitializeNextInSequence(prevOut,prevNum):
 
 import runShannonTest as rs
 def daisychain(\
-    odeName = "shannon_2004.ode",
+    odeName = "shannon_2004_mouseIto-Ikslow.ode",
     dt=0.1,
     dtn=10e3, # elapsed time [ms]
     iters = 3,   

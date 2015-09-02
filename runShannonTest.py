@@ -190,7 +190,7 @@ def GetMonitored(module, ode,tsteps,results,model_params):
 #stim_period = 1000.  # works (after adjusting odeint params)
 #stim_period = 500.
 # WARNING: here that parameters are SET, not rescaled, in contrast to runParams function
-def runParamsFast(odeName = "shannon_2004.ode",name="out",\
+def runParamsFast(odeName = "shannon_2004_mouseIto-Ikslow.ode",name="out",\
                   varDict=None,stateDict=None,dt=0.1,dtn=2000,stim_period=1000.,mxsteps=None):
 
   params = gotranJIT.init()

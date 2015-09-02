@@ -262,8 +262,8 @@ def doit(resultsFile="results.txt",tstop=5000,ks=16.,KSRleak=5.3e-6):
   params = init()
   params.tstop = tstop 
 
-   
-  file_name = "shannon_2004.ode"
+#  file_name = "shannon_2004.ode"
+  file_name = "shannon_2004_mouseIto-Ikslow.ode"
   params.parameters = ['ks',ks,'KSRleak',KSRleak]
   results,module,tsteps,model_params,ode=main(file_name, params)
 
