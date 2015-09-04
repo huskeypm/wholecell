@@ -104,7 +104,7 @@ def runner(dt=1000,dtn=1.,\
            stim_period=1000,\
   #         V_max_Jpump = 0.0053114, # SERCA, [mM/ms]
   #         V_max = 9, # NCX, [uA/uF]
-           mxsteps=500):
+           mxsteps=10000):
 
   s = model.s; t =model.t; p = model.p
   
@@ -120,7 +120,10 @@ def runner(dt=1000,dtn=1.,\
   
   #states = odeint(model.rhs,s,tsteps,(p,),mxstep=mxsteps)
   #print "USING SUPPER!" 
+  # mxsteps 
   states = odeint(model.rhs,s,tsteps,(p,),mxstep=mxsteps,hmax=.03,rtol=1e-12, atol=1e-12)
+  #V_idx =  model.state_indices( "V" )
+  #plt.plot(tsteps,mM_to_uM*states[:,V_idx],label=Cai_idx)
   
   # get monitored variables
   (ts,js)=monitorstepper(model,states,np.copy(p),tsteps)
