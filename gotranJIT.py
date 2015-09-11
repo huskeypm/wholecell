@@ -254,17 +254,20 @@ import sys
 #
 # ROUTINE  
 #
-def plotit(resultsFile="results.txt"):
+def plotit(resultsName="results.txt"):
   import matplotlib.pylab as plt
-  results = np.loadtxt(resultsFile)
+  pltName = "test.png"
+  print "Printing", pltName
+  results = np.loadtxt(resultsName)
   plt.plot(results)
-  plt.gcf().savefig("poop.png")  
+  plt.gcf().savefig(pltName)     
 
-def doit(resultsFile="results.txt",tstop=5000,ks=16.,KSRleak=5.3e-6,
-         file_name = "shannon_2004.ode"
+def doit(resultsName="results.txt",tstop=5000,ks=16.,KSRleak=5.3e-6,
+         file_name = "shannon_2004.ode",
+         stateName = "Cai"
          ):
   print "Using ode model ", file_name 
-  print "Writing results to ", resultsFile
+  print "Writing results to ", resultsName
   params = init()
   params.tstop = tstop 
 
@@ -273,8 +276,8 @@ def doit(resultsFile="results.txt",tstop=5000,ks=16.,KSRleak=5.3e-6,
   results,module,tsteps,model_params,ode=main(file_name, params)
 
   # save cai 
-  Cai_idx =  module.state_indices( "Cai" )
-  np.savetxt(resultsFile,results[:,Cai_idx])
+  idx =  module.state_indices( stateName ) 
+  np.savetxt(resultsName,results[:,idx])
 
 
 #
@@ -314,19 +317,25 @@ if __name__ == "__main__":
 
   # Loops over each argument iln the command line 
   file_name = "shannon_2004.ode"
+  resultsName = "results.txt" 
+  stateName = "Cai"
   for i,arg in enumerate(sys.argv):
     # calls 'doit' with the next argument following the argument '-validation'
     if(arg=="-doit"):
-      doit(file_name = file_name)
+      doit(file_name = file_name,resultsName=resultsName,stateName=stateName)
       quit()
     if(arg=="-2"):
-      doit(resultsFile="mod.txt",ks=14,KSRleak=5.2e-6)
+      doit(resultsName="mod.txt",ks=14,KSRleak=5.2e-6)
       quit()
     if(arg=="-plotit"):
       plotit()
       quit() 
     if(arg=="-file_name"):
       file_name = sys.argv[i+1]
+    if(arg=="-resultsName"):
+      resultsName= sys.argv[i+1]
+    if(arg=="-stateName"):
+      stateName= sys.argv[i+1]
   
 
 
