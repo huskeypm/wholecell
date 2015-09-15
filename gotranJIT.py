@@ -158,10 +158,8 @@ def main(filename, params):
             error("Problem importing scipy.integrate.odeint. {}".format(e))
         # OLD 
         #results = odeint(rhs, y0, tsteps, Dfun=jac, args=(model_params,))
-        print "Using revised params from runner.py"
-        mxsteps = 1000
         results = odeint(rhs, y0, tsteps, Dfun=jac, args=(model_params,),\
-                         mxstep=mxsteps,hmax=.03,rtol=1e-12, atol=1e-12)
+                         mxstep=1000,hmax=.03,rtol=1e-12, atol=1e-12)
         
 
     else:
@@ -213,8 +211,11 @@ def init():
                          parameters.generation.solvers.keys(),
                          description="The solver that will be used to "\
                          "integrate the ODE.")
+
+    scipy_params = ParameterDict(mxstep=1000, hmax=.03, rtol=1e-12, atol=1e-12)
     
     params = ParameterDict(\
+        scipy_params = scipy_params,
         solver = solver,
         steady_state = steady_state,
         parameters = Param([""], description="Set parameter of model"),
@@ -225,6 +226,7 @@ def init():
         plot_x = Param("time", description="Values used for the x axis. Can be time "\
                        "and any valid plot_y variable."), 
         code = code_params)
+
     
     # PKH 
     #params.parse_args(usage="usage: %prog FILE [options]")
@@ -252,24 +254,30 @@ import sys
 #
 # ROUTINE  
 #
-def plotit(resultsFile="results.txt"):
+def plotit(resultsName="results.txt"):
   import matplotlib.pylab as plt
-  results = np.loadtxt(resultsFile)
+  pltName = "test.png"
+  print "Printing", pltName
+  results = np.loadtxt(resultsName)
   plt.plot(results)
-  plt.gcf().savefig("poop.png")  
+  plt.gcf().savefig(pltName)     
 
-def doit(resultsFile="results.txt",tstop=5000,ks=16.,KSRleak=5.3e-6):
+def doit(resultsName="results.txt",tstop=5000,ks=16.,KSRleak=5.3e-6,
+         file_name = "shannon_2004.ode",
+         stateName = "Cai"
+         ):
+  print "Using ode model ", file_name 
+  print "Writing results to ", resultsName
   params = init()
   params.tstop = tstop 
 
 #  file_name = "shannon_2004.ode"
-  file_name = "shannon_2004_mouseIto-Ikslow.ode"
   params.parameters = ['ks',ks,'KSRleak',KSRleak]
   results,module,tsteps,model_params,ode=main(file_name, params)
 
   # save cai 
-  Cai_idx =  module.state_indices( "Cai" )
-  np.savetxt(resultsFile,results[:,Cai_idx])
+  idx =  module.state_indices( stateName ) 
+  np.savetxt(resultsName,results[:,idx])
 
 
 #
@@ -307,18 +315,27 @@ if __name__ == "__main__":
   #  1
   #  #print "arg"
 
-  # Loops over each argument in the command line 
+  # Loops over each argument iln the command line 
+  file_name = "shannon_2004.ode"
+  resultsName = "results.txt" 
+  stateName = "Cai"
   for i,arg in enumerate(sys.argv):
     # calls 'doit' with the next argument following the argument '-validation'
     if(arg=="-doit"):
-      doit()
+      doit(file_name = file_name,resultsName=resultsName,stateName=stateName)
       quit()
     if(arg=="-2"):
-      doit(resultsFile="mod.txt",ks=14,KSRleak=5.2e-6)
+      doit(resultsName="mod.txt",ks=14,KSRleak=5.2e-6)
       quit()
     if(arg=="-plotit"):
       plotit()
       quit() 
+    if(arg=="-file_name"):
+      file_name = sys.argv[i+1]
+    if(arg=="-resultsName"):
+      resultsName= sys.argv[i+1]
+    if(arg=="-stateName"):
+      stateName= sys.argv[i+1]
   
 
 
