@@ -262,7 +262,8 @@ def plotit(resultsName="results.txt"):
   plt.plot(results)
   plt.gcf().savefig(pltName)     
 
-def doit(resultsName="results.txt",tstop=5000,ks=16.,KSRleak=5.3e-6,
+def doit(resultsName="results.txt",
+         tstop=5000,ks=16.,KSRleak=5.3e-6,stim_period=1000, # ms
          file_name = "shannon_2004.ode",
          stateName = "Cai"
          ):
@@ -272,7 +273,7 @@ def doit(resultsName="results.txt",tstop=5000,ks=16.,KSRleak=5.3e-6,
   params.tstop = tstop 
 
 #  file_name = "shannon_2004.ode"
-  params.parameters = ['ks',ks,'KSRleak',KSRleak]
+  params.parameters = ['ks',ks,'KSRleak',KSRleak,'stim_period',stim_period]
   results,module,tsteps,model_params,ode=main(file_name, params)
 
   # save cai 
@@ -319,10 +320,12 @@ if __name__ == "__main__":
   file_name = "shannon_2004.ode"
   resultsName = "results.txt" 
   stateName = "Cai"
+  stim_period = 1000. # ms 
   for i,arg in enumerate(sys.argv):
     # calls 'doit' with the next argument following the argument '-validation'
     if(arg=="-doit"):
-      doit(file_name = file_name,resultsName=resultsName,stateName=stateName)
+      doit(file_name = file_name,resultsName=resultsName,
+           stateName=stateName, stim_period = stim_period)
       quit()
     if(arg=="-2"):
       doit(resultsName="mod.txt",ks=14,KSRleak=5.2e-6)
@@ -330,6 +333,8 @@ if __name__ == "__main__":
     if(arg=="-plotit"):
       plotit()
       quit() 
+    if(arg=="-stim_period"):
+      stim_period = np.float(sys.argv[i+1])
     if(arg=="-file_name"):
       file_name = sys.argv[i+1]
     if(arg=="-resultsName"):

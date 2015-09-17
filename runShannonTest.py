@@ -190,7 +190,7 @@ def GetMonitored(module, ode,tsteps,results,model_params):
 #stim_period = 1000.  # works (after adjusting odeint params)
 #stim_period = 500.
 # WARNING: here that parameters are SET, not rescaled, in contrast to runParams function
-def runParamsFast(odeName = "shannon_2004_mouseIto-Ikslow.ode",name="out",\
+def runParamsFast(odeName = "shannon_2004.ode",name="out",\
                   varDict=None,stateDict=None,dt=0.1,dtn=2000,stim_period=1000.,mxsteps=None):
 
   params = gotranJIT.init()
@@ -307,8 +307,12 @@ if __name__ == "__main__":
   sweep = False
   useJIT=True # There shouldn't be a compelling reason to set this to false 
   varDict = dict()              
+  odeName = "shannon_2004.ode"
   for i,arg in enumerate(sys.argv):
     # calls 'runParams' with the next argument following the argument '-validation'
+    if("-odeName" in arg): 
+      odeName = sys.argv[i+1]
+      # wont work for useJIT=False
     if("-var" in arg):
       varName =sys.argv[i+1] 
       varVal =sys.argv[i+2] 
@@ -340,6 +344,7 @@ if __name__ == "__main__":
   else: 
     if useJIT:
       runParamsFast(varDict=varDict,\
+              odeName = odeName,
               name=name,dtn=deltaT,dt=dt, stim_period = stim)
     else:
       runParams(runner=runner,varDict=varDict,\
