@@ -21,7 +21,7 @@ def readPickle(name = "PCa0.75kss0.25.pickle"):
   pkl_file = open(name, 'rb')
   data1 = pickle.load(pkl_file)  
   pkl_file.close()
-     
+
   return data1  
 
 def LoadPickles(caseDict):
@@ -48,6 +48,7 @@ def analyOut(data1,state="Cai",label=""):
   temp = temp[(1+idx):]
   plt.plot(ts,temp*mM_to_uM,label=label)
     
+  pi = data1['p']
   PCa = pi[runner.model.parameter_indices("PCa")]
   ks = pi[runner.model.parameter_indices("ks")]
   minCai = np.min(temp)
@@ -168,7 +169,44 @@ def TwoDPlots(allKeys,allVars,outsMin, outsMax,label0="",label1="",state="Cai"):
     name = state+"_extrema.png"
     plt.gcf().savefig(name)        
 
-def PlotFluxes(t,j,idx1,label1="flux1",idx2=None,label2="flux2"):
+
+def PlotPickleData(data,idxName="V",label1="V (mV)"):    
+  #  idx1=runner.model.state_indices(idxName)     
+  # fluxes
+  t = data['t']
+  s = data['s']
+  s_idx = data['s_idx']
+  j = data['j']
+  j_idx = data['j_idx']
+
+  if idxName in j_idx:
+    v = j
+    v_idx = j_idx
+  # states 
+  if idxName in s_idx:
+    v = s
+    v_idx = s_idx
+
+  idx1 = v_idx.index(idxName)
+
+  plt.figure()
+  fig, ax1 = plt.subplots()
+  #print "WARNING: should pull Cm, Vol, F from shannon model"
+  #i_to_j = 2e-2 # [A/F] --> [uM/ms]
+  ax1.plot(t,v[:,idx1],'k',label=label1)
+  ax1.set_xlabel('time [ms]')
+  ax1.set_ylabel(label1)
+  
+  
+
+
+def PlotFluxes(t,j,idx1=None,idx1Name="i_Ca",label1="flux1",idx2=None,label2=None):      
+
+  raise RuntimeError("No longer using this. Try/revise PlotPickle()")
+  if idx1==None:
+    idx1=runner.model.monitor_indices(idx1Name)    
+  #if idx1==None:
+  #  idx1=runner.model.monitor_indices(label1)      
 
   fig, ax1 = plt.subplots()
   rects = []
@@ -176,7 +214,8 @@ def PlotFluxes(t,j,idx1,label1="flux1",idx2=None,label2="flux2"):
   #print "WARNING: should pull Cm, Vol, F from shannon model"
   #i_to_j = 2e-2 # [A/F] --> [uM/ms]
   labels.append(label1)
-  rect1 =ax1.plot(t,j[:,idx1],'k',label=label1)
+  #rect1 =ax1.plot(t,j[:,idx1],'k',label=label1)
+  rect1 =ax1.plot(t,j[idx1,:],'k',label=label1)
   rects.append(rect1[0])
   ax1.set_xlabel('time [ms]')
   ax1.set_ylabel(label1)

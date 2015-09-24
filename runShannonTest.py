@@ -9,6 +9,21 @@ import runner
 runner.init()
 idxNCX = runner.model.monitor_indices("i_NaCa")
 
+
+def WritePickle(name,p,p_idx,s,s_idx,j,j_idx,t):
+  # store to pickle
+  # using 'asarray' since my 'j' was getting stored as its transpose 
+  data1 = {'p':p,'s':s,'t':t,'j':np.asarray(j),\
+           'p_idx':p_idx,'s_idx':s_idx,'j_idx':j_idx}
+  #print np.shape(j) 
+  import cPickle as pickle
+  if ".pickle" not in name:
+    name += ".pickle"
+  output = open(name, 'wb')
+  pickle.dump(data1, output)
+  output.close()
+  print "SUCCESS! Wrote output to ", name
+
 #def namer(PCa,ks,vMax=None,stim=None):
 def namer(var1Name, var1Val, var2Name=None,var2Val=None,stim_period=1000,tag=None):
     #loc = "/u1/huskeypm/srcs/wholecell/"
@@ -66,6 +81,7 @@ def runParams(
 
   # Print pickle file of all states 
   import cPickle as pickle 
+  raise RuntimeError("Dying here before writing pickle, since need to store j_index etc. Why are you using the non JIT code anyway?!!") 
   if ".pickle" not in name:
     name += ".pickle"
   output = open(name, 'wb')
@@ -181,6 +197,8 @@ def GetMonitored(module, ode,tsteps,results,model_params):
     for ind, (time, res) in enumerate(zip(tsteps, results)):
         module.monitor(res, time, model_params, monitored_get_values)
         plot_values[:,ind] = monitored_get_values[ monitor_inds ]    
+
+    plot_values = np.transpose(plot_values) 
     
     return monitored_plot, plot_values
 
@@ -230,19 +248,8 @@ def runParamsFast(odeName = "shannon_2004.ode",name="out",\
 
   # get monitored fluxes   
   j_idx,j = GetMonitored(module, ode,tsteps,results,model_params)  
+  WritePickle(name,p,p_idx,s,s_idx,j,j_idx,t)
   
-  # store to pickle
-  data1 = {'p':p,'s':s,'t':t,'j':j,\
-           'p_idx':p_idx,'s_idx':s_idx,'j_idx':j_idx} 
-  import cPickle as pickle
-  if ".pickle" not in name:
-    name += ".pickle"
-  output = open(name, 'wb')
-  pickle.dump(data1, output)
-  output.close()
-  print "SUCCESS! Wrote output to ", name 
-
-    
 
 
 
