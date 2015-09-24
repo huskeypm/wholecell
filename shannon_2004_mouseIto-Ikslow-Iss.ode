@@ -93,6 +93,9 @@ states("IKur", "Ykur_gate",
        Y_Kur_slow1 = 0.6154,
        Y_Kur_slow2 = 0.6738)
 
+states("Iss", "Xss_gate",
+       Xss = 0.6441)
+
 parameters("IKur",
        Gkur1 = ScalarParam(0.176, unit="nS*pF**-1" ), # fast
        Gkur2 = ScalarParam(0.14, unit="nS*pF**-1" ), # slow
@@ -101,6 +104,9 @@ parameters("IKur",
        fIKurpISO = 0.718207,
        i_KurtotBA = 0.025, # MOUSE
        y174 = 0.9990)
+
+parameters("Iss",
+	Gss=ScalarParam(0.15, unit="nS*pF**-1" ))
 
 parameters("IKp",
            g_Kp = ScalarParam(0.001, unit="mS*uF**-1"))
@@ -385,6 +391,12 @@ fIKuravail = (1-a_Kur)+a_Kur*(i_Kur_PKAp/fIKurp0)
 i_kur1 = Kcoeff*fIKuravail*Gkur1*X_Kur_slow*Y_Kur_slow1*(V-E_K) 
 i_kur2 = Kcoeff*Gkur2*X_Kur_slow*Y_Kur_slow2*(V-E_K)
 i_kur = i_kur1 + i_kur2
+
+component("Iss", "Xss_gate")
+xssss = X_Kur_slowss; # = 1/(1+exp(-(y(39)+15)/14));
+tauxss = 70*exp(-((V+43)/30)**2)+14; # Iss
+dXss_dt = (xssss-Xss)/tauxss;
+I_ss = Kcoeff*Gss*Xss*(V-E_K); #store
 
 component("IKp")
 i_Kp = g_Kp*(V - E_K)/(1 + exp(7.488 - V/5.98)) # uA*uF**-1
