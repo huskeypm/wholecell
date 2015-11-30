@@ -36,7 +36,8 @@
 parameters("Model parameters",
            Ko = ScalarParam(5.4, unit="mM"),
            Nao = ScalarParam(140, unit="mM"),
-           Cao = ScalarParam(1.8, unit="mM"),
+#           Cao = ScalarParam(1.8, unit="mM"), # Rabbit Original
+           Cao = ScalarParam(1.0, unit="mM"), # Mouse CES 11/20/15
            Clo = ScalarParam(150, unit="mM"),
            Ki = ScalarParam(135, unit="mM"),
            Mgi = ScalarParam(1, unit="mM"),
@@ -49,7 +50,8 @@ parameters("Model parameters",
            cell_radius = ScalarParam(10.25, unit="um"))
 
 parameters("INa",
-           G_INa = ScalarParam(16, unit="mS*uF**-1"),
+#           G_INa = ScalarParam(16, unit="mS*uF**-1"), # Rabbit Original
+            G_INa = ScalarParam(10, unit="mS*uF**-1"), # Mouse CES 11/20/15
 #           Fx_Na_jct1 = 0.11, # Rabbit Original
 #           Fx_Na_SL = 0.89) # Rabbit Original
             Fx_Na_jct1 = 0.19, # Mouse CES 9/24/15
@@ -172,8 +174,10 @@ states("ICaL", "FCa gate",
 parameters("INaCa",
 #           V_max_INaCa = ScalarParam(9, unit="uA*uF**-1"), # Rabbit Original
            V_max_INaCa = ScalarParam(1, unit="uA*uF**-1"), # Mouse CES 9/24/15
-           Fx_NCX_jct1 = 0.11,
-           Fx_NCX_SL = 0.89,
+#           Fx_NCX_jct1 = 0.11,  # Rabbit Original
+#           Fx_NCX_SL = 0.89,  # Rabbit Original
+           Fx_NCX_jct1 = 0.19,  # Mouse CES 11/20/15
+           Fx_NCX_SL = 0.81,  # Mouse CES 11/20/15
            Q10_NCX = 1.57,
            K_mNai = ScalarParam(12.29, unit="mM"),
            K_mCao = ScalarParam(1.3, unit="mM"),
@@ -189,7 +193,7 @@ parameters("ICap",
 #           Fx_SLCaP_jct1 = 0.11, # Rabbit Original
 #           Fx_SLCaP_SL = 0.89, # Rabbit Original
            Fx_SLCaP_jct1 = 0.19, # Mouse CES 9/24/15
-           Fx_SLCaP_SL = 0.89, # Mouse CES 9/24/15          
+           Fx_SLCaP_SL = 0.81, # Mouse CES 9/24/15          
            Q10_SLCaP = 2.35,
            Km = ScalarParam(0.0005, unit="mM"),
            H_ICap = 1.6,
@@ -562,7 +566,8 @@ G_IKr = 0.03*sqrt(Ko/5.4) # mS*uF**-1
 i_Kr = G_IKr*Xr*Rr*(V - E_K) # uA*uF**-1
 
 component("IK1")
-G_K1 = 0.9*sqrt(Ko/5.4) # mS*uF**-1
+#G_K1 = 0.9*sqrt(Ko/5.4) # mS*uF**-1 #Rabbit Original
+G_K1 = 0.3*sqrt(Ko/5.4) # mS*uF**-1 # Mouse CES 11/20/15
 i_K1 = G_K1*K1_infinity*(V - E_K) # uA*uF**-1
 
 component("ICaL")
