@@ -1,0 +1,2 @@
+gotranrun shannon_2004_mouseIto.ode --plot_y V --tstop 4000 --dt .1 --parameters stim_period 1000
+ 1475  gotranrun shannon_2004.ode --plot_y V --tstop 4000 --dt .1 --parameters stim_period 1000

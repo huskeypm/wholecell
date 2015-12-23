@@ -1,0 +1,141 @@
+State Variables in Soltis Biophys J 2010 matlab code
+
+modules:
+ECC y(1)-y(83)
+1	m gate
+2	h gate
+3	j gate
+4-7 unused, had been for LCC model
+8	x gate (Ito,slow)
+9	y gate (Ito,slow)
+10	r gate (Ito)
+11	x gate (Ito,fast)
+12	y gate (Ito,fast)
+13	xs gate (Iks)
+14	RyR: R
+15	RyR: O
+16	RyR: I
+17	NaBj
+18	NaBsl
+19	TnCL
+20	TnCHc
+21	TNCHm
+22	CaM (unused b/c CaM buffering done in CaM module now)
+23	Myosin_ca
+24	Myosin_mg
+25	SRB
+26	SLLj
+27	SLLsl
+28	SLHj
+29	SLHsl
+30	Ca bound to Casqn 
+31	Ca SR
+32	Na dyad
+33	Na sl
+34	Na cytosol
+35	K
+36	Ca dyad
+37	Ca sl
+38	Ca cytosol
+40	r gate (Ito,slow)
+43	integrated ICaL
+44	integrated Ipca
+45	integrated Incx
+46	Vm
+47	h gate for INaL
+48-59 not used, had been for INa markov model in Grandi
+60-65	LCC model, mode 1 dyad
+66-69	LCC model, mode 2 dyad
+72-77	LCC model, mode 1 sarcolemma
+78-83	LCC model, mode 2 sarcolemma
+
+CaM_dyad module: y(84)-y(98)
+CaM
+Ca2CaM
+Ca4CaM
+CaMB
+Ca2CaMB
+Ca4CaMB
+Pb2
+Pb
+Pt
+Pt2
+Pa
+Ca4CaN
+CaMCa4CaN
+Ca2CaMCa4CaN
+Ca4CaMCa4CaN
+	
+CaM_sl module: y(99)-y(113)
+CaM
+Ca2CaM
+Ca4CaM
+CaMB
+Ca2CaMB
+Ca4CaMB
+Pb2
+Pb
+Pt
+Pt2
+Pa
+Ca4CaN
+CaMCa4CaN
+Ca2CaMCa4CaN
+Ca4CaMCa4CaN
+
+CaM_cyt module: y(114)-y(128)
+CaM
+Ca2CaM
+Ca4CaM
+CaMB
+Ca2CaMB
+Ca4CaMB
+Pb2
+Pb
+Pt
+Pt2
+Pa
+Ca4CaN
+CaMCa4CaN
+Ca2CaMCa4CaN
+Ca4CaMCa4CaN
+
+CaMKII module: y(129)-y(134)
+LCCp-PKA
+LCCp-CaMKIIdyad
+RyR-Ser2809p
+RyR-Ser2815p
+PLB-Thr17p
+LCCp-CaMKIIsl
+
+bAR module: y(135)-y(164) 
+L
+R
+G
+bARsum
+bAR_barkp
+bAR_pkap
+Galpha_gtptot
+Galpha_gdp
+Gsbg
+Gsalpha_gtpfree
+Fsk
+AC
+unused
+unused
+cAMPtot
+cAMPfree
+PKACI
+PKACII
+PLBp
+Inhib1ptot
+Inhib1pfree
+PP1
+LCCap
+LCCbp
+RyRp
+TnIp
+Iksfree
+yotiaofree
+Iksp
+CFTRp
