@@ -171,25 +171,37 @@ def TwoDPlots(allKeys,allVars,outsMin, outsMax,label0="",label1="",state="Cai"):
 
 
 # trange can set 't' limit
-def PlotPickleData(data,idxName="V",label1="V (mV)",trange=None):    
+def PlotPickleData(data1,data2=None,idxName="V",label1="V (mV)",trange=None):    
   #  idx1=runner.model.state_indices(idxName)     
   # fluxes
   ms_to_s = 1e-3
-  t = data['t'] * ms_to_s
-  s = data['s']
-  s_idx = data['s_idx']
-  j = data['j']
-  j_idx = data['j_idx']
+  class empty:pass
 
-  if idxName in j_idx:
-    v = j
-    v_idx = j_idx
-  # states 
-  if idxName in s_idx:
-    v = s
-    v_idx = s_idx
+  def mycont(data): 
+    datac = empty()
+    datac.t = data['t'] * ms_to_s
+    datac.s = data['s']
+    datac.s_idx = data['s_idx']
+    datac.j = data['j']
+    datac.j_idx = data['j_idx']
 
-  idx1 = v_idx.index(idxName)
+    if idxName in datac.j_idx:
+      datac.v = datac.j
+      datac.v_idx = datac.j_idx
+    # states 
+    elif idxName in datac.s_idx:
+      datac.v = datac.s
+      datac.v_idx = datac.s_idx
+    else:
+      print idxName, " not found"
+      datac.v =None
+
+    return datac
+
+  datac1 = mycont(data1) 
+  if data2!=None:
+    datac2 = mycont(data2) 
+
 
   fig = plt.figure()
 
@@ -199,12 +211,22 @@ def PlotPickleData(data,idxName="V",label1="V (mV)",trange=None):
   else:
     trange = np.asarray(trange) 
     plt.subplot(1,2,2)
-    plt.plot(t,v[:,idx1],'k',label=label1)
+    if datac1.v !=None:
+      idx1 = datac1.v_idx.index(idxName)
+      plt.plot(datac1.t,datac1.v[:,idx1],'k',label=label1)
+    if data2!=None and datac2.v !=None:
+      idx2 = datac2.v_idx.index(idxName)
+      plt.plot(datac2.t,datac2.v[:,idx2],'r',label=label1)
     plt.xlim(trange*ms_to_s)
     plt.subplot(1,2,1)
 
 
-  plt.plot(t,v[:,idx1],'k',label=label1)
+  if datac1.v !=None:
+    idx1 = datac1.v_idx.index(idxName)
+    plt.plot(datac1.t,datac1.v[:,idx1],'k.-',label=label1)
+  if data2!=None and datac2.v !=None:
+    idx2 = datac2.v_idx.index(idxName)
+    plt.plot(datac2.t,datac2.v[:,idx2],'r',label=label1)
   plt.xlabel('time [s]')
   plt.ylabel(label1)
   plt.tight_layout()

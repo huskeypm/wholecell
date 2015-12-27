@@ -51,7 +51,8 @@ def main(filename, params):
         generation.functions.jacobian.generate = params.code.generate_jacobian
     else:
         generation.solvers[params.solver].generate = True
-    
+
+      
     # Compile executeable code from gotran ode
     ode = load_ode(filename)
 
@@ -158,9 +159,10 @@ def main(filename, params):
             error("Problem importing scipy.integrate.odeint. {}".format(e))
         # OLD 
         #results = odeint(rhs, y0, tsteps, Dfun=jac, args=(model_params,))
+        mxstep = 1000
+        mxstep = 2000 
         results = odeint(rhs, y0, tsteps, Dfun=jac, args=(model_params,),\
-                         mxstep=1000,hmax=.03,rtol=1e-12, atol=1e-12)
-        
+                         mxstep=2000,hmax=.03,rtol=1e-12, atol=1e-12)
 
     else:
 
