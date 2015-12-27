@@ -171,7 +171,9 @@ def TwoDPlots(allKeys,allVars,outsMin, outsMax,label0="",label1="",state="Cai"):
 
 
 # trange can set 't' limit
-def PlotPickleData(data1,data2=None,idxName="V",label1="V (mV)",trange=None):    
+def PlotPickleData(data1,data2=None,idxName="V",ylabel="V (mV)",trange=None,
+    case1legend = None, case2legend=None
+    ):    
   #  idx1=runner.model.state_indices(idxName)     
   # fluxes
   ms_to_s = 1e-3
@@ -213,22 +215,23 @@ def PlotPickleData(data1,data2=None,idxName="V",label1="V (mV)",trange=None):
     plt.subplot(1,2,2)
     if datac1.v !=None:
       idx1 = datac1.v_idx.index(idxName)
-      plt.plot(datac1.t,datac1.v[:,idx1],'k',label=label1)
+      plt.plot(datac1.t,datac1.v[:,idx1],'k',label=case1legend)
     if data2!=None and datac2.v !=None:
       idx2 = datac2.v_idx.index(idxName)
-      plt.plot(datac2.t,datac2.v[:,idx2],'r',label=label1)
+      plt.plot(datac2.t,datac2.v[:,idx2],'r',label=case2legend)
     plt.xlim(trange*ms_to_s)
     plt.subplot(1,2,1)
 
 
   if datac1.v !=None:
     idx1 = datac1.v_idx.index(idxName)
-    plt.plot(datac1.t,datac1.v[:,idx1],'k.-',label=label1)
+    plt.plot(datac1.t,datac1.v[:,idx1],'k',label=case1legend)
   if data2!=None and datac2.v !=None:
     idx2 = datac2.v_idx.index(idxName)
-    plt.plot(datac2.t,datac2.v[:,idx2],'r',label=label1)
+    plt.plot(datac2.t,datac2.v[:,idx2],'r',label=case2legend)
   plt.xlabel('time [s]')
-  plt.ylabel(label1)
+  plt.ylabel(ylabel)
+  plt.legend(loc=3)
   plt.tight_layout()
   
   

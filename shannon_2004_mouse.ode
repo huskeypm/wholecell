@@ -437,8 +437,8 @@ i_kur2 = Kcoeff*Gkur2*X_Kur_slow*Y_Kur_slow2*(V-E_K)
 i_kur = i_kur1 + i_kur2
 
 component("Iss", "Xss_gate")
-xssss = X_Kur_slowss; # = 1/(1+exp(-(y(39)+15)/14));
-tauxss = 70*exp(-((V+43)/30)**2)+14; # Iss
+xssss = X_Kur_slowss; # = 1/(1+exp(-(y(39)+15)/14));  # CES mouse 
+tauxss = 70*exp(-((V+43)/30.)**2)+14; # Iss
 dXss_dt = (xssss-Xss)/tauxss;
 i_ss = Kcoeff*Gss*Xss*(V-E_K); #store
 
@@ -470,16 +470,16 @@ i_tof = G_tof*X_tof*Y_tof*(V - E_K) # uA*uF**-1
 
 component("Itof", "Itof X gate")
 #X_tof_infinity = 1/(1 + exp(-(V + 3)/15)) # Rabbit version
-X_tof_infinity= 1/(1 + exp(-(V + 3)/13)) # Mouse version, equal to x_toss in Morotti paper, CES 9/1/15
+X_tof_infinity= 1/(1 + exp(-(V + 3)/13.)) # Mouse version, equal to x_toss in Morotti paper, CES 9/1/15
 #tau_X_tof = 3.5*exp(-(V/30)**2) + 1.5 # ms # Rabbit version
-tau_X_tof = 0.7*exp(-((V+25)/30)**2) + 0.08 # ms # Mouse version CES 9/1/15
+tau_X_tof = 0.7*exp(-((V+25)/30.)**2) + 0.08 # ms # Mouse version CES 9/1/15
 dX_tof_dt = (X_tof_infinity - X_tof)/tau_X_tof
 
 component("Itof", "Itof Y gate")
 #Y_tof_infinity = 1/(1 + exp((V + 33.5)/10)) # Rabbit version
-Y_tof_infinity = 1/(1 + exp((V + 48.0)/5)) # Mouse version, equal to y_toss in Morotti paper, CES 9/1/15
+Y_tof_infinity = 1/(1 + exp((V + 48.0)/5.)) # Mouse version, equal to y_toss in Morotti paper, CES 9/1/15
 #tau_Y_tof = 20/(1 + exp((V + 33.5)/10)) + 20 # ms Rabbit version
-tau_Y_tof = 32*(exp(-(V + 55.5)/16)**2) + 8/(1+exp(( V+60)/8.)) + 10 # ms # Mouse version CES 9/1/15
+tau_Y_tof = 32*(exp(-(V + 55.5)/16.)**2) + 8/(1+exp(-( V+60)/8.)) + 10 # ms # Mouse version CES 9/1/15
 dY_tof_dt = (Y_tof_infinity - Y_tof)/tau_Y_tof
 
 component("IK1", "K1 gate")
