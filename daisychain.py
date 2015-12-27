@@ -37,7 +37,7 @@ import runShannonTest as rs
 def daisychain(\
     odeName = "shannon_2004.ode",
     dt=0.1,
-    dtn=10e3, # elapsed time [ms]
+    dtn=10e3, # elapsed time [ms] per iteration 
     iters = 3,   
     stim_period=1000.,
     mxsteps=None,
@@ -192,8 +192,10 @@ if __name__ == "__main__":
 
   # Loops over each argument in the command line 
   varDict = dict()
+  odeName = "shannon_2004.ode"
   iters = 3
   dtn = 10e3
+  dt = 0.1
   stim_period = 1000.
   outBase = "test.pickle"
   for i,arg in enumerate(sys.argv):
@@ -205,6 +207,12 @@ if __name__ == "__main__":
   
     if(arg=="-dtn" or arg=="-T" ): 
       dtn = np.float(sys.argv[i+1])
+
+    if(arg=="-dt"):
+      dt = np.float(sys.argv[i+1])
+
+    if(arg=="-odeName"):
+      odeName = sys.argv[i+1]
 
     if(arg=="-iters"): 
       iters= np.int(sys.argv[i+1])
@@ -222,6 +230,8 @@ if __name__ == "__main__":
       quit()
 
   daisychain(\
+    odeName = odeName,
+    dt = dt,
     dtn=dtn, # elapsed time [ms]
     iters = iters,
     outBase = outBase,       
