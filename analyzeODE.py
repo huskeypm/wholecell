@@ -16,6 +16,19 @@ ms_to_s = 1e-3
 ### 
 ### I/O 
 ###  
+def writePickle(name,p,p_idx,s,s_idx,j,j_idx,t):
+  # store to pickle
+  # using 'asarray' since my 'j' was getting stored as its transpose 
+  data1 = {'p':p,'s':s,'t':t,'j':np.asarray(j),\
+           'p_idx':p_idx,'s_idx':s_idx,'j_idx':j_idx}
+  #print np.shape(j) 
+  if ".pickle" not in name:
+    name += ".pickle"
+  output = open(name, 'wb')
+  pickle.dump(data1, output)
+  output.close()
+  print "SUCCESS! Wrote output to ", name
+
 def readPickle(name = "PCa0.75kss0.25.pickle"):
   print "Reading " + name  
   pkl_file = open(name, 'rb')

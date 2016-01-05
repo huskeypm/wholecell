@@ -8,21 +8,11 @@ import numpy as np
 import runner 
 runner.init()
 idxNCX = runner.model.monitor_indices("i_NaCa")
+import analyzeODE as ao
 
 
 def WritePickle(name,p,p_idx,s,s_idx,j,j_idx,t):
-  # store to pickle
-  # using 'asarray' since my 'j' was getting stored as its transpose 
-  data1 = {'p':p,'s':s,'t':t,'j':np.asarray(j),\
-           'p_idx':p_idx,'s_idx':s_idx,'j_idx':j_idx}
-  #print np.shape(j) 
-  import cPickle as pickle
-  if ".pickle" not in name:
-    name += ".pickle"
-  output = open(name, 'wb')
-  pickle.dump(data1, output)
-  output.close()
-  print "SUCCESS! Wrote output to ", name
+  ao.writePickle(name,p,p_idx,s,s_idx,j,j_idx,t)
 
 #def namer(PCa,ks,vMax=None,stim=None):
 def namer(var1Name, var1Val, var2Name=None,var2Val=None,stim_period=1000,tag=None):
