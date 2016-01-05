@@ -12,10 +12,12 @@ idxNCX = runner.model.monitor_indices("i_NaCa")
 
 
 def WritePickle(name,p,p_idx,s,s_idx,j,j_idx,t):
+  import cPickle as pickle 
   #ao.writePickle(name,p,p_idx,s,s_idx,j,j_idx,t)
   data1 = {'p':p,'s':s,'t':t,'j':np.asarray(j),\
            'p_idx':p_idx,'s_idx':s_idx,'j_idx':j_idx}
   #print np.shape(j) 
+  import cPickle as pickle
   if ".pickle" not in name:
     name += ".pickle"
   output = open(name, 'wb')
