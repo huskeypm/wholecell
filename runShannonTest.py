@@ -22,6 +22,7 @@ def WritePickle(name,p,p_idx,s,s_idx,j,j_idx,t):
   pickle.dump(data1, output)
   output.close()
   print "SUCCESS! Wrote output to ", name
+  print "WARNING: need to antiquate this function and use analyzeODE version"
 
 
 #def namer(PCa,ks,vMax=None,stim=None):
