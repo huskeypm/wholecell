@@ -788,36 +788,40 @@ def ProcessDecomp(caseDict, \
   # In[ ]:
 
 
-# Compute quantities of interest from transient data
-# DUPE # def ProcessTransients(case,pacingInterval,tstart=8000):
-# DUPE #     # compute rate of \catwo transient decline 
-# DUPE #     tau = tf.GetTau(case,pacingInterval,tstart=tstart,idxCai=idxCai)
-# DUPE #     
-# DUPE #     
-# DUPE #     # get transient amplitudes 
-# DUPE #     # grab suitable spot for statistics 
-# DUPE #     tsub, caisub= tf.GetInterval(case,pacingInterval,tstart=tstart,idx=idxCai)
-# DUPE #     delCa = (np.max(caisub) - np.min(caisub))*mM_to_uM
-# DUPE #     
-# DUPE #     # get SR transient amplitudes 
-# DUPE #     tsub, casrsub= tf.GetInterval(case,pacingInterval,tstart=tstart,idx=idxCaSR)
-# DUPE #     delCaSR = (np.max(casrsub) - np.min(casrsub))*mM_to_uM
-# DUPE #     
-# DUPE #     # get max RyR
-# DUPE #     tsub, jRyRsub= tf.GetInterval(case,pacingInterval,tstart=tstart,getFlux=True, idx=idxjRyR)
-# DUPE #     #plt.figure()
-# DUPE #     #plt.plot(jRyRsub)
-# DUPE #     #jRyR = j[:, runner.model.monitor_indices(idx) ]
-# DUPE #     maxRyR = np.max(jRyRsub)*mM_to_uM
-# DUPE #     
-# DUPE #     print tau, delCa, delCaSR, maxRyR
-# DUPE #     #pctChg = GetExtreme(t,cai,subMin=7900,subMax=8500,si=7910)
-# DUPE #     #pctChgSR = GetExtreme(t,casr,subMin=7900,subMax=8500,si=7910)
-# DUPE #     
-# DUPE #     return tau,delCa, delCaSR, maxRyR
-# DUPE # 
-# DUPE # 
+def PlotMorotti(cases,
+                case1Name='rabbit_5',case2Name='mouse_5',
+                trange=[2.0e3,2.2e3]
+                ):
+    case1=cases[case1Name]
+    case2=cases[case2Name]    
+    states = ["V", "Cai", "Nai"]
+    ctr=0
+    for i,state in enumerate(states):
+        PlotPickleData(case1.data,data2=case2.data,idxName=state, 
+                          ylabel=state,trange=trange,
+                          case1legend=case1.caseName,
+                          case2legend=case2.caseName)
+        plt.tight_layout()
+        #title = case1.caseName+"_mouserabbit_comp"+state
+        title = "mouse_rabbit_compare_%.2d_"%ctr+state
+        plt.gcf().savefig(title+".png")
+        ctr+=1
 
+    fluxes = ["i_Na", "i_CaL", 
+              "i_kur",# I think this is Morotti's I_K,slow
+              "i_ss",
+              "i_tof", "i_tos","i_Ks","i_Kr","i_K1",
+              "i_NaCa","i_NaK",
+              "i_Kp"]
 
-
-
+    #I_Ca, IK,Slow, Iss, Ito, IKs, IKr, IK1, INaCa, INaK
+    for i,flux in enumerate(fluxes):
+        PlotPickleData(case1.data,data2=case2.data,idxName=flux,
+                          ylabel="%s [A/F]"%flux,trange=trange,
+                            case1legend=case1.caseName,
+                          case2legend=case2.caseName)                        
+        #title = case1.caseName+"_mouserabbit_comp"+flux
+        title = "mouse_rabbit_compare_%.2d_"%ctr+flux
+        ctr+=1
+        plt.gcf().savefig(title+".png")
+                
