@@ -185,7 +185,7 @@ def TwoDPlots(allKeys,allVars,outsMin, outsMax,label0="",label1="",state="Cai"):
 
 # trange can set 't' limit
 def PlotPickleData(data1,data2=None,idxName="V",ylabel="V (mV)",trange=None,
-    case1legend = None, case2legend=None
+    case1legend = None, case2legend=None,ylim=False,
     ):    
   #  idx1=runner.model.state_indices(idxName)     
   # fluxes
@@ -232,6 +232,8 @@ def PlotPickleData(data1,data2=None,idxName="V",ylabel="V (mV)",trange=None,
     if data2!=None and datac2.v !=None:
       idx2 = datac2.v_idx.index(idxName)
       plt.plot(datac2.t,datac2.v[:,idx2],'r',label=case2legend)
+    if ylim != False:
+      plt.ylim(ylim)
     plt.xlim(trange*ms_to_s)
     plt.subplot(1,2,1)
 
