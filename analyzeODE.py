@@ -13,6 +13,8 @@ class empty:pass
 mM_to_uM = 1e3
 ms_to_s = 1e-3
 
+
+
 ### 
 ### I/O 
 ###  
@@ -37,11 +39,15 @@ def readPickle(name = "PCa0.75kss0.25.pickle"):
 
   return data1  
 
-def LoadPickles(caseDict):
+def LoadPickles(caseDict,noOverwrite=False):
   for key,case in caseDict.iteritems():
     print "# ", key
     print "Loading "  , case.name
-    case.data = readPickle(case.name)
+
+    if hasattr(case,'data') and noOverwrite==True:
+      print "Skipping read, since already populated"
+    else: 
+      case.data = readPickle(case.name)
     
 
 ###
@@ -285,9 +291,9 @@ def PlotFluxes(t,j,idx1=None,idx1Name="i_Ca",label1="flux1",idx2=None,label2=Non
   
   leg.get_frame().set_alpha(1.0) 
 
-idxCai = runner.model.state_indices("Cai")
-idxCaSR = runner.model.state_indices("Ca_SR")
-idxjRyR = runner.model.monitor_indices("j_rel_SR")
+#idxCai = runner.model.state_indices("Cai")
+#idxCaSR = runner.model.state_indices("Ca_SR")
+#idxjRyR = runner.model.monitor_indices("j_rel_SR")
 
 
 def TransientBarPlots(cases,caseNames,resultsA,resultsB=False,tag=""):
@@ -624,34 +630,37 @@ def PSDAnaly(s1,ranger=[2,200],verbose=True):
     #plt.plot(psd2[ranger[0]:ranger[1],0])
     return dc, psd2
 
-#  indSS = 2e3 # collect statistics after this time point [ms] (looking for steady state)
-def ProcessDecomp(caseDict, \
+# State Decomposition Analysis 
+# indSS = 2e3 # collect statistics after this time point [ms] (looking for steady state)
+def ProcessDecomp(): 
+  raise RuntimeError("ProcessDecomp is antiquated. Use StateDecompositionAnalysis()")
+
+def StateDecompositionAnalysis(caseDict, \
                   wanted1="baseline",wanted2="incrleak",
-                  indSS=2e3, # [ms]
-                  xlimV=[89e3,90e3],
+                  indSS=[2e3,-1], # Time aftter which data is used for comparative analysis. -1 signifies getting last time step  [ms]
+                  xlim=None,
                   root="./",
                   ranked=20
                  ):  
-  wanted =[wanted1,wanted2]
   
   # we want to compare only two of the cases, so select these here    
   #wanted =["baseline1Hz","baseline0.25Hz"]# ,"2xincrleak0.25Hz"]
   #wanted =["baseline0.25Hz","2xincrleak0.25Hz"]
   subCaseDict = dict()
-  for wantedi in wanted:
+  wanted =[wanted1,wanted2]
+  for idx, wantedi in enumerate(wanted):
     for key, case in caseDict.iteritems():
-    # will be out of order  
     #if key in wanted:
       if key == wantedi:
         print "Selecting ", key      
+        case.idx = idx 
         subCaseDict[ case.tag ]  = case
         #print np.shape(case.data['s']) 
 
-  LoadPickles(subCaseDict)
+  LoadPickles(subCaseDict,noOverwrite=True)   
 
   # for two cases, perform psd analysis to obtain mean and PSD
-  caseComp = []
-  maxTimeStep = -1
+  caseComp = [None,None]
   for key, case in subCaseDict.iteritems():
       print case.name
       t = case.data['t']
@@ -660,114 +669,137 @@ def ProcessDecomp(caseDict, \
 
       #sub = s[1e4:5e4,0:10]
       #sub = s[1e4:5e4,]
-      sub = s[indSS:maxTimeStep,]
+      sub = s[indSS[0]:indSS[1]]
       case.dc, case.psd2 = PSDAnaly(sub,verbose=False)
-      caseComp.append(case)
+      caseComp[ case.idx ] = case 
 
 
   ## display comparison of transients 
-  plt.figure()
-  label1 = "Cai"
-  label2 = "Ca_SR"
-  #idx =  module.state_indices( label )
-  #plt.plot(tsteps,results[:,idx],label = label)
-  fig, ax1 = plt.subplots()
-  ax2 = ax1.twinx()
-  i=0
+  #plt.figure()
+  #label1 = "Cai"
+  #label2 = "Ca_SR"
+  ##idx =  module.state_indices( label )
+  ##plt.plot(tsteps,results[:,idx],label = label)
+  #fig, ax1 = plt.subplots()
+  #ax2 = ax1.twinx()
+  #i=0
   cols = ["r","b"]
+  # get shortest traj
+  lastT = 1e30
   for key, case in subCaseDict.iteritems():
-      print case.name
       ti = case.data['t']
-      si = case.data['s']
-      s_idx = case.data['s_idx']
-      idx1 = s_idx.index(label1)
-      idx2 = s_idx.index(label2)
-      ax1.plot(ti,si[:,idx1],cols[i]+"-",label = case.label)
-      ax2.plot(ti,si[:,idx2],cols[i]+"--")
-      i+=1
+      # pick whichever T is smallest: max length of either trajector or the xlim bound
+      if xlim!=None:
+        lastT = np.min([ti[-1],lastT,xlim[1]])
+      else: 
+        lastT = np.min([ti[-1],lastT])             
+  if xlim==None:
+    xlim = [0,lastT]
 
-  lastT = ti[-1]
-  ax1.set_ylim([0,1.5e-3])
-  ax1.set_xlim([indSS,lastT])
-  ax2.set_ylim([0.0,0.6])
-  ax2.set_xlim([indSS,lastT])
-  plt.title("Ca2+ transients") 
-  ax1.set_ylabel("%s [mM]"%label1)
-  ax2.set_ylabel("%s [mM]"%label2)
-  plt.legend()
-  plt.gcf().savefig(root+"transients_%s_%s.png"%(wanted1,wanted2),dpi=300)
+  ## plot Ca transients 
+  #for key, case in subCaseDict.iteritems():
+  #    print case.name
+  #    ti = case.data['t']
+  #    si = case.data['s']
+  #    s_idx = case.data['s_idx']
+#
+#      idx1 = s_idx.index(label1)
+#      idx2 = s_idx.index(label2)
+#      ax1.plot(ti[0:lastT],si[0:lastT,idx1],cols[i]+"-",label = case.label)
+#      ax2.plot(ti[0:lastT],si[0:lastT,idx2],cols[i]+"--")
+#      i+=1
+#
+#  ax1.set_ylim([0,1.5e-3])
+#  ax1.set_xlim([indSS,lastT])
+#  ax2.set_ylim([0.0,0.6])
+#  ax2.set_xlim([indSS,lastT])
+#  plt.title("Ca2+ transients") 
+#  ax1.set_ylabel("%s [mM]"%label1)
+#  ax2.set_ylabel("%s [mM]"%label2)
+#  plt.legend()
+#  plt.gcf().savefig(root+"transients_%s_%s.png"%(wanted1,wanted2),dpi=300)
 
   ## action potential 
-  plt.figure()
-  label1 = "V"
-  fig, ax1 = plt.subplots()
-  i=0
-  cols = ["r","b"]
-  for key, case in subCaseDict.iteritems():
-      print case.name
+
+  def PlotStateCompare(label1):
+    plt.figure()
+    fig, ax1 = plt.subplots()
+    i=0
+    cols = ["r","b"]
+    #ylims = [1e90,-1e90]
+    for key, case in subCaseDict.iteritems():
       ti = case.data['t']
       si = case.data['s']
       s_idx = case.data['s_idx']
       idx1 = s_idx.index(label1)
-      ax1.plot(ti,si[:,idx1],cols[i]+"-",label = case.label)
+
+      ti_vals = ti[xlim[0]:xlim[1]]             
+      si_vals = si[xlim[0]:xlim[1],idx1]
+      ax1.plot(ti_vals,si_vals,cols[i]+"-",label = case.label)
+
       i+=1
 
-  lastT = ti[-1]
-  #ax1.set_ylim([0,1.5e-3])
-  ax1.set_xlim(xlimV)
-  plt.title("Action potential") 
-  ax1.set_ylabel("%s [V]"%label1)
-  plt.legend()
-  plt.gcf().savefig(root+"AP_%s_%s.png"%(wanted1,wanted2),dpi=300)
+    #ax1.set_ylim([0,1.5e-3])
+    ax1.set_xlim(xlim)
+    #plt.title("Action potential") 
+    ax1.set_ylabel("%s [unk]"%label1)
+    plt.legend()
+    plt.gcf().savefig(root+"state_%s_%s_%s.png"%(label1,wanted1,wanted2),dpi=300)
+
 
   
   
-  
-  stateChg = (caseComp[1].dc-caseComp[0].dc)/caseComp[0].dc
+  ## Quantify (pct error) change in mean value of each state
+  # normalize by case 1
+  caseComp[0].dcn = caseComp[0].dc/caseComp[0].dc
+  caseComp[1].dcn = caseComp[1].dc/caseComp[0].dc
+  stateChg = caseComp[1].dcn-caseComp[0].dcn
   sort_index = (np.argsort(np.abs(stateChg)))[::-1]
+
+
   #### CUT AND PASTE FROM GOTRANNED CODE (shannon_2004.ode)
-  if 1:
-      print "SHOULD BE ABLE TO SURMISE THIS DIRECTLY FROM NEW PICKLE FILES"
-      state_inds = dict([("h", 0), ("j", 1), ("m", 2), ("Xr", 3), ("Xs", 4),        ("X_tos", 5), ("Y_tos", 6), ("R_tos", 7), ("X_tof", 8), ("Y_tof", 9),        ("d", 10), ("f", 11), ("fCaB_SL", 12), ("fCaB_jct1", 13), ("R", 14),        ("O", 15), ("I", 16), ("Ca_TroponinC", 17), ("Ca_TroponinC_Ca_Mg",        18), ("Mg_TroponinC_Ca_Mg", 19), ("Ca_Calmodulin", 20), ("Ca_Myosin",        21), ("Mg_Myosin", 22), ("Ca_SRB", 23), ("Na_jct1_buf", 24),        ("Na_SL_buf", 25), ("Na_jct1", 26), ("Na_SL", 27), ("Nai", 28),        ("Ca_Calsequestrin", 29), ("Ca_SLB_SL", 30), ("Ca_SLB_jct1", 31),        ("Ca_SLHigh_SL", 32), ("Ca_SLHigh_jct1", 33), ("Ca_SR", 34),        ("Ca_jct1", 35), ("Ca_SL", 36), ("Cai", 37), ("V", 38)])
-  
-  #### END
-  
+  #if 0:
+  #    print "SHOULD BE ABLE TO SURMISE THIS DIRECTLY FROM NEW PICKLE FILES"
+  #    state_inds = dict([("h", 0), ("j", 1), ("m", 2), ("Xr", 3), ("Xs", 4),        ("X_tos", 5), ("Y_tos", 6), ("R_tos", 7), ("X_tof", 8), ("Y_tof", 9),        ("d", 10), ("f", 11), ("fCaB_SL", 12), ("fCaB_jct1", 13), ("R", 14),        ("O", 15), ("I", 16), ("Ca_TroponinC", 17), ("Ca_TroponinC_Ca_Mg",        18), ("Mg_TroponinC_Ca_Mg", 19), ("Ca_Calmodulin", 20), ("Ca_Myosin",        21), ("Mg_Myosin", 22), ("Ca_SRB", 23), ("Na_jct1_buf", 24),        ("Na_SL_buf", 25), ("Na_jct1", 26), ("Na_SL", 27), ("Nai", 28),        ("Ca_Calsequestrin", 29), ("Ca_SLB_SL", 30), ("Ca_SLB_jct1", 31),        ("Ca_SLHigh_SL", 32), ("Ca_SLHigh_jct1", 33), ("Ca_SR", 34),        ("Ca_jct1", 35), ("Ca_SL", 36), ("Cai", 37), ("V", 38)])
+  ##### END
+    
+  #Assuming that both pickle files have same states/ode model. 
+  s_idx = case.data['s_idx']
+  state_inds = {key: idx for (idx, key) in enumerate(s_idx)}
   # create reverse lookup
-  revDict = dict()
-  for key, case in state_inds.iteritems():
-    #print key, case
-    revDict[case]=key  
-  idx=1
+  state_inds_rev = {idx: key for (idx, key) in enumerate(s_idx)}
   
   # grabbing top-twenty modulated states
   bestidx = sort_index[0:ranked]
   beststates = []
   for i,idx in enumerate(bestidx):
-          if idx not in revDict:
+          if idx not in state_inds_rev:
               raise ValueError("Unknown state: '{0}'".format(idx))
               
-          #print revDict[idx],"pct %4.2f"%stateChg[idx],                           "0 %4.1e"% caseComp[0].dc[idx],"1 %4.1e"% caseComp[1].dc[idx]    
-          beststates.append(revDict[idx])
+          print state_inds_rev[idx],"pct %4.2f"%stateChg[idx], \
+                                      "0 %4.1e/%4.1e"% (caseComp[0].dc[idx],caseComp[0].dcn[idx]),\
+                                      "1 %4.1e/%4.1e"% (caseComp[1].dc[idx],caseComp[1].dcn[idx])    
+          beststates.append(state_inds_rev[idx])
           #print beststates[i]
           #indices.append(state_inds[state])
           
+  ## Plot State Data 
+  plotStates = ["V","Cai","Ca_SR"] + beststates
+  for label in plotStates:
+    PlotStateCompare(label)
   
   
-  # Plot comparative data 
-  
-  # In[50]:
-  
+  ## Plot comparative data 
   width=0.3        
   plt.figure()
   fig, ax = plt.subplots()
   ind = np.arange(ranked)        
   
-  dc0s = caseComp[0].dc
-  norm = 1/dc0s[bestidx]
-  rects1 = ax.bar(ind, dc0s[bestidx]*norm, width,color='r')
+  dc0s = caseComp[0].dcn
+  rects1 = ax.bar(ind, dc0s[bestidx], width,color='r')
   
-  dc1s = caseComp[1].dc
-  rects2 = ax.bar(ind+width, dc1s[bestidx]*norm, width,color='b')
+  dc1s = caseComp[1].dcn
+  rects2 = ax.bar(ind+width, dc1s[bestidx], width,color='b')
   
   ax.set_xticks(ind+width)
   ax.set_xticklabels( beststates,rotation=90 )
@@ -777,7 +809,7 @@ def ProcessDecomp(caseDict, \
   lb2= caseComp[1].label
   plt.title("%s vs %s" % (lb1,lb2))
   ax.legend( (rects1[0], rects2[0]), (lb1,lb2),loc=0 )
-  ax.set_ylabel("%chg wrt WT")
+  ax.set_ylabel("fold chg wrt WT")
   plt.tight_layout()
   
   
@@ -790,7 +822,8 @@ def ProcessDecomp(caseDict, \
 
 def PlotMorotti(cases,
                 case1Name='rabbit_5',case2Name='mouse_5',
-                trange=[2.0e3,2.2e3]
+                trange=[2.0e3,2.2e3],
+                root ="./" # path for prionting figures 
                 ):
     case1=cases[case1Name]
     case2=cases[case2Name]    
@@ -804,7 +837,7 @@ def PlotMorotti(cases,
         plt.tight_layout()
         #title = case1.caseName+"_mouserabbit_comp"+state
         title = "mouse_rabbit_compare_%.2d_"%ctr+state
-        plt.gcf().savefig(title+".png")
+        plt.gcf().savefig(root+"/"+title+".png")
         ctr+=1
 
     fluxes = ["i_Na", "i_CaL", 
@@ -823,5 +856,5 @@ def PlotMorotti(cases,
         #title = case1.caseName+"_mouserabbit_comp"+flux
         title = "mouse_rabbit_compare_%.2d_"%ctr+flux
         ctr+=1
-        plt.gcf().savefig(title+".png")
+        plt.gcf().savefig(root+"/"+title+".png")
                 

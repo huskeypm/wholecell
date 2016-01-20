@@ -93,17 +93,28 @@ def daisychain(\
 
 # concatenates frajectories 
 def concatenateTrajs(pickleNames):
+  raise RuntimeError("Antiquated. Use ConcatenateTrajs instead (note different output") 
+
+def ConcatenateTrajs(pickleNames,writeCat=False,downsampleRate=1):
   
   allsi = []
+  allji = []
   allt = []
   tprev=0
   for i,pickleName in enumerate(pickleNames):
     data = ao.readPickle(pickleName) 
+
     si = data['s']
     s_idx = data['s_idx']
+    ji = data['j']
+    j_idx = data['j_idx']
+
+    p = data['p']
+    p_idx = data['p_idx']
     t = data['t']
   
     allsi.append(si)  # probably should pre-allocate 
+    allji.append(ji)  # probably should pre-allocate 
     allt.append(t+tprev)    
   
     # update offset  
@@ -115,7 +126,7 @@ def concatenateTrajs(pickleNames):
   #v= np.array(v)
   #print np.ndarray.flatten(v)
   
-  # concatenate times 
+  ## concatenate times 
   ts = np.array(allt)
   ts = np.array(ts)
   # not general....
@@ -123,22 +134,56 @@ def concatenateTrajs(pickleNames):
   #print np.shape(ts)
   
   
+  ## States 
   # concatenate state values 
   sis = np.array(allsi)
   #print np.shape(sis)
-  
   nSteps = np.prod([np.shape(sis)[0],np.shape(sis)[1]])
   nStates = np.shape(sis)[2]
   #print nSteps
-  
   allsisi = np.zeros([nSteps,nStates])
-  
   # there's a smarter way to hash this out....
   for i in range(nStates):
       sisi = np.ndarray.flatten(sis[:,:,i])    
       allsisi[:,i] = sisi
 
-  return ts, allsisi, s_idx
+  ## jis
+  # concatenate state values 
+  jis = np.array(allji)
+  #print np.shape(sis)
+  nSteps = np.prod([np.shape(jis)[0],np.shape(jis)[1]])
+  nJs     = np.shape(jis)[2]
+  #print nSteps
+  alljisi = np.zeros([nSteps,nJs])
+  # there's a smarter way to hash this out....
+  for i in range(nJs):
+      jisi = np.ndarray.flatten(jis[:,:,i])    
+      alljisi[:,i] = jisi
+
+
+  #return ts, allsisi, s_idx
+  data = dict()
+  data['s']    = allsisi[::downsampleRate,]
+  data['s_idx']= s_idx 
+  data['j']    = alljisi[::downsampleRate,]
+  data['j_idx']= j_idx
+  data['p']    = p 
+  data['p_idx']= p_idx 
+  data['t']    = ts[::downsampleRate]
+
+  if writeCat:
+    pickleCatName = pickleNames[0].replace("_1","_cat")
+    ao.writePickle(pickleCatName,
+                   data['p'],
+                   data['p_idx'],
+                   data['s'],
+                   data['s_idx'],
+                   data['j'],
+                   data['j_idx'],
+                   data['t'])
+
+  return data
+  
   
       
   

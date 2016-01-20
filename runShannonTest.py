@@ -8,10 +8,11 @@ import numpy as np
 import runner 
 runner.init()
 idxNCX = runner.model.monitor_indices("i_NaCa")
-#import analyzeODE as ao
+import analyzeODE as ao
 
 
 def WritePickle(name,p,p_idx,s,s_idx,j,j_idx,t):
+  raise RuntimeError("WARNING: need to antiquate this function and use analyzeODE version") 
   #ao.writePickle(name,p,p_idx,s,s_idx,j,j_idx,t)
   data1 = {'p':p,'s':s,'t':t,'j':np.asarray(j),\
            'p_idx':p_idx,'s_idx':s_idx,'j_idx':j_idx}
@@ -22,7 +23,6 @@ def WritePickle(name,p,p_idx,s,s_idx,j,j_idx,t):
   pickle.dump(data1, output)
   output.close()
   print "SUCCESS! Wrote output to ", name
-  print "WARNING: need to antiquate this function and use analyzeODE version"
 
 
 #def namer(PCa,ks,vMax=None,stim=None):
@@ -249,7 +249,7 @@ def runParamsFast(odeName = "shannon_2004.ode",name="out",\
 
   # get monitored fluxes   
   j_idx,j = GetMonitored(module, ode,tsteps,results,model_params)  
-  WritePickle(name,p,p_idx,s,s_idx,j,j_idx,t)
+  ao.writePickle(name,p,p_idx,s,s_idx,j,j_idx,t)
   
 
 
