@@ -132,13 +132,13 @@ parameters("Itos",
            G_tos = ScalarParam(0.06, unit="mS*uF**-1"))
 
 states("Itos", "X_gate",
-       X_tos = 4.051574e-3)
+       X_tos = 0) # MOUSE PKH 4.051574e-3)
 
 states("Itos", "Y_gate",
-       Y_tos = 9.945511e-1)
+       Y_tos = 0) # MOUSE PKH 9.945511e-1)
 
 states("Itos", "R_gate",
-       R_tos = 0.9946)
+       R_tos = 0) # MOUSE PKH 0.9946)
 
 parameters("Itof",
           # G_tof = ScalarParam(0.02, unit="mS*uF**-1")) # Rabbit parameters
@@ -453,17 +453,17 @@ component("Itos", "X_gate")
 # X_tos_infinity = 1/(1 + exp(-(V + 3)/15)) # Rabbit version
 X_tos_infinity = 1/(1 + exp(-(V + 3)/13)) # Mouse version CES 9/1/15
 tau_X_tos = 9/(1 + exp((V + 3)/15)) + 0.5 # ms
-dX_tos_dt = (X_tos_infinity - X_tos)/tau_X_tos
+dX_tos_dt = 0 # (X_tos_infinity - X_tos)/tau_X_tos  # Mouse PKH  
 
 component("Itos", "Y_gate")
 Y_tos_infinity = 1/(1 + exp((V + 33.5)/10))
 tau_Y_tos = 3000/(1 + exp((V + 60)/10)) + 30 # ms
-dY_tos_dt = (Y_tos_infinity - Y_tos)/tau_Y_tos
+dY_tos_dt = 0 # (Y_tos_infinity - Y_tos)/tau_Y_tos # Mouse PKH 
 
 component("Itos", "R_gate")
 R_tos_infinity = 1/(1 + exp((V + 33.5)/10))
 tau_R_tos = 2.8e3/(1 + exp((V + 60)/10)) + 220 # ms
-dR_tos_dt = (R_tos_infinity - R_tos)/tau_R_tos
+dR_tos_dt = 0 # (R_tos_infinity - R_tos)/tau_R_tos # Mouse PKH 
 
 component("Itof")
 i_tof = G_tof*X_tof*Y_tof*(V - E_K) # uA*uF**-1
