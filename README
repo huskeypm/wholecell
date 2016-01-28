@@ -25,56 +25,10 @@ export PATH=$PATH:$LOC/gotran/scripts/
 gotran2py shannon_2004.ode 
 
 \section{Run} 
+See http://pkh.as.uky.edu/wiki/using-gotran-systems-biology-modeling
 \item show that ODE/PDE model agree
 templateGotran.py -validation
 
 \item gen figures for biophys paper 
 templateGotran.py -biophys
-
-MORE:
-
-## test
-python tester.py
-
-
-To generate xml:
-source ~/bin/dolfin.bash
-gmsh sarcomere -clscale 0.9 sarcomere.geo -3
-dolfin-convert sarcomere.msh sarcomere.xml
-
-
-More instructions are included in the individual notebooks 
-
-\subsection{Developmenmt}
-ALWAYS unit test before checking in code (by running python validation.py) 
- mpirun -np 8 python validation.py
-
-
-\subsection{MPI} 
-source dolfin.bash
-ipcluster start --engines=MPI --n  4 
-
-start notebook as normal after that (MPIDolfin.ipynb) 
-
-\subsection{Fields for SIAM models} 
-
-
-2D with SSL
-Cyto: V(Ca), V(Buff), V(Fluo) 
-Cleft: R (Ca)
-SL: R(Ca) o
-
-2D without SSL
-Cyto: V(Ca), V(Buff), V(Fluo) 
-      D(ssl region), rxn(ssl region) 
-      D(cyto region), rxn(cyto region) 
-Cleft: R (Ca)
-SL: in cyto
-
-3D
-Cyto: V(Ca), V(Buff), V(Fluo) 
-      D(ssl region), rxn(ssl region) 
-      D(cyto region), rxn(cyto region) 
-Cleft: R (Ca)
-SL: in cyto 
 

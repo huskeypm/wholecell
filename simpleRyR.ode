@@ -19,7 +19,7 @@ parameters("Ca buffer as params",
        Ca_jct = 1.737475e-4) 
 
 
-component("Jrel sr")
+expressions("Jrel sr")
 kCaSR = Max_SR - (Max_SR - Min_SR)/(one + (EC50_SR/Ca_SR)**HSR)
 koSRCa = koCa/kCaSR
 kiSRCa = kiCa*kCaSR

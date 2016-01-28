@@ -343,14 +343,14 @@ parameters("Cell",
            stim_duration = ScalarParam(5, unit="ms"),
            stim_amplitude = ScalarParam(9.5, unit="uA*uF**-1"))
 
-component("Model parameters")
+expressions("Model parameters")
 Vol_Cell = 3.141592654*(cell_radius/1000)**2*cell_length/1000**3 # l
 Vol_SR = 0.035*Vol_Cell # l
 Vol_SL = 0.02*Vol_Cell # l
 Vol_jct1 = 0.0539*0.01*Vol_Cell # l
 Vol_myo = 0.65*Vol_Cell # l
 
-component("Reversal potentials")
+expressions("Reversal potentials")
 E_Na_jct1 = Rgas*T/F*log(Nao/Na_jct1) # mV
 E_Na_SL = Rgas*T/F*log(Nao/Na_SL) # mV
 E_Ca_jct1 = Rgas*T/(2*F)*log(Cao/Ca_jct1) # mV
@@ -358,49 +358,49 @@ E_Ca_SL = Rgas*T/(2*F)*log(Cao/Ca_SL) # mV
 E_K = Rgas*T/F*log(Ko/Ki) # mV
 E_Cl = Rgas*T/F*log(Cli/Clo) # mV
 
-component("INa")
+expressions("INa")
 openProb = m**3*h*j
 i_Na_jct1 = Fx_Na_jct1*G_INa*openProb*(V - E_Na_jct1) # uA*uF**-1
 i_Na_SL = Fx_Na_SL*G_INa*openProb*(V - E_Na_SL) # uA*uF**-1
 i_Na = i_Na_jct1 + i_Na_SL # uA*uF**-1
 
-component("INa", "h gate")
+expressions("INa", "h gate")
 alpha_h = Conditional(Lt(V, -40), 0.135*exp((80 + V)/-6.8), 0) # ms**-1
 #beta_h = Conditional(Lt(V, -40), 3.56*exp(0.079*V) + 3.1e5*exp(0.35*V), 1/(0.13*(1 + exp((V + 10.66)/-11.1)))) # ms**-1 # Rabbit Original
 beta_h = Conditional(Lt(V, -40), 3.92*exp(0.079*V) + 3.1e5*exp(0.35*V), 0.66/(0.13*(1 + exp((V + 10.66)/-11.1)))) # ms**-1 # Mouse CES 9/24/15
 dh_dt = alpha_h*(1 - h) - beta_h*h
 
-component("INa", "j gate")
+expressions("INa", "j gate")
 alpha_j = Conditional(Lt(V, -40), (-1.2714e5*exp(0.2444*V) - 3.474e-5*exp(-0.04391*V))*(V + 37.78)/1/(1 + exp(0.311*(V + 79.23))), 0) # ms**-1
 beta_j = Conditional(Lt(V, -40), 0.1212*exp(-0.01052*V)/(1 + exp(-0.1378*(V + 40.14))), 0.3*exp(-2.535e-7*V)/(1 + exp(-0.1*(V + 32)))) # ms**-1
 dj_dt = alpha_j*(1 - j) - beta_j*j
 
-component("INa", "m gate")
+expressions("INa", "m gate")
 alpha_m = 0.32*(V + 47.13)/1/(1 - exp(-0.1*(V + 47.13))) # ms**-1
 beta_m = 0.08*exp(-V/11) # ms**-1
 dm_dt = alpha_m*(1 - m) - beta_m*m
 
-component("INab")
+expressions("INab")
 i_Nab_jct1 = Fx_NaBk_jct1*G_NaBk*(V - E_Na_jct1) # uA*uF**-1
 i_Nab_SL = Fx_NaBk_SL*G_NaBk*(V - E_Na_SL) # uA*uF**-1
 i_Nab = i_Nab_jct1 + i_Nab_SL # uA*uF**-1
 
-component("INaK")
+expressions("INaK")
 sigma = (exp(Nao/67.3) - 1)/7
 f_NaK = 1/(1 + 0.1245*exp(-0.1*V*F/(Rgas*T)) + 0.0365*sigma*exp(-V*F/(Rgas*T)))
 i_NaK_jct1 = Fx_NaK_jct1*I_NaK_max*f_NaK/(1 + (Km_Nai/Na_jct1)**H_NaK)*Ko/(Ko + Km_Ko) # uA*uF**-1
 i_NaK_SL = Fx_NaK_SL*I_NaK_max*f_NaK/(1 + (Km_Nai/Na_SL)**H_NaK)*Ko/(Ko + Km_Ko) # uA*uF**-1
 i_NaK = i_NaK_jct1 + i_NaK_SL # uA*uF**-1
 
-component("IKr", "Xr gate")
+expressions("IKr", "Xr gate")
 Xr_infinity = 1/(1 + exp(-(50 + V)/7.5))
 tau_Xr = 1/(0.00138*(V + 7)/(1 - exp(-0.123*(V + 7))) + 0.00061*(V + 10)/(exp(0.145*(V + 10)) - 1)) # ms
 dXr_dt = (Xr_infinity - Xr)/tau_Xr
 
-component("IKr", "Rr gate")
+expressions("IKr", "Rr gate")
 Rr = 1/(1 + exp((33 + V)/22.4))
 
-component("IKs")
+expressions("IKs")
 pCa_jct1 = -log(Ca_jct1/1) + 3 # For rabbits only
 pCa_SL = -log(Ca_SL/1) + 3 # For rabbits only
 G_Ks_jct1 = G_Ks*0.07*(0.057 + 0.19/(1 + exp((-7.2 + pCa_jct1)/0.6))) # mS*uF**-1 # For rabbits only
@@ -410,24 +410,24 @@ i_Ks_jct1 = Fx_Ks_jct1*G_Ks_jct1*Xs**2*(V - E_Ks) # uA*uF**-1 # Rabbit version
 i_Ks_SL = Fx_Ks_SL*G_Ks_SL*Xs**2*(V - E_Ks) # uA*uF**-1 # Rabbit version
 i_Ks = i_Ks_jct1 + i_Ks_SL # uA*uF**-1
 
-component("IKs", "Xs gate")
+expressions("IKs", "Xs gate")
 Xs_infinity = 1/(1 + exp(-(V - 1.5)/16.7))
 tau_Xs = 1/(7.19e-5*(V + 30)/(1 - exp(-0.148*(V + 30))) + 1.31e-4*(V + 30)/(-1 + exp(0.0687*(V + 30)))) # ms
 dXs_dt = (Xs_infinity - Xs)/tau_Xs
 
-component("IKur", "Xkur_gate")
+expressions("IKur", "Xkur_gate")
 X_Kur_slowss = 1/(1+exp(-(V+15)/14.))
 tau_Xkur = 0.95+0.05*exp(-0.08*V)
 dX_Kur_slow_dt = (X_Kur_slowss - X_Kur_slow)/tau_Xkur
 
-component("IKur", "Ykur_gate")
+expressions("IKur", "Ykur_gate")
 Y_Kur_slowss = 1/(1+exp((V+48)/6.2))
 tau_Ykur1 = 400+900*exp(-((V+55)/16.)**2)-250/(1+exp(-(V+60)/8.))
 dY_Kur_slow1_dt = (Y_Kur_slowss - Y_Kur_slow1)/tau_Ykur1
 tau_Ykur2 = 400+900*exp(-((V+55)/16.)**2)+550/(1+exp(-(V+60)/8.))
 dY_Kur_slow2_dt = (Y_Kur_slowss - Y_Kur_slow2)/tau_Ykur2
 
-component("IKur")
+expressions("IKur")
 i_Kur_PKAp = y174/i_KurtotBA
 a_Kur=(1.20-1.0)/(fIKurpISO/fIKurp0-1)
 fIKuravail = (1-a_Kur)+a_Kur*(i_Kur_PKAp/fIKurp0)
@@ -436,80 +436,80 @@ i_kur1 = Kcoeff*fIKuravail*Gkur1*X_Kur_slow*Y_Kur_slow1*(V-E_K)
 i_kur2 = Kcoeff*Gkur2*X_Kur_slow*Y_Kur_slow2*(V-E_K)
 i_kur = i_kur1 + i_kur2
 
-component("Iss", "Xss_gate")
+expressions("Iss", "Xss_gate")
 xssss = X_Kur_slowss; # = 1/(1+exp(-(y(39)+15)/14));  # CES mouse 
 tauxss = 70*exp(-((V+43)/30.)**2)+14; # Iss
 dXss_dt = (xssss-Xss)/tauxss;
 i_ss = Kcoeff*Gss*Xss*(V-E_K); #store
 
-component("IKp")
+expressions("IKp")
 i_Kp = g_Kp*(V - E_K)/(1 + exp(7.488 - V/5.98)) # uA*uF**-1
 
-component("Itos")
+expressions("Itos")
 #i_tos = G_tos*X_tos*(Y_tos + 0.5*R_tos)*(V - E_K) # uA*uF**-1 # Rabbit version
 i_tos = 0*G_tos*X_tos*(Y_tos + 0.5*R_tos)*(V - E_K) # uA*uF**-1 # Mouse version CES 9/1/15
 
-component("Itos", "X_gate")
+expressions("Itos", "X_gate")
 # X_tos_infinity = 1/(1 + exp(-(V + 3)/15)) # Rabbit version
 X_tos_infinity = 1/(1 + exp(-(V + 3)/13)) # Mouse version CES 9/1/15
 tau_X_tos = 9/(1 + exp((V + 3)/15)) + 0.5 # ms
 dX_tos_dt = 0 # (X_tos_infinity - X_tos)/tau_X_tos  # Mouse PKH  
 
-component("Itos", "Y_gate")
+expressions("Itos", "Y_gate")
 Y_tos_infinity = 1/(1 + exp((V + 33.5)/10))
 tau_Y_tos = 3000/(1 + exp((V + 60)/10)) + 30 # ms
 dY_tos_dt = 0 # (Y_tos_infinity - Y_tos)/tau_Y_tos # Mouse PKH 
 
-component("Itos", "R_gate")
+expressions("Itos", "R_gate")
 R_tos_infinity = 1/(1 + exp((V + 33.5)/10))
 tau_R_tos = 2.8e3/(1 + exp((V + 60)/10)) + 220 # ms
 dR_tos_dt = 0 # (R_tos_infinity - R_tos)/tau_R_tos # Mouse PKH 
 
-component("Itof")
+expressions("Itof")
 i_tof = G_tof*X_tof*Y_tof*(V - E_K) # uA*uF**-1
 
-component("Itof", "Itof X gate")
+expressions("Itof", "Itof X gate")
 #X_tof_infinity = 1/(1 + exp(-(V + 3)/15)) # Rabbit version
 X_tof_infinity= 1/(1 + exp(-(V + 3)/13.)) # Mouse version, equal to x_toss in Morotti paper, CES 9/1/15
 #tau_X_tof = 3.5*exp(-(V/30)**2) + 1.5 # ms # Rabbit version
 tau_X_tof = 0.7*exp(-((V+25)/30.)**2) + 0.08 # ms # Mouse version CES 9/1/15
 dX_tof_dt = (X_tof_infinity - X_tof)/tau_X_tof
 
-component("Itof", "Itof Y gate")
+expressions("Itof", "Itof Y gate")
 #Y_tof_infinity = 1/(1 + exp((V + 33.5)/10)) # Rabbit version
 Y_tof_infinity = 1/(1 + exp((V + 48.0)/5.)) # Mouse version, equal to y_toss in Morotti paper, CES 9/1/15
 #tau_Y_tof = 20/(1 + exp((V + 33.5)/10)) + 20 # ms Rabbit version
 tau_Y_tof = 32*(exp(-(V + 55.5)/16.)**2) + 8/(1+exp(-( V+60)/8.)) + 10 # ms # Mouse version CES 9/1/15
 dY_tof_dt = (Y_tof_infinity - Y_tof)/tau_Y_tof
 
-component("IK1", "K1 gate")
+expressions("IK1", "K1 gate")
 alpha_K1 = 1.02/(1 + exp(0.2385*(V - (E_K + 59.215)))) # ms**-1
 beta_K1 = (0.49124*exp(0.08032*(V - E_K + 5.476)) + 1*exp(0.06175*(V - (E_K + 594.31))))/(1 + exp(-0.5143*(V - E_K + 4.753))) # ms**-1
 K1_infinity = alpha_K1/(alpha_K1 + beta_K1)
 
-component("ICl Ca")
+expressions("ICl Ca")
 i_Cl_Ca = G_Cl*(V - E_Cl)*(Fx_Cl_jct1/(1 + Kd_ClCa/Ca_jct1) + Fx_Cl_SL/(1 + Kd_ClCa/Ca_SL)) # uA*uF**-1
 
-component("IClb")
+expressions("IClb")
 i_Clb = G_ClBk*(V - E_Cl) # uA*uF**-1
 
-component("ICaL", "d gate")
+expressions("ICaL", "d gate")
 d_infinity = 1/(1 + exp(-(V + 14.5)/6))
 tau_d = 1*d_infinity*(1 - exp(-(V + 14.5)/6))/(0.035*(V + 14.5)) # ms
 dd_dt = (d_infinity - d)/tau_d
 
-component("ICaL", "f gate")
+expressions("ICaL", "f gate")
 f_infinity = 1/(1 + exp((V + 35.06)/3.6)) + 0.6/(1 + exp((50 - V)/20))
 tau_f = 1/(0.0197*exp(-(0.0337*(V + 14.5))**2) + 0.02) # ms
 df_dt = (f_infinity - f)/tau_f
 
-component("ICaL", "FCa gate")
+expressions("ICaL", "FCa gate")
 fCa_SL = 1 - fCaB_SL
 fCa_jct1 = 1 - fCaB_jct1
 dfCaB_SL_dt = lccCaInact*Ca_SL*(1 - fCaB_SL) - 11.9e-3*fCaB_SL
 dfCaB_jct1_dt = lccCaInact*Ca_jct1*(1 - fCaB_jct1) - 11.9e-3*fCaB_jct1
 
-component("INaCa")
+expressions("INaCa")
 temp_jct1 = (exp(eta*V*F/(Rgas*T))*Na_jct1**HNa*Cao - exp((eta - 1)*V*F/(Rgas*T))*Nao**HNa*Ca_jct1)/(1 + ksat*exp((eta - 1)*V*F/(Rgas*T))) # mM**4
 temp_SL = (exp(eta*V*F/(Rgas*T))*Na_SL**HNa*Cao - exp((eta - 1)*V*F/(Rgas*T))*Nao**HNa*Ca_SL)/(1 + ksat*exp((eta - 1)*V*F/(Rgas*T))) # mM**4
 Q_NCX = Q10_NCX**((T - 310)/10)
@@ -519,18 +519,18 @@ i_NaCa_jct1 = Fx_NCX_jct1*V_max_INaCa*Ka_jct1*Q_NCX*temp_jct1/(K_mCai*Nao**HNa*(
 i_NaCa_SL = Fx_NCX_SL*V_max_INaCa*Ka_SL*Q_NCX*temp_SL/(K_mCai*Nao**HNa*(1 + (Na_SL/K_mNai)**HNa) + K_mNao**HNa*Ca_SL*(1 + Ca_SL/K_mCai) + K_mCao*Na_SL**HNa + Na_SL**HNa*Cao + Nao**HNa*Ca_SL) # uA*uF**-1
 i_NaCa = i_NaCa_jct1 + i_NaCa_SL # uA*uF**-1
 
-component("ICap")
+expressions("ICap")
 Q_SLCaP = Q10_SLCaP**((T - 310)/10)
 i_Cap_jct1 = Q_SLCaP*V_maxAF*Fx_SLCaP_jct1/(1 + (Km/Ca_jct1)**H_ICap) # uA*uF**-1
 i_Cap_SL = Q_SLCaP*V_maxAF*Fx_SLCaP_SL/(1 + (Km/Ca_SL)**H_ICap) # uA*uF**-1
 i_Cap = i_Cap_jct1 + i_Cap_SL # uA*uF**-1
 
-component("ICab")
+expressions("ICab")
 i_Cab_jct1 = G_CaBk*Fx_CaBk_jct1*(V - E_Ca_jct1) # uA*uF**-1
 i_Cab_SL = G_CaBk*Fx_CaBk_SL*(V - E_Ca_SL) # uA*uF**-1
 i_Cab = i_Cab_SL + i_Cab_jct1 # uA*uF**-1
 
-component("Jrel SR")
+expressions("Jrel SR")
 kCaSR = Max_SR - (Max_SR - Min_SR)/(1 + (EC50_SR/Ca_SR)**HSR)
 koSRCa = koCa/kCaSR # mM**-2*ms**-1
 kiSRCa = kiCa*kCaSR # mM**-1*ms**-1
@@ -540,20 +540,20 @@ dO_dt = koSRCa*Ca_jct1**2*R - kom*O - (kiSRCa*Ca_jct1*O - kim*I)
 dI_dt = kiSRCa*Ca_jct1*O - kim*I - (kom*I - koSRCa*Ca_jct1**2*RI)
 j_rel_SR = ks*O*(Ca_SR - Ca_jct1) # mM*ms**-1
 
-component("Jleak SR")
+expressions("Jleak SR")
 j_leak_SR = KSRleak*(Ca_SR - Ca_jct1) # mM*ms**-1
 
-component("Jpump SR")
+expressions("Jpump SR")
 Q_SRCaP = Q10_SRCaP**((T - 310)/10)
 j_pump_SR = Q_SRCaP*V_max_Jpump*((Cai/Kmf)**H_Jpump - (Ca_SR/Kmr)**H_Jpump)/(1 + (Cai/Kmf)**H_Jpump + (Ca_SR/Kmr)**H_Jpump) # mM*ms**-1
 
-component("Ion diffusion")
+expressions("Ion diffusion")
 J_Na_jct1_SL = (Na_jct1 - Na_SL)*1.8313e-14 # mmole*ms**-1
 J_Na_SL_myo = (Na_SL - Nai)*1.6386e-12 # mmole*ms**-1
 J_Ca_jct1_SL = (Ca_jct1 - Ca_SL)*8.2413e-13 # mmole*ms**-1
 J_Ca_SL_myo = (Ca_SL - Cai)*3.7243e-12 # mmole*ms**-1
 
-component("Ca buffer", "Cytosolic")
+expressions("Ca buffer", "Cytosolic")
 dCa_TroponinC = kon_TroponinC*Cai*(Bmax_TroponinC - Ca_TroponinC) - koff_TroponinC*Ca_TroponinC # mM*ms**-1
 dCa_TroponinC_Ca_Mg = kon_TroponinC_Ca_Mg_Ca*Cai*(Bmax_TroponinC_Ca_Mg_Ca - (Ca_TroponinC_Ca_Mg + Mg_TroponinC_Ca_Mg)) - koff_TroponinC_Ca_Mg_Ca*Ca_TroponinC_Ca_Mg # mM*ms**-1
 dMg_TroponinC_Ca_Mg = kon_TroponinC_Ca_Mg_Mg*Mgi*(Bmax_TroponinC_Ca_Mg_Mg - (Ca_TroponinC_Ca_Mg + Mg_TroponinC_Ca_Mg)) - koff_TroponinC_Ca_Mg_Mg*Mg_TroponinC_Ca_Mg # mM*ms**-1
@@ -570,16 +570,16 @@ dCa_Myosin_dt = dCa_Myosin
 dMg_Myosin_dt = dMg_Myosin
 dCa_SRB_dt = dCa_SRB
 
-component("IKr")
+expressions("IKr")
 G_IKr = 0.03*sqrt(Ko/5.4) # mS*uF**-1
 i_Kr = G_IKr*Xr*Rr*(V - E_K) # uA*uF**-1
 
-component("IK1")
+expressions("IK1")
 #G_K1 = 0.9*sqrt(Ko/5.4) # mS*uF**-1 #Rabbit Original
 G_K1 = 0.3*sqrt(Ko/5.4) # mS*uF**-1 # Mouse CES 11/20/15
 i_K1 = G_K1*K1_infinity*(V - E_K) # uA*uF**-1
 
-component("ICaL")
+expressions("ICaL")
 Q_CaL = Q10_CaL**((T - 310)/10)
 temp = 0.45*d*f*Q_CaL*V*F**2/(Rgas*T) # C*mole**-1
 i_CaL_Ca_jct1 = temp*fCa_jct1*Fx_ICaL_jct1*PCa*4*(gamma_Cai*Ca_jct1*exp(2*V*F/(Rgas*T)) - gamma_Cao*Cao)/(exp(2*V*F/(Rgas*T)) - 1) # uA*uF**-1
@@ -589,7 +589,7 @@ i_CaL_Na_SL = temp*fCa_SL*Fx_ICaL_SL*PNa*(gamma_Nai*Na_SL*exp(V*F/(Rgas*T)) - ga
 i_CaL_K = temp*(fCa_SL*Fx_ICaL_SL + fCa_jct1*Fx_ICaL_jct1)*PK*(gamma_Ki*Ki*exp(V*F/(Rgas*T)) - gamma_Ko*Ko)/(exp(V*F/(Rgas*T)) - 1) # uA*uF**-1
 i_CaL = i_CaL_Ca_SL + i_CaL_Ca_jct1 + i_CaL_Na_SL + i_CaL_Na_jct1 + i_CaL_K # uA*uF**-1
 
-component("Na buffer")
+expressions("Na buffer")
 dNa_jct1_buf = kon*Na_jct1*(Bmax_jct1 - Na_jct1_buf) - koff*Na_jct1_buf # mM*ms**-1
 dNa_SL_buf = kon*Na_SL*(Bmax_SL - Na_SL_buf) - koff*Na_SL_buf # mM*ms**-1
 dNa_jct1_buf_dt = dNa_jct1_buf
@@ -598,7 +598,7 @@ dNa_jct1_dt = -Cm*(i_Na_jct1 + 3*i_NaCa_jct1 + i_Nab_jct1 + 3*i_NaK_jct1 + i_CaL
 dNa_SL_dt = -Cm*(i_Na_SL + 3*i_NaCa_SL + i_Nab_SL + 3*i_NaK_SL + i_CaL_Na_SL)/(Vol_SL*F) + (J_Na_jct1_SL - J_Na_SL_myo)/Vol_SL - dNa_SL_buf
 dNai_dt = J_Na_SL_myo/Vol_myo
 
-component("Ca buffer")
+expressions("Ca buffer")
 dCalsequestrin = kon_Calsequestrin*Ca_SR*(Bmax_Calsequestrin*Vol_myo/Vol_SR - Ca_Calsequestrin) - koff_Calsequestrin*Ca_Calsequestrin # mM*ms**-1
 dCa_Calsequestrin_dt = dCalsequestrin
 dCa_SLB_SL = kon_SL*Ca_SL*(Bmax_SLB_SL*Vol_myo/Vol_SL - Ca_SLB_SL) - koff_SLB*Ca_SLB_SL # mM*ms**-1
@@ -618,7 +618,7 @@ dCa_jct1_dt = -i_Ca_jct1_tot*Cm/(Vol_jct1*2*F) - J_Ca_jct1_SL/Vol_jct1 + j_rel_S
 dCa_SL_dt = -i_Ca_SL_tot*Cm/(Vol_SL*2*F) + (J_Ca_jct1_SL - J_Ca_SL_myo)/Vol_SL - 1*dCa_SL_tot_bound
 dCai_dt = -j_pump_SR*Vol_SR/Vol_myo + J_Ca_SL_myo/Vol_myo - 1*dCa_cytosol_tot_bound
 
-component("Cell")
+expressions("Cell")
 i_Stim = Conditional(And(Ge(time - floor(time/stim_period)*stim_period, stim_start), Le(time - floor(time/stim_period)*stim_period, stim_start + stim_duration), ), -stim_amplitude, 0) # uA*uF**-1
 dV_dt = -(i_Na + i_Nab + i_NaK + i_Kr + i_Ks + i_tos + i_tof + i_K1 + i_NaCa + i_Cl_Ca + i_Clb + i_CaL + i_Cab + i_Cap + i_Kp + i_Stim + i_kur + i_ss) # PKH added i_ss
 
