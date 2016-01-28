@@ -20,7 +20,7 @@ def InitializeNextInSequence(prevOut,prevNum):
   stateDict = dict()
   v = zip(s_idx,si[-1,:]) # grabs  state values from last iteration 
   for i,g in enumerate(v):
-    #print g[0]    
+    #print "Assigning %f to %s"%(g[1],g[0])
     stateDict[g[0]]=g[1]  
 
   # create new dict with params/values   
@@ -42,6 +42,7 @@ def daisychain(\
     stim_period=1000.,
     mxsteps=None,
     outBase = "run_stim1000",
+    stateDict = None,
     paramDict = None,   
     namesOnly=False):
   # remove pickle
@@ -59,7 +60,7 @@ def daisychain(\
   paramDict["stim_period"] = stim_period
   
   # stateDict
-  stateDict = None # use defaults for first iter 
+  #stateDict = None # use defaults for first iter 
   # create list of pickle names 
   daiters = range(iters) 
   pickleNames = [ outBase+"_%d.pickle"%(i+1) for i in daiters ]
@@ -237,6 +238,7 @@ if __name__ == "__main__":
 
   # Loops over each argument in the command line 
   varDict = dict()
+  stateDict = dict()
   odeName = "shannon_2004.ode"
   iters = 3
   dtn = 10e3
@@ -249,6 +251,11 @@ if __name__ == "__main__":
       varName =sys.argv[i+1]
       varVal =sys.argv[i+2]
       varDict[varName] = np.float(varVal)
+
+    if("-state" in arg):
+      stateName =sys.argv[i+1]
+      stateVal =sys.argv[i+2]
+      stateDict[stateName] = np.float(stateVal)
   
     if(arg=="-dtn" or arg=="-T" ): 
       dtn = np.float(sys.argv[i+1])
@@ -280,6 +287,7 @@ if __name__ == "__main__":
     dtn=dtn, # elapsed time [ms]
     iters = iters,
     outBase = outBase,       
+    stateDict = stateDict,
     paramDict = varDict)
     
   

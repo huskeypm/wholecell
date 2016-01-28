@@ -228,8 +228,7 @@ def runParamsFast(odeName = "shannon_2004.ode",name="out",\
     for key, value in stateDict.iteritems():
       #print key, value 
       params.init_conditions.extend([key,value])  
-    
-    
+
   
   ## JIT compile module, simulate  
   #ks=25. # default  [1/ms]

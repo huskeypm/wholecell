@@ -9,11 +9,13 @@ class Case:
                T = 1000, 
                nIntervals=1,
                args=[], # param defn like "[-T 1000, -Vmax 85]"
-               name="test.pickle"):
+               odeName = "shannon_2004.ode",
+               name="shannon_2004.pickle"):
     self.tag = tag
     self.label = label
     self.args = args
     self.name = name 
+    self.odeName = odeName 
     self.prefix=name # store as prefix, since 'name' gets rewritten in daisychain
 
     self.CommandLine(T,nIntervals)
@@ -35,6 +37,7 @@ class Case:
 
   
         
+    self.args.append("-odeName %s"%self.odeName)   
     self.args.append("-T %f"%Ti)
     self.args.append("-name %s"%self.name)   
 
