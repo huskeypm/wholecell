@@ -608,6 +608,7 @@ def PSDAnaly(s1,ranger=[2,200],verbose=True):
     if verbose: 
       plt.figure()
       plt.bar(np.arange(np.shape(dc)[0]),dc)
+      plt.legend()
     #plt.figure()
     #pcolormesh(dm.T,cmap=cm.gray)
     #plt.colorbar()
@@ -626,6 +627,7 @@ def PSDAnaly(s1,ranger=[2,200],verbose=True):
       from matplotlib import cm 
       plt.pcolormesh(psd2.T,cmap=cm.gray)
       plt.colorbar()
+      plt.legend()
     
     
     #plt.figure()
@@ -810,7 +812,7 @@ def StateDecompositionAnalysis(caseDict, \
   lb1 =caseComp[0].label 
   lb2= caseComp[1].label
   plt.title("%s vs %s" % (lb1,lb2))
-  ax.legend( (rects1[0], rects2[0]), (lb1,lb2),loc=0 )
+  ax.legend( (rects1[0], rects2[0]), (lb1,lb2),loc=4 )
   ax.set_ylabel("fold chg wrt WT")
   plt.tight_layout()
   
