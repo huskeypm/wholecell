@@ -601,10 +601,17 @@ def PSDAnaly(s1,ranger=[2,200],verbose=True):
     #pcolormesh(s1.T,cmap=cm.gray)
     #plt.colorbar()
     
-    ## Demeaned
+    ## Demeaned (looks for zeros) 
     dc = np.mean(s1,axis=0)
     dm = s1 - dc
-    dm /= np.max(s1,axis=0)   
+
+    daMax = np.max(s1,axis=0)
+    eps = 1e-9
+    nonZero = np.argwhere(np.abs(daMax)>eps)
+    dm[:,nonZero] = dm[:,nonZero]/daMax[nonZero] 
+    isZero = np.argwhere(np.abs(daMax)<=eps)
+    dm[:,isZero] = eps
+
     if verbose: 
       plt.figure()
       plt.bar(np.arange(np.shape(dc)[0]),dc)
@@ -617,6 +624,7 @@ def PSDAnaly(s1,ranger=[2,200],verbose=True):
     S = fftp.fft(dm,axis=0)
     psd2 = np.abs(S*S)
     # log to make peaks more observable 
+    psd2[ np.argwhere( np.abs(psd2) < eps )  ]= eps
     psd2 = np.log(psd2)
     #print np.shape(psd2)
     # grab low freq 
@@ -634,7 +642,7 @@ def PSDAnaly(s1,ranger=[2,200],verbose=True):
     #plt.plot(psd2[ranger[0]:ranger[1],0])
     return dc, psd2
 
-# State Decomposition Analysis 
+# State Decomposition Analysis (SDA)
 # indSS = 2e3 # collect statistics after this time point [ms] (looking for steady state)
 def ProcessDecomp(): 
   raise RuntimeError("ProcessDecomp is antiquated. Use StateDecompositionAnalysis()")
@@ -644,7 +652,9 @@ def StateDecompositionAnalysis(caseDict, \
                   indSS=[2e3,-1], # Time aftter which data is used for comparative analysis. -1 signifies getting last time step  [ms]
                   xlim=None,
                   root="./",
-                  ranked=20
+                  ranked=20,
+                  ignoreList = ["dNa_SL_buf"],
+                  mode="states" # fluxes
                  ):  
   
   # we want to compare only two of the cases, so select these here    
@@ -661,32 +671,35 @@ def StateDecompositionAnalysis(caseDict, \
         subCaseDict[ case.tag ]  = case
         #print np.shape(case.data['s']) 
 
+  # Load data 
   LoadPickles(subCaseDict,noOverwrite=True)   
+
+
+  # decide on which data to pull
+  if mode=="states":
+    v_key = 's'
+  elif mode=="fluxes":
+    v_key = 'j'
+  else:
+    raise RuntimeError(mode +" not understood") 
+  
 
   # for two cases, perform psd analysis to obtain mean and PSD
   caseComp = [None,None]
   for key, case in subCaseDict.iteritems():
       print case.name
       t = case.data['t']
-      j = case.data['j']
-      s = case.data['s']
+
+      v = case.data[v_key] 
 
       #sub = s[1e4:5e4,0:10]
       #sub = s[1e4:5e4,]
-      sub = s[indSS[0]:indSS[1]]
+      sub = v[indSS[0]:indSS[1]]
       case.dc, case.psd2 = PSDAnaly(sub,verbose=False)
       caseComp[ case.idx ] = case 
 
 
-  ## display comparison of transients 
-  #plt.figure()
-  #label1 = "Cai"
-  #label2 = "Ca_SR"
-  ##idx =  module.state_indices( label )
-  ##plt.plot(tsteps,results[:,idx],label = label)
-  #fig, ax1 = plt.subplots()
-  #ax2 = ax1.twinx()
-  #i=0
+  ## displaycomparison
   cols = ["r","b"]
   # get shortest traj
   lastT = 1e30
@@ -700,32 +713,7 @@ def StateDecompositionAnalysis(caseDict, \
   if xlim==None:
     xlim = [0,lastT]
 
-  ## plot Ca transients 
-  #for key, case in subCaseDict.iteritems():
-  #    print case.name
-  #    ti = case.data['t']
-  #    si = case.data['s']
-  #    s_idx = case.data['s_idx']
-#
-#      idx1 = s_idx.index(label1)
-#      idx2 = s_idx.index(label2)
-#      ax1.plot(ti[0:lastT],si[0:lastT,idx1],cols[i]+"-",label = case.label)
-#      ax2.plot(ti[0:lastT],si[0:lastT,idx2],cols[i]+"--")
-#      i+=1
-#
-#  ax1.set_ylim([0,1.5e-3])
-#  ax1.set_xlim([indSS,lastT])
-#  ax2.set_ylim([0.0,0.6])
-#  ax2.set_xlim([indSS,lastT])
-#  plt.title("Ca2+ transients") 
-#  ax1.set_ylabel("%s [mM]"%label1)
-#  ax2.set_ylabel("%s [mM]"%label2)
-#  plt.legend()
-#  plt.gcf().savefig(root+"transients_%s_%s.png"%(wanted1,wanted2),dpi=300)
-
-  ## action potential 
-
-  def PlotStateCompare(label1):
+  def PlotValueComparison(label1):
     plt.figure()
     fig, ax1 = plt.subplots()
     i=0
@@ -733,13 +721,15 @@ def StateDecompositionAnalysis(caseDict, \
     #ylims = [1e90,-1e90]
     for key, case in subCaseDict.iteritems():
       ti = case.data['t']
-      si = case.data['s']
-      s_idx = case.data['s_idx']
-      idx1 = s_idx.index(label1)
+
+      vi = case.data[v_key] 
+      v_idx = case.data['%s_idx'%v_key]
+
+      idx1 = v_idx.index(label1)
 
       ti_vals = ti[xlim[0]:xlim[1]]             
-      si_vals = si[xlim[0]:xlim[1],idx1]
-      ax1.plot(ti_vals,si_vals,cols[i]+"-",label = case.label)
+      vi_vals = vi[xlim[0]:xlim[1],idx1]
+      ax1.plot(ti_vals,vi_vals,cols[i]+"-",label = case.label)
 
       i+=1
 
@@ -748,49 +738,66 @@ def StateDecompositionAnalysis(caseDict, \
     #plt.title("Action potential") 
     ax1.set_ylabel("%s [unk]"%label1)
     plt.legend()
-    plt.gcf().savefig(root+"state_%s_%s_%s.png"%(label1,wanted1,wanted2),dpi=300)
+    plt.gcf().savefig(root+"%s_%s_%s_%s.png"%(mode,label1,wanted1,wanted2),dpi=300)
 
 
   
   
   ## Quantify (pct error) change in mean value of each state
   # normalize by case 1
-  caseComp[0].dcn = caseComp[0].dc/caseComp[0].dc
-  caseComp[1].dcn = caseComp[1].dc/caseComp[0].dc
-  stateChg = caseComp[1].dcn-caseComp[0].dcn
-  sort_index = (np.argsort(np.abs(stateChg)))[::-1]
+  def donorm(subj,ref):  
+    eps = 1e-9
+    nonZero = np.argwhere(np.abs(ref.dc)>eps)
+    subj.dcn = np.zeros( np.shape(ref.dc) ) 
+    subj.dcn[ nonZero ] = subj.dc[ nonZero ] / ref.dc[ nonZero ]
+  #caseComp[0].dcn = caseComp[0].dc/caseComp[0].dc
+  #caseComp[1].dcn = caseComp[1].dc/caseComp[0].dc
+  donorm(caseComp[0],caseComp[0])
+  donorm(caseComp[1],caseComp[0])
+  valueChg = caseComp[1].dcn-caseComp[0].dcn
+  sort_index = (np.argsort(np.abs(valueChg)))[::-1]
 
 
-  #### CUT AND PASTE FROM GOTRANNED CODE (shannon_2004.ode)
-  #if 0:
-  #    print "SHOULD BE ABLE TO SURMISE THIS DIRECTLY FROM NEW PICKLE FILES"
-  #    state_inds = dict([("h", 0), ("j", 1), ("m", 2), ("Xr", 3), ("Xs", 4),        ("X_tos", 5), ("Y_tos", 6), ("R_tos", 7), ("X_tof", 8), ("Y_tof", 9),        ("d", 10), ("f", 11), ("fCaB_SL", 12), ("fCaB_jct1", 13), ("R", 14),        ("O", 15), ("I", 16), ("Ca_TroponinC", 17), ("Ca_TroponinC_Ca_Mg",        18), ("Mg_TroponinC_Ca_Mg", 19), ("Ca_Calmodulin", 20), ("Ca_Myosin",        21), ("Mg_Myosin", 22), ("Ca_SRB", 23), ("Na_jct1_buf", 24),        ("Na_SL_buf", 25), ("Na_jct1", 26), ("Na_SL", 27), ("Nai", 28),        ("Ca_Calsequestrin", 29), ("Ca_SLB_SL", 30), ("Ca_SLB_jct1", 31),        ("Ca_SLHigh_SL", 32), ("Ca_SLHigh_jct1", 33), ("Ca_SR", 34),        ("Ca_jct1", 35), ("Ca_SL", 36), ("Cai", 37), ("V", 38)])
-  ##### END
-    
   #Assuming that both pickle files have same states/ode model. 
-  s_idx = case.data['s_idx']
-  state_inds = {key: idx for (idx, key) in enumerate(s_idx)}
+  v_idx = case.data['%s_idx'%v_key]
+  value_inds = {key: idx for (idx, key) in enumerate(v_idx)}
   # create reverse lookup
-  state_inds_rev = {idx: key for (idx, key) in enumerate(s_idx)}
+  value_inds_rev = {idx: key for (idx, key) in enumerate(v_idx)}
   
   # grabbing top-twenty modulated states
-  bestidx = sort_index[0:ranked]
-  beststates = []
-  for i,idx in enumerate(bestidx):
-          if idx not in state_inds_rev:
-              raise ValueError("Unknown state: '{0}'".format(idx))
+  bestidx    = []
+  bestvalues = []
+
+  stored = 0 
+  for i,idx in enumerate(sort_index):
+          if idx not in value_inds_rev:
+              raise ValueError("Unknown state/flux: '{0}'".format(idx))
+
+          if value_inds_rev[idx] in ignoreList:
+            print "Skipping ", value_inds_rev[idx]
+            continue
               
-          print state_inds_rev[idx],"pct %4.2f"%stateChg[idx], \
+          print value_inds_rev[idx],"pct %4.2f"%valueChg[idx], \
                                       "0 %4.1e/%4.1e"% (caseComp[0].dc[idx],caseComp[0].dcn[idx]),\
                                       "1 %4.1e/%4.1e"% (caseComp[1].dc[idx],caseComp[1].dcn[idx])    
-          beststates.append(state_inds_rev[idx])
+          bestidx.append(idx)
+          bestvalues.append(value_inds_rev[idx])
           #print beststates[i]
           #indices.append(state_inds[state])
+
+          stored+=1
+          if stored>=ranked:
+            break 
           
   ## Plot State Data 
-  plotStates = ["V","Cai","Ca_SR"] + beststates
-  for label in plotStates:
-    PlotStateCompare(label)
+  if mode == "states":
+    plotValues = ["V","Cai","Ca_SR"] + bestvalues
+  elif mode =="fluxes":
+    plotValues = ["i_Cab"] + bestvalues
+
+  #
+  #for label in plotValues:
+  #  PlotValueComparison(label)
   
   
   ## Plot comparative data 
@@ -806,7 +813,7 @@ def StateDecompositionAnalysis(caseDict, \
   rects2 = ax.bar(ind+width, dc1s[bestidx], width,color='b')
   
   ax.set_xticks(ind+width)
-  ax.set_xticklabels( beststates,rotation=90 )
+  ax.set_xticklabels( bestvalues,rotation=90 )
   
   
   lb1 =caseComp[0].label 
@@ -818,10 +825,8 @@ def StateDecompositionAnalysis(caseDict, \
   
   
   #plt.gcf().savefig(root+versionPrefix+"comparative.png",dpi=300)
-  plt.gcf().savefig(root+"comparative_%s_%s.png"%(wanted1,wanted2),dpi=300)
+  plt.gcf().savefig(root+"comparative_%s_%s_%s.png"%(mode,wanted1,wanted2),dpi=300)
   
-  
-  # In[ ]:
 
 
 def PlotMorotti(cases,
