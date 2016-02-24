@@ -133,7 +133,7 @@ states("ICaL", "FCa gate",
        fCaB_jct1 = 2.421991e-2)
 
 parameters("INaCa",
-           V_max_INaCa = ScalarParam(9, unit="uA*uF**-1"),
+           V_max_INaCa = ScalarParamncreased the maximum rate of reaction(9, unit="uA*uF**-1"),
            Fx_NCX_jct1 = 0.11,
            Fx_NCX_SL = 0.89,
            Q10_NCX = 1.57,
