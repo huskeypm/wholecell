@@ -3,11 +3,13 @@ import analyzeODE as ao
 # Grabs stuff from previous run 
 #prevOut = "run_G_CaBk1.00_G_NaBk1.00_stim2000_1.pickle"
 #prevNum=1 # could probably grab this from pickleName
-def InitializeNextInSequence(prevOut,prevNum):
+def InitializeNextInSequence(prevOut,prevNum,dSr):
   # Determine new pickleoutName 
   nextNum=prevNum+1
+  #if dSr != 0:
+  #  nextOut = prevOut.replace("_%d_red.pickle"%prevNum,"_%d_red.pickle"%nextNum)
+  #else:
   nextOut = prevOut.replace("_%d.pickle"%prevNum,"_%d.pickle"%nextNum)
-
   # Load in prev data 
   data = ao.readPickle(prevOut) 
   si = data['s']
@@ -42,6 +44,7 @@ def daisychain(\
     stim_period=1000.,
     mxsteps=None,
     outBase = "run_stim1000",
+    dSr = 0.,
     paramDict = None,   
     namesOnly=False):
   # remove pickle
@@ -78,16 +81,18 @@ def daisychain(\
         prevName = nextName
         prevNum = nextNum
         nextName,nextNum,stateDict,paramDict = InitializeNextInSequence(\
-          prevName,prevNum)
-      
+          prevName,prevNum,dSr)
       
       # hack
       #stateDict["V"]=50 works 
       rs.runParamsFast(odeName=odeName,name=nextName,
                        varDict=paramDict,stateDict=stateDict,dt=dt,dtn=dtn,\
-                       stim_period=stim_period,mxsteps=mxsteps)
+                       stim_period=stim_period,mxsteps=mxsteps,dSr=dSr)
 
 
+  # pull out p,p_idx,j,j_idx from pickles 
+  ts, allsisi, s_idx = concatenateTrajs(pickleNames)
+  # writePickle once more with tag outBase_cat.pickle
   return pickleNames
 
 
@@ -95,15 +100,19 @@ def daisychain(\
 def concatenateTrajs(pickleNames):
   
   allsi = []
+  allji = []
   allt = []
   tprev=0
   for i,pickleName in enumerate(pickleNames):
     data = ao.readPickle(pickleName) 
     si = data['s']
+    ji = data['j']
     s_idx = data['s_idx']
+    j_idx = data['j_idx']
     t = data['t']
   
     allsi.append(si)  # probably should pre-allocate 
+    allji.append(ji)  # probably should pre-allocate 
     allt.append(t+tprev)    
   
     # update offset  
@@ -125,18 +134,29 @@ def concatenateTrajs(pickleNames):
   
   # concatenate state values 
   sis = np.array(allsi)
+  jis = np.array(allji)
   #print np.shape(sis)
   
   nSteps = np.prod([np.shape(sis)[0],np.shape(sis)[1]])
   nStates = np.shape(sis)[2]
   #print nSteps
-  
+    
   allsisi = np.zeros([nSteps,nStates])
-  
+  alljisi = np.zeros([nSteps,nStates])
+
+  p = data['p']
+  p_idx = data['p_idx']
+
   # there's a smarter way to hash this out....
   for i in range(nStates):
       sisi = np.ndarray.flatten(sis[:,:,i])    
       allsisi[:,i] = sisi
+      jisi = np.ndarray.flatten(jis[:,:,i])    
+      alljisi[:,i] = jisi
+
+  name = outBase+"_cat.pickle"
+  rs.WritePickle(name,p,p_idx,allsisi,s_idx,alljisi,j_idx,ts)
+#WritePickle(name,p,p_idx,s,s_idx,j,j_idx,t) 
 
   return ts, allsisi, s_idx
   
@@ -198,6 +218,8 @@ if __name__ == "__main__":
   dt = 0.1
   stim_period = 1000.
   outBase = "test.pickle"
+  dSr = 0.
+
   for i,arg in enumerate(sys.argv):
     # calls 'runParams' with the next argument following the argument '-validation'
     if("-var" in arg):
@@ -222,6 +244,10 @@ if __name__ == "__main__":
   
     if(arg=="-outBase" or arg=="-name"):
       outBase = sys.argv[i+1]
+   
+    if(arg=="-dSr" or arg=="-downSampleRate"):
+      dSr = np.float(sys.argv[i+1])
+      #print dSr
 
     # calls 'doit' with the next argument following the argument '-validation'
     if(arg=="-validation"):
@@ -229,13 +255,15 @@ if __name__ == "__main__":
       print "PASS!" 
       quit()
 
-  daisychain(\
+  pickleNames = daisychain(\
     odeName = odeName,
     dt = dt,
     dtn=dtn, # elapsed time [ms]
     iters = iters,
+    dSr = dSr,
     outBase = outBase,       
     paramDict = varDict)
+
     
   
 

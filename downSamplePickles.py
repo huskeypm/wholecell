@@ -14,19 +14,27 @@ import analyzeODE as ao
 #
 
 # rate - downsample rate
-def downsample(fileName,rate=10): 
+def downsample(fileName, rate): 
   dataFull = ao.readPickle(fileName)
    
   p = dataFull['p']
   p_idx = dataFull['p_idx']
-  s = dataFull['s']; sDs = s[::rate,]
+  s = dataFull['s']; #sDs = s[::rate,]
   s_idx = dataFull['s_idx']
-  j = dataFull['j']; jDs = j[::rate,]
+  j = dataFull['j']; #jDs = j[::rate,]
   j_idx = dataFull['j_idx']
-  t = dataFull['t']; tDs = t[::rate]
+  t = dataFull['t']; #tDs = t[::rate]
 
+  sDs,jDs,tDs = downsampleData(s,j,t,rate)
+  
   redFileName = fileName.replace(".pickle","_red.pickle")
   ao.writePickle(redFileName,p,p_idx,sDs,s_idx,jDs,j_idx,tDs)
+
+def downsampleData(s,j,t,rate):
+  sDs = s[::rate,]
+  jDs = j[::rate,]
+  tDs = t[::rate,]
+  return sDs, jDs, tDs
 
 
 

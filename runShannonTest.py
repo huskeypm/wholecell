@@ -6,13 +6,13 @@ For performing parameter sweeps and running shannon model with dictionaries of p
 # Changed default stimulation to 701
 import numpy as np
 import runner 
+import downSamplePickles
 runner.init()
 idxNCX = runner.model.monitor_indices("i_NaCa")
 #import analyzeODE as ao
 
 
 def WritePickle(name,p,p_idx,s,s_idx,j,j_idx,t):
-  import cPickle as pickle 
   #ao.writePickle(name,p,p_idx,s,s_idx,j,j_idx,t)
   data1 = {'p':p,'s':s,'t':t,'j':np.asarray(j),\
            'p_idx':p_idx,'s_idx':s_idx,'j_idx':j_idx}
@@ -59,7 +59,8 @@ def runParams(
   stim_period = 1000,
   mxsteps = 1000,
   deltaT = 3000, # duration
-  dt = 1. # interval 
+  dt = 1., # interval 
+  dSr = 0.
   ):
 
   # rescale params 
@@ -212,11 +213,12 @@ def GetMonitored(module, ode,tsteps,results,model_params):
 #stim_period = 500.
 # WARNING: here that parameters are SET, not rescaled, in contrast to runParams function
 def runParamsFast(odeName = "shannon_2004.ode",name="out",\
-                  varDict=None,stateDict=None,dt=0.1,dtn=2000,stim_period=1000.,mxsteps=None):
+                  varDict=None,stateDict=None,dt=0.1,dtn=2000,stim_period=1000.,mxsteps=None,dSr=0.):
 
   params = gotranJIT.init()
   params.tstop = dtn
   params.dt = dt
+  #params.dSr = dSr
 
   # SET Params
   params.parameters = ['stim_period',stim_period]  
@@ -251,9 +253,14 @@ def runParamsFast(odeName = "shannon_2004.ode",name="out",\
 
   # get monitored fluxes   
   j_idx,j = GetMonitored(module, ode,tsteps,results,model_params)  
-  WritePickle(name,p,p_idx,s,s_idx,j,j_idx,t)
   
-
+  if dSr != 0.:
+      sDs,jDs,tDs = downSamplePickles.downsampleData(s,j,t,dSr)
+      print "name ", name 
+      red = name 
+      WritePickle(red,p,p_idx,sDs,s_idx,jDs,j_idx,tDs)
+  else:
+      WritePickle(name,p,p_idx,s,s_idx,j,j_idx,t)
 
 
 
@@ -314,6 +321,7 @@ if __name__ == "__main__":
   dt = 1. # [ms] 
   name="out"
   deltaT = 10000 # [ms] 
+  dSr = 0.
   sweep = False
   useJIT=True # There shouldn't be a compelling reason to set this to false 
   varDict = dict()              
@@ -338,6 +346,8 @@ if __name__ == "__main__":
       
     if(arg=="-T"):
       deltaT=np.float(sys.argv[i+1])
+    if(arg=="-dSr"):
+      dSr = np.float(sys.argv[i+1])
     if(arg=="-name"):
       name=sys.argv[i+1] 
     if(arg=="-stim"):
@@ -355,8 +365,8 @@ if __name__ == "__main__":
     if useJIT:
       runParamsFast(varDict=varDict,\
               odeName = odeName,
-              name=name,dtn=deltaT,dt=dt, stim_period = stim)
+              name=name,dtn=deltaT,dt=dt, stim_period = stim, dSr = dSr)
     else:
       runParams(runner=runner,varDict=varDict,\
-              name=name,deltaT=deltaT,dt=dt, stim_period = stim)
+              name=name,deltaT=deltaT,dt=dt, stim_period = stim, dSr = dSr)
   
