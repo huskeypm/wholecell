@@ -9,11 +9,10 @@ import runner
 import downSamplePickles
 runner.init()
 idxNCX = runner.model.monitor_indices("i_NaCa")
-import analyzeODE as ao
+#import analyzeODE as ao
 
 
 def WritePickle(name,p,p_idx,s,s_idx,j,j_idx,t):
-  raise RuntimeError("WARNING: need to antiquate this function and use analyzeODE version")
   #ao.writePickle(name,p,p_idx,s,s_idx,j,j_idx,t)
   data1 = {'p':p,'s':s,'t':t,'j':np.asarray(j),\
            'p_idx':p_idx,'s_idx':s_idx,'j_idx':j_idx}
@@ -25,6 +24,7 @@ def WritePickle(name,p,p_idx,s,s_idx,j,j_idx,t):
   pickle.dump(data1, output)
   output.close()
   print "SUCCESS! Wrote output to ", name
+  print "WARNING: need to antiquate this function and use analyzeODE version"
 
 
 #def namer(PCa,ks,vMax=None,stim=None):
@@ -60,7 +60,7 @@ def runParams(
   mxsteps = 1000,
   deltaT = 3000, # duration
   dt = 1., # interval 
-  downsampleRate = 1  
+  dSr = 0.
   ):
 
   # rescale params 
@@ -213,12 +213,12 @@ def GetMonitored(module, ode,tsteps,results,model_params):
 #stim_period = 500.
 # WARNING: here that parameters are SET, not rescaled, in contrast to runParams function
 def runParamsFast(odeName = "shannon_2004.ode",name="out",\
-                  varDict=None,stateDict=None,dt=0.1,dtn=2000,stim_period=1000.,mxsteps=None,downsampleRate=1 ):
+                  varDict=None,stateDict=None,dt=0.1,dtn=2000,stim_period=1000.,mxsteps=None,dSr=0.):
 
   params = gotranJIT.init()
   params.tstop = dtn
   params.dt = dt
-  #params.downsampleRate = downsampleRate
+  #params.dSr = dSr
 
   # SET Params
   params.parameters = ['stim_period',stim_period]  
@@ -253,17 +253,14 @@ def runParamsFast(odeName = "shannon_2004.ode",name="out",\
 
   # get monitored fluxes   
   j_idx,j = GetMonitored(module, ode,tsteps,results,model_params)  
-  print "j", np.shape(j)
-  print "ji", len(j_idx)   
   
-  if downsampleRate >1:     
-      sDs,jDs,tDs = downSamplePickles.downsampleData(s,j,t,downsampleRate)
-      print "jds", np.shape(jDs)
+  if dSr != 0.:
+      sDs,jDs,tDs = downSamplePickles.downsampleData(s,j,t,dSr)
       print "name ", name 
       red = name 
-      ao.writePickle(red,p,p_idx,sDs,s_idx,jDs,j_idx,tDs)
+      WritePickle(red,p,p_idx,sDs,s_idx,jDs,j_idx,tDs)
   else:
-      ao.writePickle(name,p,p_idx,s,s_idx,j,j_idx,t)
+      WritePickle(name,p,p_idx,s,s_idx,j,j_idx,t)
 
 
 
@@ -324,7 +321,7 @@ if __name__ == "__main__":
   dt = 1. # [ms] 
   name="out"
   deltaT = 10000 # [ms] 
-  downsampleRate = 1  
+  dSr = 0.
   sweep = False
   useJIT=True # There shouldn't be a compelling reason to set this to false 
   varDict = dict()              
@@ -349,8 +346,8 @@ if __name__ == "__main__":
       
     if(arg=="-T"):
       deltaT=np.float(sys.argv[i+1])
-    if(arg=="-downsampleRate"):
-      downsampleRate = np.float(sys.argv[i+1])
+    if(arg=="-dSr"):
+      dSr = np.float(sys.argv[i+1])
     if(arg=="-name"):
       name=sys.argv[i+1] 
     if(arg=="-stim"):
@@ -368,8 +365,8 @@ if __name__ == "__main__":
     if useJIT:
       runParamsFast(varDict=varDict,\
               odeName = odeName,
-              name=name,dtn=deltaT,dt=dt, stim_period = stim, downsampleRate = downsampleRate)
+              name=name,dtn=deltaT,dt=dt, stim_period = stim, dSr = dSr)
     else:
       runParams(runner=runner,varDict=varDict,\
-              name=name,deltaT=deltaT,dt=dt, stim_period = stim, downsampleRate = downsampleRate)
+              name=name,deltaT=deltaT,dt=dt, stim_period = stim, dSr = dSr)
   

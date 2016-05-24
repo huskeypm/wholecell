@@ -23,7 +23,8 @@ def writePickle(name,p,p_idx,s,s_idx,j,j_idx,t):
   # using 'asarray' since my 'j' was getting stored as its transpose 
   data1 = {'p':p,'s':s,'t':t,'j':np.asarray(j),\
            'p_idx':p_idx,'s_idx':s_idx,'j_idx':j_idx}
-  #print np.shape(j) 
+  #print "j again: ", len(j) 
+  #print "j_idx: ",np.shape(j_idx)
   if ".pickle" not in name:
     name += ".pickle"
   output = open(name, 'wb')
