@@ -7,6 +7,7 @@ def InitializeNextInSequence(prevOut,prevNum):
   # Determine new pickleoutName 
   nextNum=prevNum+1
   nextOut = prevOut.replace("_%d.pickle"%prevNum,"_%d.pickle"%nextNum)
+
   # Load in prev data 
   data = ao.readPickle(prevOut) 
   si = data['s']
@@ -19,7 +20,7 @@ def InitializeNextInSequence(prevOut,prevNum):
   stateDict = dict()
   v = zip(s_idx,si[-1,:]) # grabs  state values from last iteration 
   for i,g in enumerate(v):
-    #print g[0]    
+    #print "Assigning %f to %s"%(g[1],g[0])
     stateDict[g[0]]=g[1]  
 
   # create new dict with params/values   
@@ -60,7 +61,7 @@ def daisychain(\
   paramDict["stim_period"] = stim_period
   
   # stateDict
-  stateDict = None # use defaults for first iter 
+  #stateDict = None # use defaults for first iter 
   # create list of pickle names 
   daiters = range(iters) 
   pickleNames = [ outBase+"_%d.pickle"%(i+1) for i in daiters ]
@@ -140,11 +141,9 @@ def ConcatenateTrajs(pickleNames,writeCat=False,downsampleRate=1):
   # concatenate state values 
   sis = np.array(allsi)
   #print np.shape(sis)
-  
   nSteps = np.prod([np.shape(sis)[0],np.shape(sis)[1]])
   nStates = np.shape(sis)[2]
   #print nSteps
-    
   allsisi = np.zeros([nSteps,nStates])
   # there's a smarter way to hash this out....
   for i in range(nStates):
@@ -248,8 +247,6 @@ if __name__ == "__main__":
   dt = 0.1
   stim_period = 1000.
   outBase = "test.pickle"
-  downsampleRate=1   
-
   for i,arg in enumerate(sys.argv):
     # calls 'runParams' with the next argument following the argument '-validation'
     if("-var" in arg):
@@ -295,9 +292,7 @@ if __name__ == "__main__":
     iters = iters,
     outBase = outBase,       
     stateDict = stateDict,
-    downsampleRate = downsampleRate,
     paramDict = varDict)
-
     
   
 
