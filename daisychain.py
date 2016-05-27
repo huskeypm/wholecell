@@ -43,6 +43,7 @@ def daisychain(\
     mxsteps=None,
     outBase = "run_stim1000",
     stateDict = None,
+    downsampleRate = 1,
     paramDict = None,   
     namesOnly=False):
   # remove pickle
@@ -86,7 +87,7 @@ def daisychain(\
       #stateDict["V"]=50 works 
       rs.runParamsFast(odeName=odeName,name=nextName,
                        varDict=paramDict,stateDict=stateDict,dt=dt,dtn=dtn,\
-                       stim_period=stim_period,mxsteps=mxsteps)
+                       stim_period=stim_period,mxsteps=mxsteps,dSr=downsampleRate)
 
 
   return pickleNames
@@ -245,6 +246,7 @@ if __name__ == "__main__":
   dt = 0.1
   stim_period = 1000.
   outBase = "test.pickle"
+  downsampleRate=1
   for i,arg in enumerate(sys.argv):
     # calls 'runParams' with the next argument following the argument '-validation'
     if("-var" in arg):
@@ -274,6 +276,10 @@ if __name__ == "__main__":
   
     if(arg=="-outBase" or arg=="-name"):
       outBase = sys.argv[i+1]
+   
+    if(arg=="-dSr" or arg=="-downsampleRate"):
+      downsampleRate = np.float(sys.argv[i+1])
+      #print dSr
 
     # calls 'doit' with the next argument following the argument '-validation'
     if(arg=="-validation"):
@@ -286,6 +292,7 @@ if __name__ == "__main__":
     dt = dt,
     dtn=dtn, # elapsed time [ms]
     iters = iters,
+    downsampleRate = downsampleRate,
     outBase = outBase,       
     stateDict = stateDict,
     paramDict = varDict)

@@ -640,7 +640,7 @@ def PSDAnaly(s1,ranger=[2,200],verbose=True):
     
     #plt.figure()
     #plt.plot(psd2[ranger[0]:ranger[1],0])
-    return dc, psd2
+    return daMax,dc, psd2
 
 # State Decomposition Analysis (SDA)
 # indSS = 2e3 # collect statistics after this time point [ms] (looking for steady state)
@@ -654,7 +654,9 @@ def StateDecompositionAnalysis(caseDict, \
                   root="./",
                   ranked=20,
                   ignoreList = ["dNa_SL_buf"],
-                  mode="states" # fluxes
+                  mode="states" , # fluxes
+                  cols = ["r","b"],
+                  sortby="mean"
                  ):  
   
   # we want to compare only two of the cases, so select these here    
@@ -684,7 +686,7 @@ def StateDecompositionAnalysis(caseDict, \
     raise RuntimeError(mode +" not understood") 
   
 
-  # for two cases, perform psd analysis to obtain mean and PSD
+  ## for two cases, perform psd analysis to obtain mean and PSD
   caseComp = [None,None]
   for key, case in subCaseDict.iteritems():
       print case.name
@@ -694,13 +696,12 @@ def StateDecompositionAnalysis(caseDict, \
 
       #sub = s[1e4:5e4,0:10]
       #sub = s[1e4:5e4,]
-      sub = v[indSS[0]:indSS[1]]
-      case.dc, case.psd2 = PSDAnaly(sub,verbose=False)
+      sub = v[int(indSS[0]):int(indSS[1]),]
+      case.max, case.dc, case.psd2 = PSDAnaly(sub,verbose=False)
       caseComp[ case.idx ] = case 
 
 
   ## displaycomparison
-  cols = ["r","b"]
   # get shortest traj
   lastT = 1e30
   for key, case in subCaseDict.iteritems():
@@ -717,7 +718,6 @@ def StateDecompositionAnalysis(caseDict, \
     plt.figure()
     fig, ax1 = plt.subplots()
     i=0
-    cols = ["r","b"]
     #ylims = [1e90,-1e90]
     for key, case in subCaseDict.iteritems():
       ti = case.data['t']
@@ -747,14 +747,23 @@ def StateDecompositionAnalysis(caseDict, \
   # normalize by case 1
   def donorm(subj,ref):  
     eps = 1e-9
+    # means 
     nonZero = np.argwhere(np.abs(ref.dc)>eps)
     subj.dcn = np.zeros( np.shape(ref.dc) ) 
     subj.dcn[ nonZero ] = subj.dc[ nonZero ] / ref.dc[ nonZero ]
-  #caseComp[0].dcn = caseComp[0].dc/caseComp[0].dc
-  #caseComp[1].dcn = caseComp[1].dc/caseComp[0].dc
+
+    #maxima
+    nonZero = np.argwhere(np.abs(ref.max)>eps)
+    subj.maxn = np.zeros( np.shape(ref.max) ) 
+    subj.maxn[ nonZero ] = subj.max[ nonZero ] / ref.max[ nonZero ]
   donorm(caseComp[0],caseComp[0])
   donorm(caseComp[1],caseComp[0])
-  valueChg = caseComp[1].dcn-caseComp[0].dcn
+
+  # sort from largest to smallest change 
+  if sortby=="mean" or sortby=="dc":
+    valueChg = caseComp[1].dcn-caseComp[0].dcn
+  else:
+    valueChg = caseComp[1].maxn-caseComp[0].maxn
   sort_index = (np.argsort(np.abs(valueChg)))[::-1]
 
 
@@ -767,6 +776,8 @@ def StateDecompositionAnalysis(caseDict, \
   # grabbing top-twenty modulated states
   bestidx    = []
   bestvalues = []
+  lines = []
+  lines.append("name caseno val diff_val\n")
 
   stored = 0 
   for i,idx in enumerate(sort_index):
@@ -777,16 +788,24 @@ def StateDecompositionAnalysis(caseDict, \
             print "Skipping ", value_inds_rev[idx]
             continue
               
-          print value_inds_rev[idx],"pct %4.2f"%valueChg[idx], \
-                                      "0 %4.1e/%4.1e"% (caseComp[0].dc[idx],caseComp[0].dcn[idx]),\
-                                      "1 %4.1e/%4.1e"% (caseComp[1].dc[idx],caseComp[1].dcn[idx])    
+          # print raw values
+          if sortby=="mean":
+            line=value_inds_rev[idx]+" pct %4.2f "%valueChg[idx]+ \
+                                      " 0 %4.1e %4.1e/%4.1e"% (caseComp[0].max[idx], caseComp[0].dc[idx],caseComp[0].dcn[idx])+\
+                                      " 1 %4.1e %4.1e/%4.1e"% (caseComp[1].max[idx], caseComp[1].dc[idx],caseComp[1].dcn[idx])    
+          else:
+            line = "%-20s"%value_inds_rev[idx]+ " 0 %4.1e 1 [%4.1e] "%( caseComp[0].max[idx], caseComp[1].max[idx]-caseComp[0].max[idx])
+          print line
+
+          # store 
+          lines.append(line)
           bestidx.append(idx)
           bestvalues.append(value_inds_rev[idx])
           #print beststates[i]
           #indices.append(state_inds[state])
 
           stored+=1
-          if stored>=ranked:
+          if stored>=ranked and ranked>0:
             break 
           
   ## Plot State Data 
@@ -804,13 +823,16 @@ def StateDecompositionAnalysis(caseDict, \
   width=0.3        
   plt.figure()
   fig, ax = plt.subplots()
-  ind = np.arange(ranked)        
+  ind = np.arange(stored)        
   
-  dc0s = caseComp[0].dcn
-  rects1 = ax.bar(ind, dc0s[bestidx], width,color='r')
-  
-  dc1s = caseComp[1].dcn
-  rects2 = ax.bar(ind+width, dc1s[bestidx], width,color='b')
+  if sortby=="mean":
+    vals0s = caseComp[0].dcn
+    vals1s = caseComp[1].dcn
+  else:
+    vals0s = caseComp[0].maxn
+    vals1s = caseComp[1].maxn
+  rects1 = ax.bar(ind, vals0s[bestidx], width,color='r')
+  rects2 = ax.bar(ind+width, vals1s[bestidx], width,color='b')
   
   ax.set_xticks(ind+width)
   ax.set_xticklabels( bestvalues,rotation=90 )
@@ -818,14 +840,20 @@ def StateDecompositionAnalysis(caseDict, \
   
   lb1 =caseComp[0].label 
   lb2= caseComp[1].label
-  plt.title("%s vs %s" % (lb1,lb2))
+  plt.title("%s vs %s (%s)" % (lb1,lb2,sortby))
   ax.legend( (rects1[0], rects2[0]), (lb1,lb2),loc=4 )
   ax.set_ylabel("fold chg wrt WT")
   plt.tight_layout()
   
   
   #plt.gcf().savefig(root+versionPrefix+"comparative.png",dpi=300)
-  plt.gcf().savefig(root+"comparative_%s_%s_%s.png"%(mode,wanted1,wanted2),dpi=300)
+  filePrefix = root+"comparative_%s_%s_%s_%s"%(mode,wanted1,wanted2,sortby)
+  plt.gcf().savefig(filePrefix+".png",dpi=300)
+
+  import json
+  f = open(filePrefix+'.txt', 'w')
+  json.dump(lines, f)
+  f.close()
   
 
 
