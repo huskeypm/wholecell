@@ -826,12 +826,19 @@ def StateDecompositionAnalysis(caseDict, \
   fig, ax = plt.subplots()
   ind = np.arange(stored)        
   
+  # store info for later analysis
+  caseComp[0].bestidx =  bestidx
+  caseComp[0].bestvalues =  bestvalues
+  caseComp[1].bestidx = bestidx
+  caseComp[1].bestvalues = bestvalues
   if sortby=="mean":
     vals0s = caseComp[0].dcn
     vals1s = caseComp[1].dcn
   else:
     vals0s = caseComp[0].maxn
     vals1s = caseComp[1].maxn
+ 
+  # bar plot 
   rects1 = ax.bar(ind, vals0s[bestidx], width,color='r')
   rects2 = ax.bar(ind+width, vals1s[bestidx], width,color='b')
   
@@ -845,6 +852,8 @@ def StateDecompositionAnalysis(caseDict, \
   ax.legend( (rects1[0], rects2[0]), (lb1,lb2),loc=4 )
   ax.set_ylabel("fold chg wrt WT")
   plt.tight_layout()
+
+
   
   
   #plt.gcf().savefig(root+versionPrefix+"comparative.png",dpi=300)
@@ -855,8 +864,8 @@ def StateDecompositionAnalysis(caseDict, \
   f = open(filePrefix+'.txt', 'w')
   json.dump(lines, f)
   f.close()
-  
 
+  return caseComp
 
 def PlotMorotti(cases,
                 case1Name='rabbit_5',case2Name='mouse_5',
