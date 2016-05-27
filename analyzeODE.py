@@ -606,7 +606,10 @@ def PSDAnaly(s1,ranger=[2,200],verbose=True):
     dc = np.mean(s1,axis=0)
     dm = s1 - dc
 
+    # abs. value 
     daMax = np.max(s1,axis=0)
+    daMin = np.min(s1,axis=0)
+    amp = daMax-daMin
     eps = 1e-9
     nonZero = np.argwhere(np.abs(daMax)>eps)
     dm[:,nonZero] = dm[:,nonZero]/daMax[nonZero] 
@@ -641,7 +644,7 @@ def PSDAnaly(s1,ranger=[2,200],verbose=True):
     
     #plt.figure()
     #plt.plot(psd2[ranger[0]:ranger[1],0])
-    return daMax,dc, psd2
+    return daMin,daMax,amp,dc, psd2
 
 # State Decomposition Analysis (SDA)
 # indSS = 2e3 # collect statistics after this time point [ms] (looking for steady state)
@@ -657,7 +660,8 @@ def StateDecompositionAnalysis(caseDict, \
                   ignoreList = ["dNa_SL_buf"],
                   mode="states" , # fluxes
                   cols = ["r","b"],
-                  sortby="mean"
+                  doPlot=False,
+                  sortby="mean" # max, min, amp
                  ):  
   
   # we want to compare only two of the cases, so select these here    
@@ -698,7 +702,10 @@ def StateDecompositionAnalysis(caseDict, \
       #sub = s[1e4:5e4,0:10]
       #sub = s[1e4:5e4,]
       sub = v[int(indSS[0]):int(indSS[1]),]
-      case.max, case.dc, case.psd2 = PSDAnaly(sub,verbose=False)
+      case.min,case.max, case.amp,case.dc, case.psd2 = PSDAnaly(sub,verbose=False)
+      # abs 
+      #case.max = np.abs( case.max ) 
+      #case.dc  = np.abs( case.dc )   
       caseComp[ case.idx ] = case 
 
 
@@ -715,10 +722,11 @@ def StateDecompositionAnalysis(caseDict, \
   if xlim==None:
     xlim = [0,lastT]
 
-  def PlotValueComparison(label1):
+  def PlotValueComparison(label1,xmin=0):
     plt.figure()
     fig, ax1 = plt.subplots()
     i=0
+    xlim=[xmin,xmin+1e4]
     #ylims = [1e90,-1e90]
     for key, case in subCaseDict.iteritems():
       ti = case.data['t']
@@ -728,8 +736,9 @@ def StateDecompositionAnalysis(caseDict, \
 
       idx1 = v_idx.index(label1)
 
-      ti_vals = ti[xlim[0]:xlim[1]]             
-      vi_vals = vi[xlim[0]:xlim[1],idx1]
+      #ti_vals = ti[xlim[0]:xlim[1]]             
+      #vi_vals = vi[xlim[0]:xlim[1],idx1]
+      ti_vals = ti; vi_vals=vi[:,idx1]
       ax1.plot(ti_vals,vi_vals,cols[i]+"-",label = case.label)
 
       i+=1
@@ -757,14 +766,28 @@ def StateDecompositionAnalysis(caseDict, \
     nonZero = np.argwhere(np.abs(ref.max)>eps)
     subj.maxn = np.zeros( np.shape(ref.max) ) 
     subj.maxn[ nonZero ] = subj.max[ nonZero ] / ref.max[ nonZero ]
+
+    #maxima
+    nonZero = np.argwhere(np.abs(ref.min)>eps)
+    subj.minn = np.zeros( np.shape(ref.min) ) 
+    subj.minn[ nonZero ] = subj.min[ nonZero ] / ref.min[ nonZero ]
+
+    #maxima
+    nonZero = np.argwhere(np.abs(ref.amp)>eps)
+    subj.ampn = np.zeros( np.shape(ref.amp) ) 
+    subj.ampn[ nonZero ] = subj.amp[ nonZero ] / ref.amp[ nonZero ]
   donorm(caseComp[0],caseComp[0])
   donorm(caseComp[1],caseComp[0])
 
   # sort from largest to smallest change 
   if sortby=="mean" or sortby=="dc":
     valueChg = caseComp[1].dcn-caseComp[0].dcn
-  else:
+  elif sortby=="max":
     valueChg = caseComp[1].maxn-caseComp[0].maxn
+  elif sortby=="min":
+    valueChg = caseComp[1].minn-caseComp[0].minn
+  elif sortby=="amp":
+    valueChg = caseComp[1].ampn-caseComp[0].ampn
   sort_index = (np.argsort(np.abs(valueChg)))[::-1]
 
 
@@ -786,7 +809,7 @@ def StateDecompositionAnalysis(caseDict, \
               raise ValueError("Unknown state/flux: '{0}'".format(idx))
 
           if value_inds_rev[idx] in ignoreList:
-            print "Skipping ", value_inds_rev[idx]
+            #print "Skipping ", value_inds_rev[idx]
             continue
               
           # print raw values
@@ -794,8 +817,14 @@ def StateDecompositionAnalysis(caseDict, \
             line=value_inds_rev[idx]+" pct %4.2f "%valueChg[idx]+ \
                                       " 0 %4.1e %4.1e/%4.1e"% (caseComp[0].max[idx], caseComp[0].dc[idx],caseComp[0].dcn[idx])+\
                                       " 1 %4.1e %4.1e/%4.1e"% (caseComp[1].max[idx], caseComp[1].dc[idx],caseComp[1].dcn[idx])    
-          else:
-            line = "%-20s"%value_inds_rev[idx]+ " 0 %4.1e 1 [%4.1e] "%( caseComp[0].max[idx], caseComp[1].max[idx]-caseComp[0].max[idx])
+          elif sortby=="max":
+            line = "MAX %-20s"%value_inds_rev[idx]+ " 0 %4.1e 1 %4.1e [%3.1f] "%( caseComp[0].max[idx], caseComp[1].max[idx],100*caseComp[1].max[idx]/caseComp[0].max[idx]-100)
+          elif sortby=="min":
+            line = "MEAN %-20s"%value_inds_rev[idx]+ " 0 %4.1e 1 %4.1e [%3.1f] "%( caseComp[0].min[idx], caseComp[1].min[idx],100*caseComp[1].min[idx]/caseComp[0].min[idx]-100)
+          elif sortby=="amp":
+            line = "AMP  %-20s"%value_inds_rev[idx]+ " 0 %4.1e = (%4.1e - %4.1e) 1 %4.1e [%3.1f] "%( caseComp[0].amp[idx], 
+                                                                                   caseComp[0].max[idx],caseComp[0].min[idx],
+                                                                                   caseComp[1].amp[idx],100*caseComp[1].amp[idx]/caseComp[0].amp[idx]-100)
           print line
 
           # store 
@@ -816,8 +845,9 @@ def StateDecompositionAnalysis(caseDict, \
     plotValues = ["i_Cab"] + bestvalues
 
   #
-  #for label in plotValues:
-  #  PlotValueComparison(label)
+  if doPlot:
+    for label in plotValues:
+      PlotValueComparison(label,xmin=indSS[0])
   
   
   ## Plot comparative data 
@@ -834,9 +864,15 @@ def StateDecompositionAnalysis(caseDict, \
   if sortby=="mean":
     vals0s = caseComp[0].dcn
     vals1s = caseComp[1].dcn
-  else:
+  elif sortby=="max":
     vals0s = caseComp[0].maxn
     vals1s = caseComp[1].maxn
+  elif sortby=="min":
+    vals0s = caseComp[0].minn
+    vals1s = caseComp[1].minn
+  elif sortby=="amp":
+    vals0s = caseComp[0].ampn
+    vals1s = caseComp[1].ampn
  
   # bar plot 
   rects1 = ax.bar(ind, vals0s[bestidx], width,color='r')
