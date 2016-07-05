@@ -3,7 +3,7 @@ import analyzeODE as ao
 # Grabs stuff from previous run 
 #prevOut = "run_G_CaBk1.00_G_NaBk1.00_stim2000_1.pickle"
 #prevNum=1 # could probably grab this from pickleName
-def InitializeNextInSequence(prevOut,prevNum):
+def InitializeNextInSequence(prevOut,prevNum,downsampleRate):
   # Determine new pickleoutName 
   nextNum=prevNum+1
   nextOut = prevOut.replace("_%d.pickle"%prevNum,"_%d.pickle"%nextNum)
@@ -44,7 +44,7 @@ def daisychain(\
     outBase = "run_stim1000",
     stateDict = None,
     paramDict = None,   
-    downsampleRate = 1,
+    downsampleRate = 1.,
     namesOnly=False):
   # remove pickle
   outBase = outBase.replace(".pickle","")
@@ -80,7 +80,7 @@ def daisychain(\
         prevName = nextName
         prevNum = nextNum
         nextName,nextNum,stateDict,paramDict = InitializeNextInSequence(\
-          prevName,prevNum)
+          prevName,prevNum,downsampleRate)
       
       
       # hack
@@ -247,6 +247,8 @@ if __name__ == "__main__":
   dt = 0.1
   stim_period = 1000.
   outBase = "test.pickle"
+  downsampleRate=1.
+
   for i,arg in enumerate(sys.argv):
     # calls 'runParams' with the next argument following the argument '-validation'
     if("-var" in arg):
@@ -285,11 +287,12 @@ if __name__ == "__main__":
       print "PASS!" 
       quit()
 
-  daisychain(\
+  pickleNames = daisychain(\
     odeName = odeName,
     dt = dt,
     dtn=dtn, # elapsed time [ms]
     iters = iters,
+    downsampleRate=downsampleRate,
     outBase = outBase,       
     stateDict = stateDict,
     paramDict = varDict)

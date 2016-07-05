@@ -349,7 +349,8 @@ if __name__ == "__main__":
       
     if(arg=="-T"):
       deltaT=np.float(sys.argv[i+1])
-    if(arg=="-downsampleRate"):
+    #if(arg=="-downsampleRate"):
+    if(arg=="-dSr" or arg=="-downsampleRate" ):
       downsampleRate = np.float(sys.argv[i+1])
     if(arg=="-name"):
       name=sys.argv[i+1] 
