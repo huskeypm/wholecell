@@ -14,7 +14,7 @@ import analyzeODE as ao
 #
 
 # rate - downsample rate
-def downsample(fileName, rate): 
+def downsample(fileName, fileOutName=None,rate=10): 
   dataFull = ao.readPickle(fileName)
    
   p = dataFull['p']
@@ -27,7 +27,10 @@ def downsample(fileName, rate):
 
   sDs,jDs,tDs = downsampleData(s,j,t,rate)
   
-  redFileName = fileName.replace(".pickle","_red.pickle")
+  if fileOutName==None:
+    redFileName = fileName.replace(".pickle","_red.pickle")
+  else: 
+    redFileName = fileOutName 
   ao.writePickle(redFileName,p,p_idx,sDs,s_idx,jDs,j_idx,tDs)
 
 def downsampleData(s,j,t,rate):
@@ -77,11 +80,14 @@ if __name__ == "__main__":
 
   # Loops over each argument in the command line 
   fileName = False 
+  fileOutName = None
   rate = 10 
   for i,arg in enumerate(sys.argv):
     # calls 'doit' with the next argument following the argument '-validation'
     if(arg=="-pickleName"):
       fileName=sys.argv[i+1] 
+    if(arg=="-pickleOutName"):
+      fileOutName=sys.argv[i+1] 
     if(arg=="-rate"):
       rate =int(sys.argv[i+1])
   
@@ -93,7 +99,7 @@ if __name__ == "__main__":
   if fileName==False:
     raise RuntimeError("Arguments not understood")
   else:
-    downsample(fileName,rate=rate)
+    downsample(fileName,fileOutName=fileOutName, rate=rate)
 
 
 
