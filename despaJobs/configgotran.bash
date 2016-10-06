@@ -1,4 +1,4 @@
-export LOC=/u1/pmke226/srcs/            
+export LOC=/home/AD/cesc235/sources 
 export MYPATH=$LOC/mypython/
 export PYTHONPATH=$PYTHONPATH:$MYPATH/lib/python2.7/site-packages/
 export PATH=$PATH:$LOC/gotran/scripts/

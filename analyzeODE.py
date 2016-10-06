@@ -32,23 +32,25 @@ def writePickle(name,p,p_idx,s,s_idx,j,j_idx,t):
   output.close()
   print "SUCCESS! Wrote output to ", name
 
-def readPickle(name = "PCa0.75kss0.25.pickle"):
-  print "Reading " + name  
+def readPickle(name = "PCa0.75kss0.25.pickle",verbose=True):          
+  if verbose: 
+    print "Reading " + name  
   pkl_file = open(name, 'rb')
   data1 = pickle.load(pkl_file)  
   pkl_file.close()
 
   return data1  
 
-def LoadPickles(caseDict,noOverwrite=False):
+def LoadPickles(caseDict,noOverwrite=False,verbose=True):
   for key,case in caseDict.iteritems():
-    print "# ", key
-    print "Loading "  , case.name
+    if verbose:
+      print "# ", key
+      print "Loading "  , case.name
 
     if hasattr(case,'data') and noOverwrite==True:
       print "Skipping read, since already populated"
     else: 
-      case.data = readPickle(case.name)
+      case.data = readPickle(case.name,verbose=verbose)
     
 
 ###
@@ -190,16 +192,9 @@ def TwoDPlots(allKeys,allVars,outsMin, outsMax,label0="",label1="",state="Cai"):
     plt.gcf().savefig(name)        
 
 
-# trange can set 't' limit
-def PlotPickleData(data1,data2=None,idxName="V",ylabel="V (mV)",trange=None,
-    case1legend = None, case2legend=None,ylim=False,
-    ):    
-  #  idx1=runner.model.state_indices(idxName)     
-  # fluxes
-  ms_to_s = 1e-3
-  class empty:pass
-
-  def mycont(data): 
+class empty:pass
+ms_to_s = 1e-3
+def GetData(data,idxName): 
     datac = empty()
     datac.t = data['t'] * ms_to_s
     datac.s = data['s']
@@ -218,11 +213,21 @@ def PlotPickleData(data1,data2=None,idxName="V",ylabel="V (mV)",trange=None,
       print idxName, " not found"
       datac.v =None
 
+    idx = datac.v_idx.index(idxName)
+    datac.valsIdx = datac.v[:,idx] 
     return datac
 
-  datac1 = mycont(data1) 
+# trange can set 't' limit
+def PlotPickleData(data1,data2=None,idxName="V",ylabel="V (mV)",trange=None,
+    case1legend = None, case2legend=None,ylim=False,
+    ):    
+  #  idx1=runner.model.state_indices(idxName)     
+  # fluxes
+
+
+  datac1 = GetData(data1,idxName) 
   if data2!=None:
-    datac2 = mycont(data2) 
+    datac2 = GetData(data2,idxName) 
 
 
   fig = plt.figure()
