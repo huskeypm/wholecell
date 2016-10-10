@@ -17,7 +17,7 @@ export LOC=$HOME/sources
 export MYPATH=$LOC/mypython
 export PYTHONPATH=$PYTHONPATH:$MYPATH/lib/python2.7/site-packages/
 
-
+export SLEEPYTIME=150000 # maximum time jobs should take + some padding  
 cd /home/pmke226/sources/wholecell/
 
 
@@ -86,6 +86,6 @@ python runShannonTest.py -stim 1000 -T 300000 -var G_CaBk 1.000000 -var G_NaBk 1
  python runShannonTest.py -stim 1000 -T 300000 -var G_CaBk 2.750000 -var G_NaBk 2.250000 -name ./run_G_CaBk2.75_G_NaBk2.25_stim1000 &
  python runShannonTest.py -stim 1000 -T 300000 -var G_CaBk 2.750000 -var G_NaBk 2.500000 -name ./run_G_CaBk2.75_G_NaBk2.50_stim1000 &
  python runShannonTest.py -stim 1000 -T 300000 -var G_CaBk 2.750000 -var G_NaBk 2.750000 -name ./run_G_CaBk2.75_G_NaBk2.75_stim1000 &
-sleep 150000 
+sleep $SLEEPYTIME
 print "LEAVING!" 
 
