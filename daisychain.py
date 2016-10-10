@@ -48,6 +48,13 @@ def daisychain(\
     namesOnly=False):
   # remove pickle
   outBase = outBase.replace(".pickle","")
+
+  # downsample if dt < 1 ms 
+  if dt < 1.0: # [ms] 
+    downsampleRateTrial = np.floor(1.0/np.float(dt))  
+    if downsampleRateTrial > downsampleRate: 
+      downsampleRate = downsampleRateTrial
+      print "Forcing downsampling rate of ", downsampleRate, " for dt=", dt 
   
 
   ### sample param dictionary, can add specific parameters here
@@ -166,6 +173,7 @@ def ConcatenateTrajs(pickleNames,writeCat=False,downsampleRate=1):
 
   #return ts, allsisi, s_idx
   data = dict()
+  print "This is embarrasingly wrong. Fix this " 
   data['s']    = allsisi[::downsampleRate,]
   data['s_idx']= s_idx 
   data['j']    = alljisi[::downsampleRate,]
@@ -263,6 +271,7 @@ if __name__ == "__main__":
   
     if(arg=="-dSr" or arg=="-downsampleRate" ): 
       downsampleRate= np.float(sys.argv[i+1])
+
     if(arg=="-dtn" or arg=="-T" ): 
       dtn = np.float(sys.argv[i+1])
 
