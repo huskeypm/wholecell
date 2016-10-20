@@ -252,7 +252,7 @@ if __name__ == "__main__":
   odeName = "shannon_2004.ode"
   iters = 3
   dtn = 10e3
-  dt = 0.1
+  dt = 0.1 # .1 ms default
   stim_period = 1000.
   outBase = "test.pickle"
   downsampleRate=1.

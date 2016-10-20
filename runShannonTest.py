@@ -12,19 +12,19 @@ idxNCX = runner.model.monitor_indices("i_NaCa")
 import analyzeODE as ao
 
 
-def WritePickle(name,p,p_idx,s,s_idx,j,j_idx,t):
-  raise RuntimeError("WARNING: need to antiquate this function and use analyzeODE version")
-  #ao.writePickle(name,p,p_idx,s,s_idx,j,j_idx,t)
-  data1 = {'p':p,'s':s,'t':t,'j':np.asarray(j),\
-           'p_idx':p_idx,'s_idx':s_idx,'j_idx':j_idx}
-  #print np.shape(j) 
-  import cPickle as pickle
-  if ".pickle" not in name:
-    name += ".pickle"
-  output = open(name, 'wb')
-  pickle.dump(data1, output)
-  output.close()
-  print "SUCCESS! Wrote output to ", name
+#def WritePickle(name,p,p_idx,s,s_idx,j,j_idx,t):
+#  raise RuntimeError("WARNING: need to antiquate this function and use analyzeODE version")
+#  #ao.writePickle(name,p,p_idx,s,s_idx,j,j_idx,t)
+#  data1 = {'p':p,'s':s,'t':t,'j':np.asarray(j),\
+#           'p_idx':p_idx,'s_idx':s_idx,'j_idx':j_idx}
+#  #print np.shape(j) 
+#  import cPickle as pickle
+#  if ".pickle" not in name:
+#    name += ".pickle"
+#  output = open(name, 'wb')
+#  pickle.dump(data1, output)
+#  output.close()
+#  print "SUCCESS! Wrote output to ", name
 
 
 #def namer(PCa,ks,vMax=None,stim=None):
@@ -98,8 +98,16 @@ def runParams(
 # Print's command lines for running param sweep
 # FixedParm is used to pass in a modified parameter that is not being swept
 # over. Could probably be generalized into another varDict
-def GenSweptParams(varDict,\
-    stim_period=1000,T=10000,fixedParm=None,fixedParmVal=None,nameTag=None):
+def GenSweptParams(
+    varDict, # variables that are 'swept' over 
+    varDictFixed=None, # variables that are passed in but only assume one value 
+    odeName ="shannon_2004_mouse.ode",
+    stim_period=1000,T=10000,
+    fixedParm=None,fixedParmVal=None, 
+    nameTag=None):
+
+  if fixedParm!=None:
+    raise RuntimeError("Antiquated; use fixedVarDict") 
 
   # create list of input args (for command line) 
   allArgs=[]
@@ -127,14 +135,15 @@ def GenSweptParams(varDict,\
   # cmd and timing 
   #cmdpre = "nohup python runShannonTest.py"
   cmdpre = "nohup python daisychain.py"
-  cmdpre = " -jit "
+  cmdpre+= " -jit "
   cmdpre+= " -stim %d" % stim_period
   cmdpre+= " -T %d" % T                     
 
 
   cmdFixedParms = ""
-  if fixedParm!=None:
-    cmdFixedParms = " -var %s %f" % (fixedParm,fixedParmVal)
+  if varDictFixed!=None:
+    for key,value in varDictFixed.items():
+      cmdFixedParms += " -var %s %f" % (key, value)
     
 
 
@@ -147,6 +156,7 @@ def GenSweptParams(varDict,\
         cmd = cmdpre
         cmd+= " "+arg1 
         cmd+= cmdFixedParms
+        cmd+= " -odeName "+odeName 
         cmd+= " -name "+name 
         cmd+= " &"
         print cmd
@@ -163,6 +173,7 @@ def GenSweptParams(varDict,\
         cmd+= " "+arg1 
         cmd+= " "+arg2 
         cmd+= cmdFixedParms
+        cmd+= " -odeName "+odeName 
         cmd+= " -name "+name 
         cmd+= " &"
         print cmd
