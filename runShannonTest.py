@@ -125,7 +125,8 @@ def GenSweptParams(varDict,\
     
 
   # cmd and timing 
-  cmdpre = "nohup python runShannonTest.py"
+  #cmdpre = "nohup python runShannonTest.py"
+  cmdpre = "nohup python daisychain.py"
   cmdpre = " -jit "
   cmdpre+= " -stim %d" % stim_period
   cmdpre+= " -T %d" % T                     

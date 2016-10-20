@@ -260,6 +260,7 @@ if __name__ == "__main__":
   for i,arg in enumerate(sys.argv):
     # calls 'runParams' with the next argument following the argument '-validation'
     if("-var" in arg):
+      # Absolute, not relative values
       varName =sys.argv[i+1]
       varVal =sys.argv[i+2]
       varDict[varName] = np.float(varVal)
