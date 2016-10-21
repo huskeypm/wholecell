@@ -1,6 +1,9 @@
 """
 For processing ODE outputs in support of Satin/Despa collaborations 
 """
+
+
+
 import cPickle as pickle
 import runner 
 import matplotlib.pylab as plt
@@ -13,6 +16,52 @@ class empty:pass
 mM_to_uM = 1e3
 ms_to_s = 1e-3
 
+plotlyAuth=None
+# For plotly support 
+def PlotViaPlotly(casesSubset,state): 
+  downsample=10
+  import plotly
+  if plotlyAuth==None:
+    with open('/net/share/pmke226/PLOTLY', 'r') as f:
+        first_line = f.readline()
+    plotlyKey = first_line    
+    plotly.tools.set_credentials_file(
+      username='huskeypm', api_key='3x5rz5d19r') #plotlyKey)
+  import plotly.tools as tls
+  import plotly.plotly as py
+
+  fig = plt.figure()
+  ax = plt.subplot(111)
+  case1=casesSubset[0]
+  case2=casesSubset[1]
+  title ="%s_%s_%s"%(state,case1.label,case2.label)
+  ax.set_title("%s: %s,%s"%(state,case1.label,case2.label))
+  for i,case in enumerate(casesSubset):
+    pkg = GetData(case.data,state)
+    ax.plot(pkg.t[::downsample],pkg.valsIdx[::downsample], label=case.label)
+  plotly_fig = tls.mpl_to_plotly( fig )
+
+  # Adding custom attributes to legend
+  plotly_fig['layout']['showlegend'] = True
+#layout = go.Layout(
+#    xaxis=dict(
+#        range=[2, 5]
+#    ),
+#    yaxis=dict(
+#        range=[2, 5]
+#    )
+#)
+#fig = go.Figure(data=data, layout=layout)
+
+
+  plot_url = py.iplot(plotly_fig, filename = title)
+  print plot_url.resource
+   
+
+  
+  
+ 
+  
 
 
 ### 
@@ -220,7 +269,7 @@ def GetData(data,idxName):
 # trange can set 't' limit
 def PlotPickleData(data1,data2=None,idxName="V",ylabel="V (mV)",trange=None,
     case1legend = None, case2legend=None,ylim=False,
-    ):    
+    color='r'):    
   #  idx1=runner.model.state_indices(idxName)     
   # fluxes
 
@@ -240,27 +289,36 @@ def PlotPickleData(data1,data2=None,idxName="V",ylabel="V (mV)",trange=None,
     plt.subplot(1,2,2)
     if datac1.v !=None:
       idx1 = datac1.v_idx.index(idxName)
-      plt.plot(datac1.t,datac1.v[:,idx1],'k',label=case1legend)
+      plt.plot(datac1.t,datac1.v[:,idx1],color,label=case1legend)
     if data2!=None and datac2.v !=None:
       idx2 = datac2.v_idx.index(idxName)
-      plt.plot(datac2.t,datac2.v[:,idx2],'r',label=case2legend)
+      plt.plot(datac2.t,datac2.v[:,idx2],'k',label=case2legend)
     if ylim != False:
       plt.ylim(ylim)
     plt.xlim(trange*ms_to_s)
+    plt.tight_layout()	
     plt.subplot(1,2,1)
 
 
   if datac1.v !=None:
     idx1 = datac1.v_idx.index(idxName)
-    plt.plot(datac1.t,datac1.v[:,idx1],'k',label=case1legend)
+    plt.plot(datac1.t,datac1.v[:,idx1],color,label=case1legend)
   if data2!=None and datac2.v !=None:
     idx2 = datac2.v_idx.index(idxName)
-    plt.plot(datac2.t,datac2.v[:,idx2],'r',label=case2legend)
-  plt.xlabel('time [s]')
-  plt.ylabel(ylabel)
-  plt.legend(loc=3)
+    plt.plot(datac2.t,datac2.v[:,idx2],'k',label=case2legend)
+  plt.xlim(0,60)
+  plt.xlabel('time [s]',fontsize=14)
+  if idxName == "Cai"or"Ca_SR":
+      plt.ylabel(ylabel+' [uM]',fontsize=14)
+  if idxName == "Nai":
+      plt.ylabel(ylabel+' [mM]',fontsize=14)
+  if idxName == "V":
+      plt.ylabel(ylabel+' [mV]',fontsize=14)
+  legend = plt.legend(loc=3)
+  legend.get_frame().set_facecolor('white')
   plt.tight_layout()
   
+
   
 
 
