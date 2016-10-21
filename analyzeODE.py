@@ -1,9 +1,6 @@
 """
 For processing ODE outputs in support of Satin/Despa collaborations 
 """
-
-
-
 import cPickle as pickle
 import runner 
 import matplotlib.pylab as plt
@@ -18,13 +15,13 @@ ms_to_s = 1e-3
 
 plotlyAuth=None
 # For plotly support 
-def PlotViaPlotly(casesSubset,state): 
+def PlotViaPlotly(casesSubset,state):
   downsample=10
   import plotly
   if plotlyAuth==None:
     with open('/net/share/pmke226/PLOTLY', 'r') as f:
         first_line = f.readline()
-    plotlyKey = first_line    
+    plotlyKey = first_line
     plotly.tools.set_credentials_file(
       username='huskeypm', api_key='3x5rz5d19r') #plotlyKey)
   import plotly.tools as tls
@@ -53,16 +50,8 @@ def PlotViaPlotly(casesSubset,state):
 #)
 #fig = go.Figure(data=data, layout=layout)
 
-
   plot_url = py.iplot(plotly_fig, filename = title)
   print plot_url.resource
-   
-
-  
-  
- 
-  
-
 
 ### 
 ### I/O 
@@ -101,7 +90,6 @@ def LoadPickles(caseDict,noOverwrite=False,verbose=True):
     else: 
       case.data = readPickle(case.name,verbose=verbose)
     
-
 ###
 ### Mostly plotting 
 ### 
@@ -159,8 +147,6 @@ def ProcessOneDOutputs(var1Name,names,allVars,state="Cai",xlim=None,ylim=None,of
   if ylim!=None:
     plt.ylim(ylim)
 
-
-
   plt.ylabel("[%s] [uM]" % state)  
   plt.xlabel("timesteps []") # t [ms]") 
   name = state+"transients%s"%(var1Name)
@@ -174,7 +160,6 @@ def ProcessTwoDOutputs(allKeys,allVars,state="Cai",ylims=None,stim_period=1000,n
 
   outsMin = np.zeros([np.shape(vars1)[0],np.shape(vars2)[0]])
   outsMax = np.zeros(outsMin.shape)
-
 
   # assuming there exist two iterated var 
   #for i, PCa in enumerate(PCas):
@@ -226,7 +211,6 @@ def TwoDPlots(allKeys,allVars,outsMin, outsMax,label0="",label1="",state="Cai"):
     plt.colorbar()
     plt.xlabel(label1)        
     
-    
     plt.subplot(2,2,3)
     plt.title(state+" diff")
     plt.pcolormesh(xv,yv,(outsMax-outsMin)*mM_to_uM)
@@ -240,13 +224,10 @@ def TwoDPlots(allKeys,allVars,outsMin, outsMax,label0="",label1="",state="Cai"):
     name = state+"_extrema.png"
     plt.gcf().savefig(name)        
 
-
-class empty:pass
-ms_to_s = 1e-3
 def GetData(data,idxName): 
     datac = empty()
     datac.t = data['t'] * ms_to_s
-    datac.s = data['s']
+    datac.s = data['s'] / mM_to_uM
     datac.s_idx = data['s_idx']
     datac.j = data['j']
     datac.j_idx = data['j_idx']
@@ -267,17 +248,15 @@ def GetData(data,idxName):
     return datac
 
 # trange can set 't' limit
-def PlotPickleData(data1,data2=None,idxName="V",ylabel="V (mV)",trange=None,
+def PlotPickleData_OLD(data1,data2=None,idxName="V",ylabel="V (mV)",trange=None,
     case1legend = None, case2legend=None,ylim=False,
     color='r'):    
   #  idx1=runner.model.state_indices(idxName)     
   # fluxes
 
-
   datac1 = GetData(data1,idxName) 
   if data2!=None:
     datac2 = GetData(data2,idxName) 
-
 
   fig = plt.figure()
 
@@ -296,7 +275,7 @@ def PlotPickleData(data1,data2=None,idxName="V",ylabel="V (mV)",trange=None,
     if ylim != False:
       plt.ylim(ylim)
     plt.xlim(trange*ms_to_s)
-    plt.tight_layout()	
+    plt.tight_layout()
     plt.subplot(1,2,1)
 
 
@@ -318,9 +297,39 @@ def PlotPickleData(data1,data2=None,idxName="V",ylabel="V (mV)",trange=None,
   legend.get_frame().set_facecolor('white')
   plt.tight_layout()
   
+### Below definition made by BDS on 10/13/2016 ###  
+def Plot_Pickle_Data(rootOutput,datas,state=None,colors=None,xlabel=None,ylabel=None,
+                   Full_image_xlim=None,Zoomed_image_xlim=None,plot_ylim=None,unit_scaler=None,
+                   legends=None,time_range=None):
 
-  
+    Zoomed_image = plt.subplot(1,2,2)
+    Full_image = plt.subplot(1,2,1)
+    
+    for i,data in enumerate(datas):
+        extracted_data = ao.GetData(data,state)
+        
+        idx = extracted_data.v_idx.index(state)
+        Full_image.plot(extracted_data.t,(extracted_data.v[:,idx]*unit_scaler),colors[i],label=legends[i])
+        Zoomed_image.plot(extracted_data.t,(extracted_data.v[:,idx]*unit_scaler),colors[i],label=legends[i])
 
+        Full_image.legend(loc=3)
+
+    #plt.locator_params(nbins=6)
+    Full_image.locator_params(nbins=8)
+    Zoomed_image.locator_params(nbins=8)
+    Full_image.set_xlim(Full_image_xlim)
+    Zoomed_image.set_xlim(Zoomed_image_xlim)
+    Full_image.set_ylim(plot_ylim)
+    Zoomed_image.set_ylim(plot_ylim)
+    
+    plt.xlabel(xlabel, weight="bold",fontsize=14)
+    plt.ylabel(ylabel, weight="bold",fontsize=14)
+    plt.tight_layout()
+    
+    outFile = rootOutput+"Intracellular_%s_%s_%s.png"%(state,legends[1],legends[0])
+    plt.gcf().savefig(outFile,bbox_extra_Artists=(),bbox_inches='tight',dpi=300)
+    plt.show()
+    plt.close()
 
 def PlotFluxes(t,j,idx1=None,idx1Name="i_Ca",label1="flux1",idx2=None,label2=None):      
 
@@ -726,13 +735,15 @@ def StateDecompositionAnalysis(caseDict, \
                   doPlot=False,
                   sortby="mean" # max, min, amp
                  ):  
-  
+  print "Starting"
+  return  
   # we want to compare only two of the cases, so select these here    
   #wanted =["baseline1Hz","baseline0.25Hz"]# ,"2xincrleak0.25Hz"]
   #wanted =["baseline0.25Hz","2xincrleak0.25Hz"]
   subCaseDict = dict()
   wanted =[wanted1,wanted2]
   for idx, wantedi in enumerate(wanted):
+    print wantedi
     for key, case in caseDict.iteritems():
     #if key in wanted:
       if key == wantedi:
@@ -741,8 +752,9 @@ def StateDecompositionAnalysis(caseDict, \
         subCaseDict[ case.tag ]  = case
         #print np.shape(case.data['s']) 
 
-  # Load data 
-  LoadPickles(subCaseDict,noOverwrite=True)   
+  # Load data
+  # Should be loaded dum dum 
+  #LoadPickles(subCaseDict,noOverwrite=True)   
 
 
   # decide on which data to pull
@@ -813,9 +825,6 @@ def StateDecompositionAnalysis(caseDict, \
     plt.legend()
     plt.gcf().savefig(root+"%s_%s_%s_%s.png"%(mode,label1,wanted1,wanted2),dpi=300)
 
-
-  
-  
   ## Quantify (pct error) change in mean value of each state
   # normalize by case 1
   def donorm(subj,ref):  
@@ -951,9 +960,6 @@ def StateDecompositionAnalysis(caseDict, \
   ax.legend( (rects1[0], rects2[0]), (lb1,lb2),loc=4 )
   ax.set_ylabel("fold chg wrt WT")
   plt.tight_layout()
-
-
-  
   
   #plt.gcf().savefig(root+versionPrefix+"comparative.png",dpi=300)
   filePrefix = root+"comparative_%s_%s_%s_%s"%(mode,wanted1,wanted2,sortby)
