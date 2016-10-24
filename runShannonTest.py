@@ -37,13 +37,13 @@ class empty:
 
 def namer(var1Name, var1Val, var2Name=None,var2Val=None,stim_period=1000,tag=None):
     #loc = "/u1/huskeypm/srcs/wholecell/"
-    loc = "./"
+    loc = "/net/share/bdst227/Despa/Despa_Simulations_Data/"
     name =  loc+"run"
-    name+=  "_%s%3.2f"%(var1Name,var1Val)
+    name+=  "_%s_%3.2f"%(var1Name,var1Val)
     if var2Name!=None:    
-      name+=  "_%s%3.2f"%(var2Name,var2Val)
+      name+=  "_%s_%3.2f"%(var2Name,var2Val)
 
-    name+="_stim%d"%stim_period
+    name+="_stim_%d"%stim_period
 
     if tag!=None:
       name+= "_"+tag
@@ -91,6 +91,78 @@ def runParams(
   output.close()
 
 # Print's command lines for running param sweep
+### Made by BDS on 10/24/2016 ###
+# Generalized code that constant variables and variable variables can be passed in same dict. 
+# One day try to make the code so can handle more than 2 variable variables.
+def Gen_Swept_Params_Better(
+    varDict, # variables that are 'swept' over 
+    odeName ="shannon_2004_mouse.ode",
+    stim_period = 1000,Time = 10000,iters=None,
+    downsampleRate=None,nameTag=None):
+
+    Command_line_input_pre  = "nohup python daisychain.py"
+    Command_line_input_pre += " -jit "
+    Command_line_input_pre += " -stim %d" % stim_period
+    Command_line_input_pre += " -T %d" % Time
+    if iters != None:
+        command_line_input_pre += " -iters %d" % iters
+    if downsampleRate != None:
+        command_line_input_pre += " -downsampleRate %d" % downsampleRate
+    
+    # create list of input args (for command line)
+    allArgs=[]
+    allVars=[]
+    Non_Fixed_keys=[]
+
+    for key,value in sorted(varDict.items()):           
+        print keys
+        if len(value) == 1:
+            Command_line_input_pre += " -var %s %f" % (key, value[0])
+        else:        
+            Non_Fixed_keys.append(key)
+            var1vals = [np.float(x) for x in value]
+            var1s = np.linspace(var1vals[0],var1vals[1],
+              np.int((var1vals[1]-var1vals[0])/var1vals[2])+1)
+            allVars.append(var1s)
+            #print var1s
+
+            args1 = []
+            for i, rvar1 in enumerate(var1s):
+              args1.append("-var %s %f"%(key,rvar1))
+            allArgs.append(args1)
+            #print args1
+    
+    # iter over one var
+    names = []
+    if len(allArgs)==1:
+        for i, arg1 in enumerate(allArgs[0]):
+            var1 = (allVars[0])[i]
+            name = namer(keys[0],var1,stim_period=stim_period,tag=nameTag)
+            Command_line_input  = Command_line_input_pre
+            Command_line_input += " " + str(arg1)
+            Command_line_input += " -odeName " + str(odeName)
+            Command_line_input += " -name " + name
+            Command_line_input += " &"
+            print Command_line_input
+        
+    elif len(allArgs)==2:
+        for i, arg1 in enumerate(allArgs[0]):
+            for j, arg2 in enumerate(allArgs[1]):
+                var1 = (allVars[0])[i]
+                var2 = (allVars[1])[j]
+                name = namer(keys[0],var1,keys[1],var2,stim_period=stim_period,tag=nameTag)
+                Command_line_input  = Command_line_input_pre
+                Command_line_input += " " + str(arg1)
+                Command_line_input += " " + str(arg2)
+                Command_line_input += " -odeName " + str(odeName)
+                Command_line_input += " -name " + name
+                Command_line_input += " &"
+                print Command_line_input
+    else:
+        raise RuntimeError("Not supported")
+        
+    return names,keys,allVars
+
 # FixedParm is used to pass in a modified parameter that is not being swept
 # over. Could probably be generalized into another varDict
 def GenSweptParams(
@@ -100,6 +172,8 @@ def GenSweptParams(
     stim_period=1000,T=10000,
     fixedParm=None,fixedParmVal=None, 
     nameTag=None):
+
+  rase RuntimeError("This is old, use Gen_Swept_Params_Better. If need help see BDS.") 
 
   if fixedParm!=None:
     raise RuntimeError("Antiquated; use fixedVarDict") 
