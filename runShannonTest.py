@@ -10,7 +10,14 @@ import downSamplePickles
 runner.init()
 idxNCX = runner.model.monitor_indices("i_NaCa")
 import analyzeODE as ao
+import gotranJIT
 
+class empty:
+    def __init__(self,p,s,ts,js):
+      self.p = p
+      self.s = s
+      self.ts = ts
+      self.js = js
 
 #def WritePickle(name,p,p_idx,s,s_idx,j,j_idx,t):
 #  raise RuntimeError("WARNING: need to antiquate this function and use analyzeODE version")
@@ -26,8 +33,8 @@ import analyzeODE as ao
 #  output.close()
 #  print "SUCCESS! Wrote output to ", name
 
-
 #def namer(PCa,ks,vMax=None,stim=None):
+
 def namer(var1Name, var1Val, var2Name=None,var2Val=None,stim_period=1000,tag=None):
     #loc = "/u1/huskeypm/srcs/wholecell/"
     loc = "./"
@@ -42,15 +49,6 @@ def namer(var1Name, var1Val, var2Name=None,var2Val=None,stim_period=1000,tag=Non
       name+= "_"+tag
 
     return name 
-
-
-
-class empty:
-    def __init__(self,p,s,ts,js):
-      self.p = p
-      self.s = s
-      self.ts = ts
-      self.js = js
 
 def runParams(
   runner=None,
@@ -92,9 +90,6 @@ def runParams(
   pickle.dump(data1, output)
   output.close()
 
-  
-  
-
 # Print's command lines for running param sweep
 # FixedParm is used to pass in a modified parameter that is not being swept
 # over. Could probably be generalized into another varDict
@@ -129,9 +124,6 @@ def GenSweptParams(
     allArgs.append(args1)
     #print args1
 
-
-    
-
   # cmd and timing 
   #cmdpre = "nohup python runShannonTest.py"
   cmdpre = "nohup python daisychain.py"
@@ -144,8 +136,6 @@ def GenSweptParams(
   if varDictFixed!=None:
     for key,value in varDictFixed.items():
       cmdFixedParms += " -var %s %f" % (key, value)
-    
-
 
   # iter over one var
   names = []
@@ -153,12 +143,12 @@ def GenSweptParams(
     for i, arg1 in enumerate(allArgs[0]): 
         var1 = (allVars[0])[i]
         name = namer(keys[0],var1,stim_period=stim_period,tag=nameTag)
-        cmd = cmdpre
-        cmd+= " "+arg1 
-        cmd+= cmdFixedParms
-        cmd+= " -odeName "+odeName 
-        cmd+= " -name "+name 
-        cmd+= " &"
+        cmd  = cmdpre
+        cmd += " "+arg1 
+        cmd += cmdFixedParms
+        cmd += " -odeName "+odeName 
+        cmd += " -name "+name 
+        cmd += " &"
         print cmd
         names.append(name)
 
@@ -169,13 +159,13 @@ def GenSweptParams(
         var1 = (allVars[0])[i]
         var2 = (allVars[1])[j]
         name = namer(keys[0],var1,keys[1],var2,stim_period=stim_period,tag=nameTag)
-        cmd = cmdpre
-        cmd+= " "+arg1 
-        cmd+= " "+arg2 
-        cmd+= cmdFixedParms
-        cmd+= " -odeName "+odeName 
-        cmd+= " -name "+name 
-        cmd+= " &"
+        cmd  = cmdpre
+        cmd += " "+arg1 
+        cmd += " "+arg2 
+        cmd += cmdFixedParms
+        cmd += " -odeName "+odeName 
+        cmd += " -name "+name 
+        cmd += " &"
         print cmd
         names.append(name)
 
@@ -188,7 +178,6 @@ def GenSweptParams(
 ### JIT support  
 ###
 
-import gotranJIT 
 # Shamelessly snagged from gotranrun.py 
 def GetMonitored(module, ode,tsteps,results,model_params):
     monitored = []
@@ -245,8 +234,6 @@ def runParamsFast(odeName = "shannon_2004.ode",name="out",\
       #print key, value 
       params.init_conditions.extend([key,value])  
     
-    
-  
   ## JIT compile module, simulate  
   #ks=25. # default  [1/ms]
   #KSRleak=5.348e-6 # default [1/ms]
@@ -277,9 +264,6 @@ def runParamsFast(odeName = "shannon_2004.ode",name="out",\
   else:
       ao.writePickle(name,p,p_idx,s,s_idx,j,j_idx,t)
 
-
-
-
 #!/usr/bin/env python
 import sys
 ##################################
@@ -302,12 +286,11 @@ Purpose:
  
 Usage:
 """
-  msg+="  %s -sweep nameVar startVal endVal incrVal " % (scriptName)
-  msg+=" \n or\n "
-  msg+="  %s -var nameVar val  " % (scriptName)
-  msg+="""
+  msg += "  %s -sweep nameVar startVal endVal incrVal " % (scriptName)
+  msg += " \n or\n "
+  msg += "  %s -var nameVar val  " % (scriptName)
+  msg += """
   
- 
 Notes:
 
 """
@@ -328,7 +311,6 @@ if __name__ == "__main__":
   #if(len(sys.argv)==3):
   #  1
   #  #print "arg"
-
 
   # Loops over each argument in the command line 
   pi = runner.model.p
