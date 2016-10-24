@@ -115,7 +115,7 @@ def Gen_Swept_Params_Better(
     Non_Fixed_keys=[]
 
     for key,value in sorted(varDict.items()):           
-        print keys
+        #print keys
         if len(value) == 1:
             Command_line_input_pre += " -var %s %f" % (key, value[0])
         else:        
@@ -137,7 +137,7 @@ def Gen_Swept_Params_Better(
     if len(allArgs)==1:
         for i, arg1 in enumerate(allArgs[0]):
             var1 = (allVars[0])[i]
-            name = namer(keys[0],var1,stim_period=stim_period,tag=nameTag)
+            name = namer(Non_Fixed_keys[0],var1,stim_period=stim_period,tag=nameTag)
             Command_line_input  = Command_line_input_pre
             Command_line_input += " " + str(arg1)
             Command_line_input += " -odeName " + str(odeName)
@@ -150,7 +150,7 @@ def Gen_Swept_Params_Better(
             for j, arg2 in enumerate(allArgs[1]):
                 var1 = (allVars[0])[i]
                 var2 = (allVars[1])[j]
-                name = namer(keys[0],var1,keys[1],var2,stim_period=stim_period,tag=nameTag)
+                name = namer(Non_Fixed_keys[0],var1,Non_Fixed_keys[1],var2,stim_period=stim_period,tag=nameTag)
                 Command_line_input  = Command_line_input_pre
                 Command_line_input += " " + str(arg1)
                 Command_line_input += " " + str(arg2)
@@ -173,7 +173,7 @@ def GenSweptParams(
     fixedParm=None,fixedParmVal=None, 
     nameTag=None):
 
-  rase RuntimeError("This is old, use Gen_Swept_Params_Better. If need help see BDS.") 
+  raise RuntimeError("This is old, use Gen_Swept_Params_Better. If need help see BDS.") 
 
   if fixedParm!=None:
     raise RuntimeError("Antiquated; use fixedVarDict") 
