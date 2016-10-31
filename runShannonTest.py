@@ -36,19 +36,82 @@ class empty:
 #def namer(PCa,ks,vMax=None,stim=None):
 
 def namer(var1Name, var1Val, var2Name=None,var2Val=None,stim_period=1000,tag=None):
+    
+    raise RuntimeError("This is old, use NamerBetter. If need help see BDS.")
+
     #loc = "/u1/huskeypm/srcs/wholecell/"
-    loc = "/net/share/bdst227/Despa/Despa_Simulations_Data/"
-    name =  loc+"run"
-    name+=  "_%s_%3.2f"%(var1Name,var1Val)
+    loc   = "/net/share/bdst227/Despa/Despa_Simulations_Data/"
+    name  =  loc+"run"
+    name +=  "_%s_%3.2f"%(var1Name,var1Val)
     if var2Name!=None:    
-      name+=  "_%s_%3.2f"%(var2Name,var2Val)
+      name += "_%s_%3.2f"%(var2Name,var2Val)
 
-    name+="_stim_%d"%stim_period
+    name += "_stim_%d"%stim_period
 
-    if tag!=None:
-      name+= "_"+tag
+    if tag != None:
+      name += tag
 
     return name 
+
+# Returns name of file to be submited
+### Made by BDS on 10/30/2016 ###
+# Made it so that name of file can handle more cases.
+# Does percentage math for you and puts into name. 
+# Switches out pesky "." for "p" so computers do not confuse tags.
+def NamerBetter(temp, var1Name, var1Val, var2Name=None,var2Val=None,stim_period=1000):
+
+    leak_Base = 7.539e-4
+    nka_Base = 5.0
+    SERCA_Base = 7.02e-3
+    
+    name  = "mouse_"
+    name += "Temp_%3.2f_" %(temp)
+    
+    # Leak name value
+    if var1Name == "G_CaBk":
+        leak_Change = var1Val 
+        leak_Percentage = (leak_Change / leak_Base) * 100
+        name += "leak%3.2fpct_" %(leak_Percentage)
+	print "Be carefull and double check that leak is correct!!!!!!"
+    elif var2Name == "G_CaBk":
+        leak_Change = var2Val 
+        leak_Percentage = (leak_Change / leak_Base) * 100
+        name += "leak%3.2fpct_" %(leak_Percentage)
+        print "Be carefull and double check that leak is correct!!!!!!"
+    else:
+        name += "leak100pct_"
+        
+    # NKA name value
+    if var1Name == "I_NaK_max":
+        nka_Change = var1Val 
+        nka_Percentage = (nka_Change / nka_Base) * 100
+        name += "nka%3.2fpct_" %(nka_Percentage)
+    elif var2Name == "I_NaK_max":
+        nka_Change = var2Val 
+        nka_Percentage = (nka_Change / nka_Base) * 100
+        name += "nka%3.2fpct_" %(nka_Percentage)
+    else:
+        name += "nka100pct_"
+        
+    # SERCA name value
+    if var1Name == "V_max_Jpump":
+        SERCA_Change = var1Val 
+        SERCA_Percentage = (SERCA_Change / SERCA_Base) * 100
+        name += "SERCA%3.2fpct_" %(SERCA_Percentage)
+    elif var2Name == "V_max_Jpump":
+        SERCA_Change = var2Val 
+        SERCA_Percentage = (SERCA_Change / SERCA_Base) * 100
+        name += "SERCA%3.2fpct_" %(SERCA_Percentage)
+    else:
+        name += "SERCA100pct_"
+
+    stim_period_Hz = stim_period / 1000
+    name += "freq%dHz" %(stim_period_Hz)
+    
+    name = name.replace(".","p")
+
+    return name
+
 
 def runParams(
   runner=None,
@@ -94,21 +157,30 @@ def runParams(
 ### Made by BDS on 10/24/2016 ###
 # Generalized code that constant variables and variable variables can be passed in same dict. 
 # One day try to make the code so can handle more than 2 variable variables.
-def Gen_Swept_Params_Better(
+def GenSweptParamsBetter(
+    stateDict, # states that are 'swept' over
     varDict, # variables that are 'swept' over 
-    odeName ="shannon_2004_mouse.ode",
-    stim_period = 1000,Time = 10000,iters=None,
-    downsampleRate=None,nameTag=None):
+    Time = 10000, stim_period = 1000, iters = 3,
+    odeName = "shannon_2004_mouse.ode",
+    nameTag=".pkl",dt=0.1,downsampleRate=None):
 
-    Command_line_input_pre  = "nohup python daisychain.py"
-    Command_line_input_pre += " -jit "
-    Command_line_input_pre += " -stim %d" % stim_period
-    Command_line_input_pre += " -T %d" % Time
-    if iters != None:
-        command_line_input_pre += " -iters %d" % iters
+    #Command_line_input_pre  = "nohup python daisychain.py"
+    commandLineInputPre  = "python daisychain.py"
+    commandLineInputPre += " -dt %f" % dt
+    commandLineInputPre += " -jit"
+    commandLineInputPre += " -stim %d" % stim_period
+    commandLineInputPre += " -T %d" % Time
+    commandLineInputPre += " -iters %d" % iters
     if downsampleRate != None:
-        command_line_input_pre += " -downsampleRate %d" % downsampleRate
-    
+        commandLineInputPre += " -downsampleRate %d" % downsampleRate
+   
+    for key,value in sorted(stateDict.items()):           
+    	#print keys
+        if len(value) == 1:
+        	commandLineInputPre += " -state %s %f" % (key, value[0])
+	else:
+		raise RuntimeError("This code can't sweep over states at this time :(")
+ 
     # create list of input args (for command line)
     allArgs=[]
     allVars=[]
@@ -116,8 +188,11 @@ def Gen_Swept_Params_Better(
 
     for key,value in sorted(varDict.items()):           
         #print keys
-        if len(value) == 1:
-            Command_line_input_pre += " -var %s %f" % (key, value[0])
+        if key == "T":
+            temp = value[0]
+	    print "Temp: ", temp
+	if len(value) == 1:
+            commandLineInputPre += " -var %s %f" % (key, value[0])
         else:        
             Non_Fixed_keys.append(key)
             var1vals = [np.float(x) for x in value]
@@ -136,28 +211,29 @@ def Gen_Swept_Params_Better(
     names = []
     if len(allArgs)==1:
         for i, arg1 in enumerate(allArgs[0]):
-            var1 = (allVars[0])[i]
+       	    var1 = (allVars[0])[i]
             name = namer(Non_Fixed_keys[0],var1,stim_period=stim_period,tag=nameTag)
-            Command_line_input  = Command_line_input_pre
-            Command_line_input += " " + str(arg1)
-            Command_line_input += " -odeName " + str(odeName)
-            Command_line_input += " -name " + name
-            Command_line_input += " &"
-            print Command_line_input
+            commandLineInput  = commandLineInputPre
+            commandLineInput += " " + str(arg1)
+            commandLineInput += " -odeName " + str(odeName)
+            commandLineInput += " -name " + name
+            commandLineInput += " &"
+            print commandLineInput
         
     elif len(allArgs)==2:
         for i, arg1 in enumerate(allArgs[0]):
             for j, arg2 in enumerate(allArgs[1]):
                 var1 = (allVars[0])[i]
                 var2 = (allVars[1])[j]
-                name = namer(Non_Fixed_keys[0],var1,Non_Fixed_keys[1],var2,stim_period=stim_period,tag=nameTag)
-                Command_line_input  = Command_line_input_pre
-                Command_line_input += " " + str(arg1)
-                Command_line_input += " " + str(arg2)
-                Command_line_input += " -odeName " + str(odeName)
-                Command_line_input += " -name " + name
-                Command_line_input += " &"
-                print Command_line_input
+                name = NamerBetter(temp,Non_Fixed_keys[0],var1,Non_Fixed_keys[1],var2,stim_period)
+                commandLineInput  = commandLineInputPre
+                commandLineInput += " " + str(arg1)
+                commandLineInput += " " + str(arg2)
+                commandLineInput += " -odeName " + str(odeName)
+                commandLineInput += " -name " + name
+                commandLineInput += " &"
+                print commandLineInput
+		
     else:
         raise RuntimeError("Not supported")
         
@@ -173,7 +249,7 @@ def GenSweptParams(
     fixedParm=None,fixedParmVal=None, 
     nameTag=None):
 
-  raise RuntimeError("This is old, use Gen_Swept_Params_Better. If need help see BDS.") 
+  raise RuntimeError("This is old, use GenSweptParamsBetter. If need help see BDS.") 
 
   if fixedParm!=None:
     raise RuntimeError("Antiquated; use fixedVarDict") 

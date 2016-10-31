@@ -63,14 +63,14 @@ def writePickle(name,p,p_idx,s,s_idx,j,j_idx,t):
            'p_idx':p_idx,'s_idx':s_idx,'j_idx':j_idx}
   #print "j again: ", len(j) 
   #print "j_idx: ",np.shape(j_idx)
-  if ".pickle" not in name:
-    name += ".pickle"
+  if ".pkl" not in name:
+    name += ".pkl"
   output = open(name, 'wb')
   pickle.dump(data1, output)
   output.close()
-  print "SUCCESS! Wrote output to ", name
+  print "SUCCESS! Wrote output to", name
 
-def readPickle(name = "PCa0.75kss0.25.pickle",verbose=True):          
+def readPickle(name = "PCa0.75kss0.25.pkl",verbose=True):          
   if verbose: 
     print "Reading " + name  
   pkl_file = open(name, 'rb')
@@ -278,7 +278,6 @@ def PlotPickleData_OLD(data1,data2=None,idxName="V",ylabel="V (mV)",trange=None,
     plt.tight_layout()
     plt.subplot(1,2,1)
 
-
   if datac1.v !=None:
     idx1 = datac1.v_idx.index(idxName)
     plt.plot(datac1.t,datac1.v[:,idx1],color,label=case1legend)
@@ -304,6 +303,7 @@ def Plot_Pickle_Data(rootOutput,datas,state=None,colors=None,xlabel=None,ylabel=
 
     Zoomed_image = plt.subplot(1,2,2)
     Full_image = plt.subplot(1,2,1)
+    File_Name_Cases = ""
     
     for i,data in enumerate(datas):
         extracted_data = ao.GetData(data,state)
@@ -311,6 +311,7 @@ def Plot_Pickle_Data(rootOutput,datas,state=None,colors=None,xlabel=None,ylabel=
         idx = extracted_data.v_idx.index(state)
         Full_image.plot(extracted_data.t,(extracted_data.v[:,idx]*unit_scaler),colors[i],label=legends[i])
         Zoomed_image.plot(extracted_data.t,(extracted_data.v[:,idx]*unit_scaler),colors[i],label=legends[i])
+        File_Name_Cases += "%s_" %legends[i]
 
         Full_image.legend(loc=3)
 
@@ -326,11 +327,11 @@ def Plot_Pickle_Data(rootOutput,datas,state=None,colors=None,xlabel=None,ylabel=
     plt.ylabel(ylabel, weight="bold",fontsize=14)
     plt.tight_layout()
     
-    outFile = rootOutput+"Intracellular_%s_%s_%s.png"%(state,legends[1],legends[0])
+    outFile = rootOutput+"Intracellular_%s_%splots.png"%(state,File_Name_Cases)
+    print outFile
     plt.gcf().savefig(outFile,bbox_extra_Artists=(),bbox_inches='tight',dpi=300)
     plt.show()
     plt.close()
-
 def PlotFluxes(t,j,idx1=None,idx1Name="i_Ca",label1="flux1",idx2=None,label2=None):      
 
   raise RuntimeError("No longer using this. Try/revise PlotPickle()")
