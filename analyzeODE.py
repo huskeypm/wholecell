@@ -4,7 +4,8 @@ For processing ODE outputs in support of Satin/Despa collaborations
 import cPickle as pickle
 import runner 
 import matplotlib.pylab as plt
-import numpy as np 
+import numpy as np
+import analyzeODE as ao 
 from runShannonTest import *
 import taufitting as tf
 runner.init()
@@ -222,7 +223,8 @@ def TwoDPlots(allKeys,allVars,outsMin, outsMax,label0="",label1="",state="Cai"):
     plt.tight_layout()
     
     name = state+"_extrema.png"
-    plt.gcf().savefig(name)        
+    plt.gcf().savefig(name) 
+    return       
 
 def GetData(data,idxName): 
     datac = empty()
@@ -299,14 +301,37 @@ def PlotPickleData_OLD(data1,data2=None,idxName="V",ylabel="V (mV)",trange=None,
 ### Below definition made by BDS on 10/13/2016 ###  
 def Plot_Pickle_Data(rootOutput,datas,state=None,colors=None,xlabel=None,ylabel=None,
                    Full_image_xlim=None,Zoomed_image_xlim=None,plot_ylim=None,unit_scaler=None,
-                   legends=None,time_range=None):
+                   legends=None,time_range=None,legendMover1=1.0,legendMover2=1.0):
 
     Zoomed_image = plt.subplot(1,2,2)
     Full_image = plt.subplot(1,2,1)
     File_Name_Cases = ""
-    
+ 
+    def GetData(data,idxName):
+    	datac = empty()
+    	datac.t = data['t'] * ms_to_s
+    	datac.s = data['s'] / mM_to_uM
+    	datac.s_idx = data['s_idx']
+    	datac.j = data['j']
+    	datac.j_idx = data['j_idx']
+
+    	if idxName in datac.j_idx:
+      		datac.v = datac.j
+      		datac.v_idx = datac.j_idx
+    	# states 
+    	elif idxName in datac.s_idx:
+      		datac.v = datac.s
+      		datac.v_idx = datac.s_idx
+    	else:
+      		print idxName, " not found"
+      		datac.v =None
+
+    	idx = datac.v_idx.index(idxName)
+    	datac.valsIdx = datac.v[:,idx]
+    	return datac    
+
     for i,data in enumerate(datas):
-        extracted_data = ao.GetData(data,state)
+        extracted_data = GetData(data,state)
         
         idx = extracted_data.v_idx.index(state)
         Full_image.plot(extracted_data.t,(extracted_data.v[:,idx]*unit_scaler),colors[i],label=legends[i])
@@ -326,12 +351,40 @@ def Plot_Pickle_Data(rootOutput,datas,state=None,colors=None,xlabel=None,ylabel=
     plt.xlabel(xlabel, weight="bold",fontsize=14)
     plt.ylabel(ylabel, weight="bold",fontsize=14)
     plt.tight_layout()
-    
+
+    art = []
+    lgd = plt.legend(bbox_to_anchor=(legendMover1,legendMover2))
+    art.append(lgd)
+
     outFile = rootOutput+"Intracellular_%s_%splots.png"%(state,File_Name_Cases)
     print outFile
-    plt.gcf().savefig(outFile,bbox_extra_Artists=(),bbox_inches='tight',dpi=300)
+    plt.gcf().savefig(outFile,additional_artists=art,bbox_inches='tight',dpi=300)
     plt.show()
     plt.close()
+
+def GetData(data,idxName):
+    datac = empty()
+    datac.t = data['t'] * ms_to_s
+    datac.s = data['s'] / mM_to_uM
+    datac.s_idx = data['s_idx']
+    datac.j = data['j']
+    datac.j_idx = data['j_idx']
+
+    if idxName in datac.j_idx:
+      datac.v = datac.j
+      datac.v_idx = datac.j_idx
+    # states 
+    elif idxName in datac.s_idx:
+      datac.v = datac.s
+      datac.v_idx = datac.s_idx
+    else:
+      print idxName, " not found"
+      datac.v =None
+
+    idx = datac.v_idx.index(idxName)
+    datac.valsIdx = datac.v[:,idx]
+    return datac
+
 def PlotFluxes(t,j,idx1=None,idx1Name="i_Ca",label1="flux1",idx2=None,label2=None):      
 
   raise RuntimeError("No longer using this. Try/revise PlotPickle()")

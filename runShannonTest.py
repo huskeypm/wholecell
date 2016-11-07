@@ -58,13 +58,15 @@ def namer(var1Name, var1Val, var2Name=None,var2Val=None,stim_period=1000,tag=Non
 # Made it so that name of file can handle more cases.
 # Does percentage math for you and puts into name. 
 # Switches out pesky "." for "p" so computers do not confuse tags.
-def NamerBetter(temp, var1Name, var1Val, var2Name=None,var2Val=None,stim_period=1000):
+def NamerBetter(temp, var1Name, var1Val, var2Name=None,var2Val=None,var3Name=None,var3Val=None,stim_period=1000):
+
+    fileOutputDirectory = "/net/share/bdst227/Despa/Despa_Simulations_Data/"
 
     leak_Base = 7.539e-4
     nka_Base = 5.0
     SERCA_Base = 7.02e-3
     
-    name  = "mouse_"
+    name  = fileOutputDirectory + "mouse_"
     name += "Temp_%3.2f_" %(temp)
     
     # Leak name value
@@ -72,14 +74,19 @@ def NamerBetter(temp, var1Name, var1Val, var2Name=None,var2Val=None,stim_period=
         leak_Change = var1Val 
         leak_Percentage = (leak_Change / leak_Base) * 100
         name += "leak%3.2fpct_" %(leak_Percentage)
-	print "Be carefull and double check that leak is correct!!!!!!"
+	#print "Be carefull and double check that leak is correct!!!!!!"
     elif var2Name == "G_CaBk":
         leak_Change = var2Val 
         leak_Percentage = (leak_Change / leak_Base) * 100
         name += "leak%3.2fpct_" %(leak_Percentage)
-        print "Be carefull and double check that leak is correct!!!!!!"
+        #print "Be carefull and double check that leak is correct!!!!!!"
+    elif var3Name == "G_CaBk":
+        leak_Change = var3Val
+        leak_Percentage = (leak_Change / leak_Base) * 100
+        name += "leak%3.2fpct_" %(leak_Percentage)
+        #print "Be carefull and double check that leak is correct!!!!!!"
     else:
-        name += "leak100pct_"
+        name += "leak100p00pct_"
         
     # NKA name value
     if var1Name == "I_NaK_max":
@@ -90,8 +97,12 @@ def NamerBetter(temp, var1Name, var1Val, var2Name=None,var2Val=None,stim_period=
         nka_Change = var2Val 
         nka_Percentage = (nka_Change / nka_Base) * 100
         name += "nka%3.2fpct_" %(nka_Percentage)
+    elif var3Name == "I_NaK_max":
+        nka_Change = var3Val
+        nka_Percentage = (nka_Change / nka_Base) * 100
+        name += "nka%3.2fpct_" %(nka_Percentage)
     else:
-        name += "nka100pct_"
+        name += "nka100p00pct_"
         
     # SERCA name value
     if var1Name == "V_max_Jpump":
@@ -102,8 +113,12 @@ def NamerBetter(temp, var1Name, var1Val, var2Name=None,var2Val=None,stim_period=
         SERCA_Change = var2Val 
         SERCA_Percentage = (SERCA_Change / SERCA_Base) * 100
         name += "SERCA%3.2fpct_" %(SERCA_Percentage)
+    elif var3Name == "V_max_Jpump":
+        SERCA_Change = var3Val
+        SERCA_Percentage = (SERCA_Change / SERCA_Base) * 100
+        name += "SERCA%3.2fpct_" %(SERCA_Percentage)
     else:
-        name += "SERCA100pct_"
+        name += "SERCA100p00pct_"
 
     stim_period_Hz = stim_period / 1000
     name += "freq%dHz" %(stim_period_Hz)
@@ -112,6 +127,52 @@ def NamerBetter(temp, var1Name, var1Val, var2Name=None,var2Val=None,stim_period=
 
     return name
 
+def BashFileMaker(numProcs,totalJobs,names):
+	maxJobsPerProcs = (totalJobs / numProcs) + 1.0
+	print "Jobs per processor: ", maxJobsPerProcs
+	counter = 0.0
+	fileCounter = 1
+	files = []
+
+	for i, name in enumerate(names):
+    
+    		if counter == 0.0:
+        		fileName = "submitJobsBrad%d.bash" %fileCounter
+        		theFile = open(fileName,"w")
+    
+    		if fileCounter != numProcs:
+        		totalCounter = maxJobsPerProcs
+    		else:
+        		totalCounter = totalJobs - ((numProcs-1)*maxJobsPerProcs)
+    
+    		counter += 1.0
+    		percentageDone = round((counter/totalCounter) * 100,2)
+    		theFile.write(name)
+    		theFile.write("\n")
+    		line2 = 'echo "Current job is ' + str(counter) + ' out of ' + str(totalCounter) + '"'
+    		theFile.write(line2)
+    		theFile.write("\n")
+    		line3 = 'echo "' + str(percentageDone) + '% done"'
+    		theFile.write(line3)
+    		theFile.write("\n")
+    		theFile.write("\n")
+
+		print "Writting the following name:"
+		print name
+		print "Going to this file: ", fileName
+		
+    		if counter >= maxJobsPerProcs:
+        		counter = 0.0
+        		fileCounter += 1
+        		theFile.close()
+			print ""
+			print "##############"
+			print "Switching bash file now!!!!!!"
+			print "##############"
+
+		print ""
+    
+	theFile.close()
 
 def runParams(
   runner=None,
@@ -185,6 +246,9 @@ def GenSweptParamsBetter(
     allArgs=[]
     allVars=[]
     Non_Fixed_keys=[]
+    totalCounter = 1.0
+    counter = 0.0
+    
 
     for key,value in sorted(varDict.items()):           
         #print keys
@@ -195,18 +259,22 @@ def GenSweptParamsBetter(
             commandLineInputPre += " -var %s %f" % (key, value[0])
         else:        
             Non_Fixed_keys.append(key)
-            var1vals = [np.float(x) for x in value]
+	    var1vals = [np.float(x) for x in value]
             var1s = np.linspace(var1vals[0],var1vals[1],
               np.int((var1vals[1]-var1vals[0])/var1vals[2])+1)
             allVars.append(var1s)
             #print var1s
 
+	    if key != "G_NaBk":
+            	totalCounter *= len(var1s)
+
             args1 = []
             for i, rvar1 in enumerate(var1s):
-              args1.append("-var %s %f"%(key,rvar1))
+		args1.append("-var %s %f"%(key,rvar1))
             allArgs.append(args1)
             #print args1
-    
+
+    print "Total number of jobs: ", totalCounter
     # iter over one var
     names = []
     if len(allArgs)==1:
@@ -231,14 +299,46 @@ def GenSweptParamsBetter(
                 commandLineInput += " " + str(arg2)
                 commandLineInput += " -odeName " + str(odeName)
                 commandLineInput += " -name " + name
-                commandLineInput += " &"
+                #commandLineInput += " &"
+		counter += 1.0
+      		percentageDone = round((counter/totalCounter) * 100,2)
                 print commandLineInput
-		
+      		print 'echo "Current job is', counter, 'out of', totalCounter,'"'
+      		print 'echo "', percentageDone,'% done"'
+		print " "		
+
+    elif len(allArgs)==3:
+        for i, arg1 in enumerate(allArgs[0]):
+            for j, arg3 in enumerate(allArgs[2]):
+               #for k, arg3 in enumerate(allArgs[2]):
+		arg2 = (allArgs[1])[i]
+		var1 = (allVars[0])[i]
+                var2 = (allVars[1])[i]
+                var3 = (allVars[2])[j]
+                name = NamerBetter(temp,Non_Fixed_keys[0],var1,Non_Fixed_keys[2],var3,stim_period)
+                commandLineInput  = commandLineInputPre
+                commandLineInput += " " + str(arg1)
+                commandLineInput += " " + str(arg2)
+		commandLineInput += " " + str(arg3)
+                commandLineInput += " -odeName " + str(odeName)
+                commandLineInput += " -name " + name
+                #commandLineInput += " &"
+                counter += 1.0
+                percentageDone = round((counter/totalCounter) * 100,2)
+                #print commandLineInput
+                #print 'echo "Current job is', counter, 'out of', totalCounter,'"'
+                #print 'echo "', percentageDone,'% done"'
+		#if counter %16 == 0:
+		#	print ""
+		#	print "Cut here!!"
+                #print " "    
+		names.append(commandLineInput)
+
     else:
         raise RuntimeError("Not supported")
-        
-    return names,keys,allVars
 
+    return names, int(totalCounter)
+        
 # FixedParm is used to pass in a modified parameter that is not being swept
 # over. Could probably be generalized into another varDict
 def GenSweptParams(
