@@ -84,7 +84,7 @@ def LoadPickles(caseDict,noOverwrite=False,verbose=True):
   for key,case in caseDict.iteritems():
     if verbose:
       print "# ", key
-      print "Loading "  , case.name
+      print "Loading"  , case.name
 
     if hasattr(case,'data') and noOverwrite==True:
       print "Skipping read, since already populated"
@@ -902,6 +902,12 @@ def StateDecompositionAnalysis(caseDict, \
     nonZero = np.argwhere(np.abs(ref.amp)>eps)
     subj.ampn = np.zeros( np.shape(ref.amp) ) 
     subj.ampn[ nonZero ] = subj.amp[ nonZero ] / ref.amp[ nonZero ]
+
+    #maxdiff
+    nonZero = np.argwhere(np.abs(ref.amp)>eps)
+    subj.maxdiff= np.zeros( np.shape(ref.amp) )
+    subj.maxdiff[ nonZero ] = subj.maxdiff[ nonZero ] - ref.maxdiff[ nonZero ]
+
   donorm(caseComp[0],caseComp[0])
   donorm(caseComp[1],caseComp[0])
 

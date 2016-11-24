@@ -58,7 +58,7 @@ def namer(var1Name, var1Val, var2Name=None,var2Val=None,stim_period=1000,tag=Non
 # Made it so that name of file can handle more cases.
 # Does percentage math for you and puts into name. 
 # Switches out pesky "." for "p" so computers do not confuse tags.
-def NamerBetter(temp, var1Name, var1Val, var2Name=None,var2Val=None,var3Name=None,var3Val=None,stim_period=1000):
+def NamerBetter(stim_period=1000,temp=None, var1Name=None, var1Val=None, var2Name=None,var2Val=None,var3Name=None,var3Val=None):
 
     fileOutputDirectory = "/net/share/bdst227/Despa/Despa_Simulations_Data/"
 
@@ -67,8 +67,11 @@ def NamerBetter(temp, var1Name, var1Val, var2Name=None,var2Val=None,var3Name=Non
     SERCA_Base = 7.02e-3
     
     name  = fileOutputDirectory + "mouse_"
-    name += "Temp_%3.2f_" %(temp)
-    
+    if temp != None:
+	name += "Temp_%3.2f_" %(temp)
+    else:
+	name += "Temp_310_"    
+
     # Leak name value
     if var1Name == "G_CaBk":
         leak_Change = var1Val 
@@ -120,13 +123,16 @@ def NamerBetter(temp, var1Name, var1Val, var2Name=None,var2Val=None,var3Name=Non
     else:
         name += "SERCA100p00pct_"
 
-    stim_period_Hz = stim_period / 1000
-    name += "freq%dHz" %(stim_period_Hz)
-    
+    stim_period_Hz = 1 / (stim_period / 1000.0)
+    name += "freq%3.1fHz" %(stim_period_Hz)
+ 
     name = name.replace(".","p")
 
     return name
 
+
+### Wrote by BDS on 11/07/2016
+### Used to make the bash files to run jobs
 def BashFileMaker(numProcs,totalJobs,names):
 	maxJobsPerProcs = (totalJobs / numProcs) + 1.0
 	print "Jobs per processor: ", maxJobsPerProcs
@@ -248,11 +254,11 @@ def GenSweptParamsBetter(
     Non_Fixed_keys=[]
     totalCounter = 1.0
     counter = 0.0
-    
+    temp = None 
 
     for key,value in sorted(varDict.items()):           
         #print keys
-        if key == "T":
+	if key == "T":
             temp = value[0]
 	    print "Temp: ", temp
 	if len(value) == 1:
@@ -277,23 +283,32 @@ def GenSweptParamsBetter(
     print "Total number of jobs: ", totalCounter
     # iter over one var
     names = []
-    if len(allArgs)==1:
+    if len(allArgs) == 0:
+        name = NamerBetter(temp)
+	commandLineInput  = commandLineInputPre
+	commandLineInput += " -odeName " + str(odeName)
+        commandLineInput += " -name " + name
+	commandLineInput += " &"
+	print commandLineInput
+
+    elif len(allArgs)==1:
         for i, arg1 in enumerate(allArgs[0]):
        	    var1 = (allVars[0])[i]
-            name = namer(Non_Fixed_keys[0],var1,stim_period=stim_period,tag=nameTag)
+            name = namerBetter(stim_period,temp,Non_Fixed_keys[0],var1)
             commandLineInput  = commandLineInputPre
             commandLineInput += " " + str(arg1)
             commandLineInput += " -odeName " + str(odeName)
             commandLineInput += " -name " + name
-            commandLineInput += " &"
-            print commandLineInput
-        
+            #commandLineInput += " &"
+            #print commandLineInput
+	    names.append(commandLineInput)        
+
     elif len(allArgs)==2:
         for i, arg1 in enumerate(allArgs[0]):
             for j, arg2 in enumerate(allArgs[1]):
                 var1 = (allVars[0])[i]
                 var2 = (allVars[1])[j]
-                name = NamerBetter(temp,Non_Fixed_keys[0],var1,Non_Fixed_keys[1],var2,stim_period)
+                name = NamerBetter(stim_period,temp,Non_Fixed_keys[0],var1,Non_Fixed_keys[1],var2)
                 commandLineInput  = commandLineInputPre
                 commandLineInput += " " + str(arg1)
                 commandLineInput += " " + str(arg2)
@@ -302,10 +317,11 @@ def GenSweptParamsBetter(
                 #commandLineInput += " &"
 		counter += 1.0
       		percentageDone = round((counter/totalCounter) * 100,2)
-                print commandLineInput
-      		print 'echo "Current job is', counter, 'out of', totalCounter,'"'
-      		print 'echo "', percentageDone,'% done"'
-		print " "		
+                #print commandLineInput
+      		#print 'echo "Current job is', counter, 'out of', totalCounter,'"'
+      		#print 'echo "', percentageDone,'% done"'
+		#print " "	
+		names.append(commandLineInput)	
 
     elif len(allArgs)==3:
         for i, arg1 in enumerate(allArgs[0]):
@@ -315,7 +331,7 @@ def GenSweptParamsBetter(
 		var1 = (allVars[0])[i]
                 var2 = (allVars[1])[i]
                 var3 = (allVars[2])[j]
-                name = NamerBetter(temp,Non_Fixed_keys[0],var1,Non_Fixed_keys[2],var3,stim_period)
+                name = NamerBetter(stim_period,temp,Non_Fixed_keys[0],var1,Non_Fixed_keys[2],var3)
                 commandLineInput  = commandLineInputPre
                 commandLineInput += " " + str(arg1)
                 commandLineInput += " " + str(arg2)
