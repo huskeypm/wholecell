@@ -1,6 +1,9 @@
 """
 For processing ODE outputs in support of Satin/Despa collaborations 
 """
+
+
+
 import cPickle as pickle
 import runner 
 import matplotlib.pylab as plt
@@ -16,13 +19,12 @@ ms_to_s = 1e-3
 
 plotlyAuth=None
 # For plotly support 
-def PlotViaPlotly(casesSubset,state):
-  downsample=10
+def PlotViaPlotly(casesSubset,state,downsample=1,trange=None): 
   import plotly
   if plotlyAuth==None:
     with open('/net/share/pmke226/PLOTLY', 'r') as f:
         first_line = f.readline()
-    plotlyKey = first_line
+    plotlyKey = first_line    
     plotly.tools.set_credentials_file(
       username='huskeypm', api_key='3x5rz5d19r') #plotlyKey)
   import plotly.tools as tls
@@ -34,9 +36,22 @@ def PlotViaPlotly(casesSubset,state):
   case2=casesSubset[1]
   title ="%s_%s_%s"%(state,case1.label,case2.label)
   ax.set_title("%s: %s,%s"%(state,case1.label,case2.label))
+
+  if trange==None:
+    pkg = GetData(case1.data,"V") 
+    trange = np.array([0, np.shape(pkg.t)[0]])
+ 
   for i,case in enumerate(casesSubset):
     pkg = GetData(case.data,state)
-    ax.plot(pkg.t[::downsample],pkg.valsIdx[::downsample], label=case.label)
+    print trange 
+    ts = pkg.t # [trange[0]:trange[1]]
+    #ts = ts[::downsample]
+    vals = pkg.valsIdx # [trange[0]:trange[1]]
+    #vals = vals[::downsample]
+    ax.plot(ts,vals,label=case.label)
+    print "sd"
+
+  return
   plotly_fig = tls.mpl_to_plotly( fig )
 
   # Adding custom attributes to legend
@@ -51,8 +66,16 @@ def PlotViaPlotly(casesSubset,state):
 #)
 #fig = go.Figure(data=data, layout=layout)
 
+
   plot_url = py.iplot(plotly_fig, filename = title)
   print plot_url.resource
+   
+
+  
+  
+ 
+  
+
 
 ### 
 ### I/O 
@@ -91,6 +114,7 @@ def LoadPickles(caseDict,noOverwrite=False,verbose=True):
     else: 
       case.data = readPickle(case.name,verbose=verbose)
     
+
 ###
 ### Mostly plotting 
 ### 
@@ -148,6 +172,8 @@ def ProcessOneDOutputs(var1Name,names,allVars,state="Cai",xlim=None,ylim=None,of
   if ylim!=None:
     plt.ylim(ylim)
 
+
+
   plt.ylabel("[%s] [uM]" % state)  
   plt.xlabel("timesteps []") # t [ms]") 
   name = state+"transients%s"%(var1Name)
@@ -161,6 +187,7 @@ def ProcessTwoDOutputs(allKeys,allVars,state="Cai",ylims=None,stim_period=1000,n
 
   outsMin = np.zeros([np.shape(vars1)[0],np.shape(vars2)[0]])
   outsMax = np.zeros(outsMin.shape)
+
 
   # assuming there exist two iterated var 
   #for i, PCa in enumerate(PCas):
@@ -212,6 +239,7 @@ def TwoDPlots(allKeys,allVars,outsMin, outsMax,label0="",label1="",state="Cai"):
     plt.colorbar()
     plt.xlabel(label1)        
     
+    
     plt.subplot(2,2,3)
     plt.title(state+" diff")
     plt.pcolormesh(xv,yv,(outsMax-outsMin)*mM_to_uM)
@@ -226,6 +254,9 @@ def TwoDPlots(allKeys,allVars,outsMin, outsMax,label0="",label1="",state="Cai"):
     plt.gcf().savefig(name) 
     return       
 
+
+class empty:pass
+ms_to_s = 1e-3
 def GetData(data,idxName): 
     datac = empty()
     datac.t = data['t'] * ms_to_s
@@ -256,9 +287,11 @@ def PlotPickleData_OLD(data1,data2=None,idxName="V",ylabel="V (mV)",trange=None,
   #  idx1=runner.model.state_indices(idxName)     
   # fluxes
 
+
   datac1 = GetData(data1,idxName) 
   if data2!=None:
     datac2 = GetData(data2,idxName) 
+
 
   fig = plt.figure()
 
@@ -277,7 +310,7 @@ def PlotPickleData_OLD(data1,data2=None,idxName="V",ylabel="V (mV)",trange=None,
     if ylim != False:
       plt.ylim(ylim)
     plt.xlim(trange*ms_to_s)
-    plt.tight_layout()
+    plt.tight_layout()	
     plt.subplot(1,2,1)
 
   if datac1.v !=None:
@@ -806,9 +839,8 @@ def StateDecompositionAnalysis(caseDict, \
         subCaseDict[ case.tag ]  = case
         #print np.shape(case.data['s']) 
 
-  # Load data
-  # Should be loaded dum dum 
-  #LoadPickles(subCaseDict,noOverwrite=True)   
+  # Load data 
+  LoadPickles(subCaseDict,noOverwrite=True)   
 
 
   # decide on which data to pull
@@ -879,6 +911,9 @@ def StateDecompositionAnalysis(caseDict, \
     plt.legend()
     plt.gcf().savefig(root+"%s_%s_%s_%s.png"%(mode,label1,wanted1,wanted2),dpi=300)
 
+
+  
+  
   ## Quantify (pct error) change in mean value of each state
   # normalize by case 1
   def donorm(subj,ref):  
@@ -1020,6 +1055,9 @@ def StateDecompositionAnalysis(caseDict, \
   ax.legend( (rects1[0], rects2[0]), (lb1,lb2),loc=4 )
   ax.set_ylabel("fold chg wrt WT")
   plt.tight_layout()
+
+
+  
   
   #plt.gcf().savefig(root+versionPrefix+"comparative.png",dpi=300)
   filePrefix = root+"comparative_%s_%s_%s_%s"%(mode,wanted1,wanted2,sortby)
