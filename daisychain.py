@@ -77,6 +77,7 @@ def daisychain(\
   
   # subsequent runs     
   for i in range(iters):
+      print "Running iter ", i+1, "for ", dtn, " [ms]"
       # initialize
       if i==0:
         # first run 
