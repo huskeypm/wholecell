@@ -1,15 +1,13 @@
 """
 For processing ODE outputs in support of Satin/Despa collaborations 
 """
-
-
-
 import cPickle as pickle
 import runner 
 import matplotlib.pylab as plt
 import numpy as np
-import analyzeODE as ao 
+#import analyzeODE as ao 
 from runShannonTest import *
+import json
 import taufitting as tf
 runner.init()
 
@@ -18,13 +16,15 @@ mM_to_uM = 1e3
 ms_to_s = 1e-3
 
 plotlyAuth=None
+
 # For plotly support 
-def PlotViaPlotly(casesSubset,state,downsample=1,trange=None): 
+def PlotViaPlotly(casesSubset,state):
+  downsample=10
   import plotly
   if plotlyAuth==None:
     with open('/net/share/pmke226/PLOTLY', 'r') as f:
         first_line = f.readline()
-    plotlyKey = first_line    
+    plotlyKey = first_line
     plotly.tools.set_credentials_file(
       username='huskeypm', api_key='3x5rz5d19r') #plotlyKey)
   import plotly.tools as tls
@@ -36,22 +36,9 @@ def PlotViaPlotly(casesSubset,state,downsample=1,trange=None):
   case2=casesSubset[1]
   title ="%s_%s_%s"%(state,case1.label,case2.label)
   ax.set_title("%s: %s,%s"%(state,case1.label,case2.label))
-
-  if trange==None:
-    pkg = GetData(case1.data,"V") 
-    trange = np.array([0, np.shape(pkg.t)[0]])
- 
   for i,case in enumerate(casesSubset):
     pkg = GetData(case.data,state)
-    print trange 
-    ts = pkg.t # [trange[0]:trange[1]]
-    #ts = ts[::downsample]
-    vals = pkg.valsIdx # [trange[0]:trange[1]]
-    #vals = vals[::downsample]
-    ax.plot(ts,vals,label=case.label)
-    print "sd"
-
-  return
+    ax.plot(pkg.t[::downsample],pkg.valsIdx[::downsample], label=case.label)
   plotly_fig = tls.mpl_to_plotly( fig )
 
   # Adding custom attributes to legend
@@ -66,16 +53,8 @@ def PlotViaPlotly(casesSubset,state,downsample=1,trange=None):
 #)
 #fig = go.Figure(data=data, layout=layout)
 
-
   plot_url = py.iplot(plotly_fig, filename = title)
   print plot_url.resource
-   
-
-  
-  
- 
-  
-
 
 ### 
 ### I/O 
@@ -87,7 +66,8 @@ def writePickle(name,p,p_idx,s,s_idx,j,j_idx,t):
            'p_idx':p_idx,'s_idx':s_idx,'j_idx':j_idx}
   #print "j again: ", len(j) 
   #print "j_idx: ",np.shape(j_idx)
-  if ".pkl" not in name:
+  print "name: ", name
+  if ".pkl" not in name[-4:]:
     name += ".pkl"
   output = open(name, 'wb')
   pickle.dump(data1, output)
@@ -113,8 +93,73 @@ def LoadPickles(caseDict,noOverwrite=False,verbose=True):
       print "Skipping read, since already populated"
     else: 
       case.data = readPickle(case.name,verbose=verbose)
-    
 
+def threeDDataLoader(filePath,temp,percents,loadedData,fullDataLimit,reducedDataLimit,downSampler=False):   
+
+	case = empty()
+
+	num_percents = len(percents)
+	diffCai = np.zeros((num_percents, num_percents))
+	diffCaSR = np.zeros((num_percents, num_percents))
+	maxCaSR_all = np.zeros((num_percents, num_percents))
+	minCaSR_all = np.zeros((num_percents, num_percents))
+	maxNai_all = np.zeros((num_percents, num_percents))
+
+	limitsFull = np.array(fullDataLimit,dtype=int) # fullData
+	limits = np.array(reducedDataLimit,dtype=int) # reduced Data
+
+	for (i ,percent_i) in enumerate(percents):
+    		for (j, percent_j) in enumerate(percents):
+        		
+			if loadedData == "NKA":
+				fileName = "mouse_Temp_%sp00_leak%spct_nka%spct_SERCA100p00pct_freq1p0Hz_cat.pkl"%(temp,percent_i,percent_j)
+			elif loadedData == "SERCA":
+				fileName = "mouse_Temp_%sp00_leak%spct_nka100p00pct_SERCA%spct_freq1p0Hz_cat.pkl"%(temp,percent_i,percent_j)
+			else:
+				raise RuntimeError("Not supported at this time. Dying here. :(")
+
+			reducedFile = fileName.replace(".pkl","_red.pkl")
+
+        		if downSampler:
+            			fileName = filePath + fileName
+            			print fileName
+            			dsp.downsample(fileName,10)
+        
+        		case.fileName = filePath + reducedFile
+        		case.data = ao.readPickle(case.fileName,verbose=False)
+        		print case.fileName
+            
+        		s = case.data['s']
+        		s_idx = case.data['s_idx']
+        
+        		## Ca sha-izzle
+        		idx = s_idx.index("Cai")  
+        		maxCai = np.amax(s[limits[0]:limits[1],idx])
+        		#print maxCai
+        		minCai = np.amin(s[limits[0]:limits[1],idx])
+        		#print minCai 
+        		diffCai[i,j] = maxCai - minCai
+        		#print diffCai
+        
+        		s = case.data['s']
+        		s_idx = case.data['s_idx']
+        		idx = s_idx.index("Ca_SR")
+        		maxCaSR = np.amax(s[limits[0]:limits[1],idx])
+        		#print maxCai
+        		minCaSR = np.amin(s[limits[0]:limits[1],idx])
+        		#print minCai
+        		maxCaSR_all[i,j] = maxCaSR
+        		minCaSR_all[i,j] = minCaSR
+        		diffCaSR[i,j] = maxCaSR - minCaSR
+        
+        		## Na ma-pizzle
+        		idx = s_idx.index("Nai")
+        		maxNai = np.amax(s[limits[0]:limits[1],idx])
+        		#print maxCai
+        		maxNai_all[i,j] = maxNai          
+        
+	return diffCai, diffCaSR, maxCaSR_all, maxNai_all
+ 
 ###
 ### Mostly plotting 
 ### 
@@ -172,8 +217,6 @@ def ProcessOneDOutputs(var1Name,names,allVars,state="Cai",xlim=None,ylim=None,of
   if ylim!=None:
     plt.ylim(ylim)
 
-
-
   plt.ylabel("[%s] [uM]" % state)  
   plt.xlabel("timesteps []") # t [ms]") 
   name = state+"transients%s"%(var1Name)
@@ -187,7 +230,6 @@ def ProcessTwoDOutputs(allKeys,allVars,state="Cai",ylims=None,stim_period=1000,n
 
   outsMin = np.zeros([np.shape(vars1)[0],np.shape(vars2)[0]])
   outsMax = np.zeros(outsMin.shape)
-
 
   # assuming there exist two iterated var 
   #for i, PCa in enumerate(PCas):
@@ -239,7 +281,6 @@ def TwoDPlots(allKeys,allVars,outsMin, outsMax,label0="",label1="",state="Cai"):
     plt.colorbar()
     plt.xlabel(label1)        
     
-    
     plt.subplot(2,2,3)
     plt.title(state+" diff")
     plt.pcolormesh(xv,yv,(outsMax-outsMin)*mM_to_uM)
@@ -254,9 +295,6 @@ def TwoDPlots(allKeys,allVars,outsMin, outsMax,label0="",label1="",state="Cai"):
     plt.gcf().savefig(name) 
     return       
 
-
-class empty:pass
-ms_to_s = 1e-3
 def GetData(data,idxName): 
     datac = empty()
     datac.t = data['t'] * ms_to_s
@@ -287,11 +325,9 @@ def PlotPickleData_OLD(data1,data2=None,idxName="V",ylabel="V (mV)",trange=None,
   #  idx1=runner.model.state_indices(idxName)     
   # fluxes
 
-
   datac1 = GetData(data1,idxName) 
   if data2!=None:
     datac2 = GetData(data2,idxName) 
-
 
   fig = plt.figure()
 
@@ -310,7 +346,7 @@ def PlotPickleData_OLD(data1,data2=None,idxName="V",ylabel="V (mV)",trange=None,
     if ylim != False:
       plt.ylim(ylim)
     plt.xlim(trange*ms_to_s)
-    plt.tight_layout()	
+    plt.tight_layout()
     plt.subplot(1,2,1)
 
   if datac1.v !=None:
@@ -767,8 +803,14 @@ def PSDAnaly(s1,ranger=[2,200],verbose=True):
 
     # abs. value 
     daMax = np.max(s1,axis=0)
+    daMaxAbs = np.abs(np.max(s1,axis=0))
     daMin = np.min(s1,axis=0)
-    amp = daMax-daMin
+    daMinAbs = np.abs(np.min(s1,axis=0))
+    #amp = daMax-daMin
+    # compare abs value of min/max and see which corresponds to the largest value 
+    # columnwise stack the minabs/maxabs, then get highest of the two numbers
+    amp = np.max( np.column_stack([daMinAbs,daMaxAbs]), axis=1)
+    #print amp
     eps = 1e-9
     nonZero = np.argwhere(np.abs(daMax)>eps)
     dm[:,nonZero] = dm[:,nonZero]/daMax[nonZero] 
@@ -807,135 +849,26 @@ def PSDAnaly(s1,ranger=[2,200],verbose=True):
 
 # State Decomposition Analysis (SDA)
 # indSS = 2e3 # collect statistics after this time point [ms] (looking for steady state)
-def ProcessDecomp(): 
-  raise RuntimeError("ProcessDecomp is antiquated. Use StateDecompositionAnalysis()")
-
-def StateDecompositionAnalysis(caseDict, \
-                  wanted1="baseline",wanted2="incrleak",
-                  indSS=[2e3,-1], # Time aftter which data is used for comparative analysis. -1 signifies getting last time step  [ms]
-                  xlim=None,
-                  root="./",
-                  ranked=20,
-                  ignoreList = ["dNa_SL_buf"],
-                  mode="states" , # fluxes
-                  cols = ["r","b"],
-                  doPlot=False,
-                  sortby="mean" # max, min, amp
-                 ):  
-  print "Starting"
-  return  
-  # we want to compare only two of the cases, so select these here    
-  #wanted =["baseline1Hz","baseline0.25Hz"]# ,"2xincrleak0.25Hz"]
-  #wanted =["baseline0.25Hz","2xincrleak0.25Hz"]
-  subCaseDict = dict()
-  wanted =[wanted1,wanted2]
-  for idx, wantedi in enumerate(wanted):
-    print wantedi
-    for key, case in caseDict.iteritems():
-    #if key in wanted:
-      if key == wantedi:
-        print "Selecting ", key      
-        case.idx = idx 
-        subCaseDict[ case.tag ]  = case
-        #print np.shape(case.data['s']) 
-
-  # Load data 
-  LoadPickles(subCaseDict,noOverwrite=True)   
-
-
-  # decide on which data to pull
-  if mode=="states":
-    v_key = 's'
-  elif mode=="fluxes":
-    v_key = 'j'
-  else:
-    raise RuntimeError(mode +" not understood") 
-  
-
-  ## for two cases, perform psd analysis to obtain mean and PSD
-  caseComp = [None,None]
-  for key, case in subCaseDict.iteritems():
-      print case.name
-      t = case.data['t']
-
-      v = case.data[v_key] 
-
-      #sub = s[1e4:5e4,0:10]
-      #sub = s[1e4:5e4,]
-      sub = v[int(indSS[0]):int(indSS[1]),]
-      case.min,case.max, case.amp,case.dc, case.psd2 = PSDAnaly(sub,verbose=False)
-      # abs 
-      #case.max = np.abs( case.max ) 
-      #case.dc  = np.abs( case.dc )   
-      caseComp[ case.idx ] = case 
-
-
-  ## displaycomparison
-  # get shortest traj
-  lastT = 1e30
-  for key, case in subCaseDict.iteritems():
-      ti = case.data['t']
-      # pick whichever T is smallest: max length of either trajector or the xlim bound
-      if xlim!=None:
-        lastT = np.min([ti[-1],lastT,xlim[1]])
-      else: 
-        lastT = np.min([ti[-1],lastT])             
-  if xlim==None:
-    xlim = [0,lastT]
-
-  def PlotValueComparison(label1,xmin=0):
-    plt.figure()
-    fig, ax1 = plt.subplots()
-    i=0
-    xlim=[xmin,xmin+1e4]
-    #ylims = [1e90,-1e90]
-    for key, case in subCaseDict.iteritems():
-      ti = case.data['t']
-
-      vi = case.data[v_key] 
-      v_idx = case.data['%s_idx'%v_key]
-
-      idx1 = v_idx.index(label1)
-
-      #ti_vals = ti[xlim[0]:xlim[1]]             
-      #vi_vals = vi[xlim[0]:xlim[1],idx1]
-      ti_vals = ti; vi_vals=vi[:,idx1]
-      ax1.plot(ti_vals,vi_vals,cols[i]+"-",label = case.label)
-
-      i+=1
-
-    #ax1.set_ylim([0,1.5e-3])
-    ax1.set_xlim(xlim)
-    #plt.title("Action potential") 
-    ax1.set_ylabel("%s [unk]"%label1)
-    plt.legend()
-    plt.gcf().savefig(root+"%s_%s_%s_%s.png"%(mode,label1,wanted1,wanted2),dpi=300)
-
-
-  
-  
-  ## Quantify (pct error) change in mean value of each state
-  # normalize by case 1
-  def donorm(subj,ref):  
+def donorm(subj,ref):
     eps = 1e-9
     # means 
     nonZero = np.argwhere(np.abs(ref.dc)>eps)
-    subj.dcn = np.zeros( np.shape(ref.dc) ) 
+    subj.dcn = np.zeros( np.shape(ref.dc) )
     subj.dcn[ nonZero ] = subj.dc[ nonZero ] / ref.dc[ nonZero ]
 
     #maxima
     nonZero = np.argwhere(np.abs(ref.max)>eps)
-    subj.maxn = np.zeros( np.shape(ref.max) ) 
+    subj.maxn = np.zeros( np.shape(ref.max) )
     subj.maxn[ nonZero ] = subj.max[ nonZero ] / ref.max[ nonZero ]
 
     #maxima
     nonZero = np.argwhere(np.abs(ref.min)>eps)
-    subj.minn = np.zeros( np.shape(ref.min) ) 
+    subj.minn = np.zeros( np.shape(ref.min) )
     subj.minn[ nonZero ] = subj.min[ nonZero ] / ref.min[ nonZero ]
 
     #maxima
     nonZero = np.argwhere(np.abs(ref.amp)>eps)
-    subj.ampn = np.zeros( np.shape(ref.amp) ) 
+    subj.ampn = np.zeros( np.shape(ref.amp) )
     subj.ampn[ nonZero ] = subj.amp[ nonZero ] / ref.amp[ nonZero ]
 
     #maxdiff
@@ -943,132 +876,212 @@ def StateDecompositionAnalysis(caseDict, \
     subj.maxdiff= np.zeros( np.shape(ref.amp) )
     subj.maxdiff[ nonZero ] = subj.maxdiff[ nonZero ] - ref.maxdiff[ nonZero ]
 
-  donorm(caseComp[0],caseComp[0])
-  donorm(caseComp[1],caseComp[0])
-
-  # sort from largest to smallest change 
-  if sortby=="mean" or sortby=="dc":
-    valueChg = caseComp[1].dcn-caseComp[0].dcn
-  elif sortby=="max":
-    valueChg = caseComp[1].maxn-caseComp[0].maxn
-  elif sortby=="min":
-    valueChg = caseComp[1].minn-caseComp[0].minn
-  elif sortby=="amp":
-    valueChg = caseComp[1].ampn-caseComp[0].ampn
-  sort_index = (np.argsort(np.abs(valueChg)))[::-1]
+def Autolabel(rects,labels,ax):
+# attach some text labels
+	for rect,label in zip(rects,labels):
+        	height = rect.get_height()
+        	ax.text(rect.get_x() + rect.get_width()/2., 1.15*height,
+                	"%4.1f [pA/pF]"%label,
+                	rotation='vertical',
+                	ha='center', va='bottom')
 
 
-  #Assuming that both pickle files have same states/ode model. 
-  v_idx = case.data['%s_idx'%v_key]
-  value_inds = {key: idx for (idx, key) in enumerate(v_idx)}
-  # create reverse lookup
-  value_inds_rev = {idx: key for (idx, key) in enumerate(v_idx)}
-  
-  # grabbing top-twenty modulated states
-  bestidx    = []
-  bestvalues = []
-  lines = []
-  lines.append("name caseno val diff_val\n")
+def StateDecompositionAnalysisBetter(rootOutput,caseDict,
+                  wanted,
+                  indSS=[2e3,-1], # Time aftter which data is used for comparative analysis. -1 signifies getting last time step  [ms]
+                  xlim=None,
+                  root="./",
+                  ranked=20,
+                  ignoreList = ["dNa_SL_buf"],
+                  Title=None,
+                  mode="states", # fluxes
+                  cols = ["r","b"],
+                  doPlot=False,
+                  sortby="mean", # max, min, amp
+                  legendMover1=None,
+                  legendMover2=None,
+                  j_to_i = 26.92, # convert j into i, done for mouse model
+                  autolabel = False
+		 ):
 
-  stored = 0 
-  for i,idx in enumerate(sort_index):
-          if idx not in value_inds_rev:
-              raise ValueError("Unknown state/flux: '{0}'".format(idx))
+    # decide on which data to pull
+    if mode=="states":
+        print "Pulling states"
+        v_key = 's'
+    elif mode=="fluxes":
+        print "Pulling fluxes"
+        v_key = 'j'
+    else:
+        raise RuntimeError(mode +" not understood")
 
-          if value_inds_rev[idx] in ignoreList:
-            #print "Skipping ", value_inds_rev[idx]
+    # comparing cases  
+    subCaseDict = dict()
+
+    for idx, wantedi in enumerate(wanted):
+        for key, case in caseDict.iteritems():
+            if key == wantedi:
+                print "Selecting: ", key
+                case.idx = idx
+                subCaseDict[case.tag] = case
+
+                t = case.data['t']
+                ref= case.data[v_key]
+                vcp = np.copy(ref)
+                # Rescale j by j_to_i conversion factor (uM/ms --> pA/pF)
+                # INEFFICIENT, BUT NEED TO WRAP THIS UP 
+                fluxIdxs = case.data[v_key+"_idx"]
+                for i in np.arange(np.shape(vcp)[1]):
+                   if "j_" in fluxIdxs[i]:
+                     vcp[:,i] = vcp[:,i] * j_to_i
+                     print "Converting ",fluxIdxs[i]," [uM/ms] --> [pA/pF] FOR MICE!!"
+
+                sub = vcp[int(indSS[0]):int(indSS[1])]
+                case.min,case.max, case.amp,case.dc, case.psd2 = PSDAnaly(sub,verbose=False)
+                wanted[case.idx] = case
+                donorm(wanted[idx],wanted[0])
+
+    ## displaycomparison
+    # get shortest traj
+    lastT = 1e30
+    for key, case in subCaseDict.iteritems():
+        ti = case.data['t']
+        # pick whichever T is smallest: max length of either trajector or the xlim bound
+        if xlim != None:
+            lastT = np.min([ti[-1],lastT,xlim[1]])
+        else:
+            lastT = np.min([ti[-1],lastT])
+    if xlim==None:
+        xlim = [0,lastT]
+
+    # sort from largest to smallest change 
+    if sortby == "mean" or sortby == "dc":
+        valueChg = wanted[1].dcn-wanted[0].dcn
+    elif sortby == "max":
+        valueChg = wanted[1].maxn-wanted[0].maxn
+    elif sortby == "min":
+        valueChg = wanted[1].minn-wanted[0].minn
+    elif sortby == "amp":
+        valueChg = wanted[1].amp-wanted[0].amp
+    sort_index = (np.argsort(np.abs(valueChg)))[::-1]
+    #print valueChg[sort_index] #[0:5]]
+    daIdx=97
+
+    #Assuming that both pickle files have same states/ode model. 
+    v_idx = case.data['%s_idx'%v_key]
+    value_inds = {key: idx for (idx, key) in enumerate(v_idx)}
+    # create reverse lookup
+    value_inds_rev = {idx: key for (idx, key) in enumerate(v_idx)}
+    #print value_inds_rev[ sort_index[daIdx] ]
+
+    # grabbing top-twenty modulated states
+    bestidx    = []
+    bestvalues = []
+    lines = []
+    lines.append("name caseno val diff_val\n")
+
+    stored = 0
+    for i,idx in enumerate(sort_index):
+        if idx not in value_inds_rev:
+            raise ValueError("Unknown state/flux: '{0}'".format(idx))
+
+        if value_inds_rev[idx] in ignoreList:
+            #print "Skipping %d/%d:"%(i,idx), value_inds_rev[idx]
             continue
-              
-          # print raw values
-          if sortby=="mean":
+
+        # print raw values
+        if sortby == "mean":
             line=value_inds_rev[idx]+" pct %4.2f "%valueChg[idx]+ \
-                                      " 0 %4.1e %4.1e/%4.1e"% (caseComp[0].max[idx], caseComp[0].dc[idx],caseComp[0].dcn[idx])+\
-                                      " 1 %4.1e %4.1e/%4.1e"% (caseComp[1].max[idx], caseComp[1].dc[idx],caseComp[1].dcn[idx])    
-          elif sortby=="max":
-            line = "MAX %-20s"%value_inds_rev[idx]+ " 0 %4.1e 1 %4.1e [%3.1f] "%( caseComp[0].max[idx], caseComp[1].max[idx],100*caseComp[1].max[idx]/caseComp[0].max[idx]-100)
-          elif sortby=="min":
-            line = "MEAN %-20s"%value_inds_rev[idx]+ " 0 %4.1e 1 %4.1e [%3.1f] "%( caseComp[0].min[idx], caseComp[1].min[idx],100*caseComp[1].min[idx]/caseComp[0].min[idx]-100)
-          elif sortby=="amp":
-            line = "AMP  %-20s"%value_inds_rev[idx]+ " 0 %4.1e = (%4.1e - %4.1e) 1 %4.1e [%3.1f] "%( caseComp[0].amp[idx], 
-                                                                                   caseComp[0].max[idx],caseComp[0].min[idx],
-                                                                                   caseComp[1].amp[idx],100*caseComp[1].amp[idx]/caseComp[0].amp[idx]-100)
-          print line
+                                      " 0 %4.1e %4.1e/%4.1e"% (wanted[0].max[idx], wanted[0].dc[idx],wanted[0].dcn[idx])+\
+                                      " 1 %4.1e %4.1e/%4.1e"% (wanted[1].max[idx], wanted[1].dc[idx],wanted[1].dcn[idx])
+        elif sortby == "max":
+            line = "MAX %-20s"%value_inds_rev[idx]+ " 0 %4.1e 1 %4.1e [%3.1f] "%( wanted[0].max[idx],
+                                                                                 wanted[1].max[idx],100*wanted[1].max[idx]/wanted[0].max[idx]-100)
+        elif sortby == "min":
+            line = "MEAN %-20s"%value_inds_rev[idx]+ " 0 %4.1e 1 %4.1e [%3.1f] "%(wanted[0].min[idx],
+                                                                                  wanted[1].min[idx],100*wanted[1].min[idx]/wanted[0].min[idx]-100)
+        elif sortby == "amp":
+            line = "AMP  %-20s"%value_inds_rev[idx]+ " 0 %4.1e 1 %4.1e [%4.2f,pctdiff %3.1f] "%(wanted[0].amp[idx],
+                                                                                  wanted[1].amp[idx],
+                                                                                  wanted[1].amp[idx]-wanted[0].amp[idx],
+                                                                                  100*wanted[1].amp[idx]/wanted[0].amp[idx]-100)
+        #print "idx(%d/%d): "%(i,idx),line
 
-          # store 
-          lines.append(line)
-          bestidx.append(idx)
-          bestvalues.append(value_inds_rev[idx])
-          #print beststates[i]
-          #indices.append(state_inds[state])
+        # store 
+        lines.append(line)
+        bestidx.append(idx)
+        bestvalues.append(value_inds_rev[idx])
+        #print beststates[i]
+        #indices.append(state_inds[state])
 
-          stored+=1
-          if stored>=ranked and ranked>0:
-            break 
-          
-  ## Plot State Data 
-  if mode == "states":
-    plotValues = ["V","Cai","Ca_SR"] + bestvalues
-  elif mode =="fluxes":
-    plotValues = ["i_Cab"] + bestvalues
+        stored += 1
+        #print "Stored: ", stored
+        #print "Ranked: ", ranked
+        if stored >= ranked and ranked > 0:
+            print "Pulling the rip cord!!!!!"
+            break
 
-  #
-  if doPlot:
-    for label in plotValues:
-      PlotValueComparison(label,xmin=indSS[0])
-  
-  
-  ## Plot comparative data 
-  width=0.3        
-  plt.figure()
-  fig, ax = plt.subplots()
-  ind = np.arange(stored)        
-  
-  # store info for later analysis
-  caseComp[0].bestidx =  bestidx
-  caseComp[0].bestvalues =  bestvalues
-  caseComp[1].bestidx = bestidx
-  caseComp[1].bestvalues = bestvalues
-  if sortby=="mean":
-    vals0s = caseComp[0].dcn
-    vals1s = caseComp[1].dcn
-  elif sortby=="max":
-    vals0s = caseComp[0].maxn
-    vals1s = caseComp[1].maxn
-  elif sortby=="min":
-    vals0s = caseComp[0].minn
-    vals1s = caseComp[1].minn
-  elif sortby=="amp":
-    vals0s = caseComp[0].ampn
-    vals1s = caseComp[1].ampn
- 
-  # bar plot 
-  rects1 = ax.bar(ind, vals0s[bestidx], width,color='r')
-  rects2 = ax.bar(ind+width, vals1s[bestidx], width,color='b')
-  
-  ax.set_xticks(ind+width)
-  ax.set_xticklabels( bestvalues,rotation=90 )
-  
-  
-  lb1 =caseComp[0].label 
-  lb2= caseComp[1].label
-  plt.title("%s vs %s (%s)" % (lb1,lb2,sortby))
-  ax.legend( (rects1[0], rects2[0]), (lb1,lb2),loc=4 )
-  ax.set_ylabel("fold chg wrt WT")
-  plt.tight_layout()
+    ## Plot State Data 
+    if mode == "states":
+        plotValues = ["V","Cai","Ca_SR"] + bestvalues
+    elif mode =="fluxes":
+        plotValues = ["i_Cab"] + bestvalues
+    if doPlot:
+        for label in plotValues:
+            PlotValueComparison(subCaseDict,v_key,label,  cols = ["k","b","r","g"],xmin=indSS[0])
 
+    ## Plot comparative data 
+    width = 0.2
+    plt.figure()
+    fig, ax = plt.subplots()
+    ind = np.arange(stored)
 
-  
-  
-  #plt.gcf().savefig(root+versionPrefix+"comparative.png",dpi=300)
-  filePrefix = root+"comparative_%s_%s_%s_%s"%(mode,wanted1,wanted2,sortby)
-  plt.gcf().savefig(filePrefix+".png",dpi=300)
+    # store info for later analysis
+    wanted[0].bestidx =  bestidx
+    wanted[0].bestvalues =  bestvalues
+    wanted[1].bestidx = bestidx
+    wanted[1].bestvalues = bestvalues
 
-  import json
-  f = open(filePrefix+'.txt', 'w')
-  json.dump(lines, f)
-  f.close()
+    vals0s = wanted[0].dcn
+    vals1s = wanted[1].dcn
+    vals2s = wanted[2].dcn
+    vals3s = wanted[3].dcn
 
-  return caseComp
+    # bar plot 
+    rects1 = ax.bar(ind, 100*vals0s[bestidx], width,color='k')
+    rects2 = ax.bar(ind+width, 100*vals1s[bestidx], width,color='b')
+    rects3 = ax.bar(ind+(2*width), 100*vals2s[bestidx], width,color='r')
+    rects4 = ax.bar(ind+(3*width), 100*vals3s[bestidx], width,color='g')
+
+    # autolabel
+    if autolabel == True:
+    	labels = wanted[0].amp[bestidx]
+    	Autolabel(rects1,labels,ax)
+
+    ax.set_xticks(ind+width)
+    ax.set_xticklabels(bestvalues,rotation=90)
+
+    lb1 = wanted[0].label
+    lb2 = wanted[1].label
+    lb3 = wanted[2].label
+    lb4 = wanted[3].label
+
+    plt.title(Title)
+    ax.set_ylabel("% of Baseline")
+    plt.tight_layout()
+
+    art = []
+    lgd = plt.legend( (rects1[0], rects2[0],rects3[0],rects4[0]), (lb1,lb2,lb3,lb4),bbox_to_anchor=(legendMover1,legendMover2))
+    art.append(lgd)
+
+    #plt.gcf().savefig(root+versionPrefix+"comparative.png",dpi=300)
+    outFile = rootOutput+"comparative_%s_%s_%s_%s_%s_%s"%(mode,wanted[0].label,wanted[1].label,wanted[2].label,wanted[3].label,sortby)
+    plt.gcf().savefig(outFile+".png",additional_artists=art, bbox_inches="tight",dpi=300)
+
+    f = open(outFile+'.txt', 'w')
+    json.dump(lines, f)
+    f.close()
+
+    return wanted
 
 def PlotMorotti(cases,
                 case1Name='rabbit_5',case2Name='mouse_5',
@@ -1107,4 +1120,37 @@ def PlotMorotti(cases,
         title = "mouse_rabbit_compare_%.2d_"%ctr+flux
         ctr+=1
         plt.gcf().savefig(root+"/"+title+".png")
-                
+        
+def shiftNnorm(ctl_case):
+    minCtl_Cai_case = np.amin(ctl_case)
+    Ctl_Cai_case =  ctl_case -  minCtl_Cai_case
+    maxCtl_Cai_case = np.amax(Ctl_Cai_case)
+    Ctl_Cai_case /= maxCtl_Cai_case
+    
+    return Ctl_Cai_case
+
+def normShizzle(case0p5Hz,tRange = [290e3,291e3]):
+    s = case0p5Hz.data['s']
+    s_idx = case0p5Hz.data['s_idx']
+    idx = s_idx.index("Cai")
+    t = case0p5Hz.data['t']
+
+    cais = s[tRange[0]:tRange[1],idx]
+    min0p5Hz_Cai = np.amin(cais)
+    #print minWT0p5Hz_Cai
+    max0p5Hz_Cai = np.amax(cais)
+    max0p5Hz_Caix = np.argmax(cais)
+    print max0p5Hz_Caix
+
+    Comp_Cai_shift0p5Hz = cais - min0p5Hz_Cai
+    #print Comp_Cai_shift
+    maxComp_Cai_shift0p5Hz = np.amax(Comp_Cai_shift0p5Hz)
+    Comp_Cai_shift0p5Hz/=maxComp_Cai_shift0p5Hz
+    #print Comp_Cai_shift
+
+    ms_to_s = 1e-3
+    time=t[tRange[0]:tRange[1]]*ms_to_s
+    
+    return time, Comp_Cai_shift0p5Hz
+
+        
