@@ -479,8 +479,12 @@ def GetMonitored(module, ode,tsteps,results,model_params):
 #stim_period = 1000.  # works (after adjusting odeint params)
 #stim_period = 500.
 # WARNING: here that parameters are SET, not rescaled, in contrast to runParams function
-def runParamsFast(odeName = "shannon_2004.ode",name="out",\
-                  varDict=None,stateDict=None,dt=0.1,dtn=2000,stim_period=1000.,mxsteps=None,downsampleRate=1 ):
+def runParamsFast(
+  odeName = "shannon_2004.ode",
+  name="out", # if None, returns without writing pickle
+  varDict=None,stateDict=None,dt=0.1,dtn=2000,stim_period=1000.,mxsteps=None,downsampleRate=1,
+  returnDict=dict() # basically a contained for returning results 
+  ):
 
   params = gotranJIT.init()
   params.tstop = dtn
@@ -518,8 +522,12 @@ def runParamsFast(odeName = "shannon_2004.ode",name="out",\
 
   # get monitored fluxes   
   j_idx,j = GetMonitored(module, ode,tsteps,results,model_params)  
-  print "j", np.shape(j)
-  print "ji", len(j_idx)   
+  #print "j", np.shape(j)
+  #print "ji", len(j_idx)   
+
+  if name==None:
+    returnDict['data'] = ao.makePackage(p,p_idx,s,s_idx,j,j_idx,t)
+    return 
   
   if downsampleRate >1:     
       sDs,jDs,tDs = downSamplePickles.downsampleData(s,j,t,downsampleRate)

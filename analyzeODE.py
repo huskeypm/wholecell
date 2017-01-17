@@ -59,11 +59,16 @@ def PlotViaPlotly(casesSubset,state):
 ### 
 ### I/O 
 ###  
+def makePackage(p,p_idx,s,s_idx,j,j_idx,t):
+  return {'p':p,'s':s,'t':t,'j':np.asarray(j),\
+           'p_idx':p_idx,'s_idx':s_idx,'j_idx':j_idx}
 def writePickle(name,p,p_idx,s,s_idx,j,j_idx,t):
   # store to pickle
   # using 'asarray' since my 'j' was getting stored as its transpose 
-  data1 = {'p':p,'s':s,'t':t,'j':np.asarray(j),\
-           'p_idx':p_idx,'s_idx':s_idx,'j_idx':j_idx}
+  #data1 = {'p':p,'s':s,'t':t,'j':np.asarray(j),\
+  #         'p_idx':p_idx,'s_idx':s_idx,'j_idx':j_idx}
+  data1 = makePackage(p,p_idx,s,s_idx,j,j_idx,t)
+
   #print "j again: ", len(j) 
   #print "j_idx: ",np.shape(j_idx)
   print "name: ", name
