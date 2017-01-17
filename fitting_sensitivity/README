@@ -1,0 +1,31 @@
+
+Use ODE simulation for jit compiling 
+
+Can I launch jobs on separate threads? 
+
+
+Setup
+  Choose 3 var, their default values and stdev for noise 
+  Choose 3 outputs, their 'mode' (duration, amplitude, decay rate)
+  If fitting, provide truth values for these modes
+  Number of draws
+  If fitting, number of progeny 
+
+Initialization
+  Randomly draw numbers (store in object) for variable
+
+Run 
+  Run and record mode values into object
+
+Post
+  Collect objects and write data to file 
+
+
+If fitting, 
+  take top N that minimize error 
+  define the parameter values as the new default
+  repeat init-run-post sequence until happy  
+
+  
+  
+

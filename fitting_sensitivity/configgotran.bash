@@ -1,0 +1,1 @@
+../configgotran.bash
