@@ -37,12 +37,24 @@ def worker(procnum):
                        varDict=varDict,stateDict=stateDict)
     return procnum,getpid()
 
+#
+# Launch, same as worker, but accepts parameter dictionary
+#
+def workerParams(jobDict):
+    jobNum =jobDict['jobNum']
+    print "Worker bee %d, Job %d "%(getpid(),jobNum)
+
+    #print [ key,val for key,val in paramDict.iteritems() ]
+    #for key,val in paramDict.iteritems() :
+    #  print "  ",key,val
+    return jobNum,getpid()
+
 
 #
 # Simply launches #jobs of #numCores and collects results
 #
 def SimpleRun(numCores=3,jobs=5):
-    pool = multiprocessing.Pool(numCores = numCores)
+    pool = multiprocessing.Pool(processes= numCores)
     #print pool.map(worker, range(5))
     outputs = dict( pool.map(worker, range(jobs)) )
     
@@ -58,7 +70,7 @@ def ParameterSensitivity(
   numRandomDraws=3  # number of random draws for each parameter
   ):
   
-  # Define parameters to vary and their default 
+  ## Define parameters to vary and their default 
   # values  
   # should probably initialize ode and grab 
   # defaults. Lazy here
@@ -71,11 +83,11 @@ def ParameterSensitivity(
   parmDict["V_max_Jpump"] = ( defaultVal, stdDev )
   
 
-  # Create a list of jobs with randomized parameters
+  ## Create a list of jobs with randomized parameters
   jobList = []
-  
-  for key,values in parmDict.iteritems():
-    print key
+  ctr=0 
+  for parameter,values in parmDict.iteritems():
+    print parameter
     
     ## generate random pertubrations
     # draw from normal distribution
@@ -84,11 +96,19 @@ def ParameterSensitivity(
 
     # create a list of jobs 
     print randomDraws
-    listN = [{key,val} for val in randomDraws]
-    jobList+=listN
+    #listN = [{parameter:val,'jobNum':i} for i,val in enumerate(randomDraws)]
+    #jobList+=listN
+    for val in randomDraws:
+      jobList.append( {'paramName':parameter,'paramVal':val,'jobNum':ctr} )
+      ctr+=1
     
+  #print jobList
 
-  print jobList
+  ## Run jobs
+  pool = multiprocessing.Pool(processes= numCores) 
+  outputs = dict( pool.map(workerParams, jobList ) )
+  for key, value in outputs.iteritems():
+    print key,value 
 
 
 
