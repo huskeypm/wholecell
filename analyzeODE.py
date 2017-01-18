@@ -1,15 +1,21 @@
 """
 For processing ODE outputs in support of Satin/Despa collaborations 
 """
+
+from matplotlib.ticker import ScalarFormatter
+import math
 import cPickle as pickle
 import runner 
 import matplotlib.pylab as plt
 import numpy as np
 #import analyzeODE as ao 
+import downSamplePickles as dsp
 from runShannonTest import *
 import json
 import taufitting as tf
+import scipy.fftpack as fftp
 runner.init()
+import os.path
 
 class empty:pass
 mM_to_uM = 1e3
@@ -58,15 +64,18 @@ def PlotViaPlotly(casesSubset,state):
 
 ### 
 ### I/O 
-###  
+###
 def makePackage(p,p_idx,s,s_idx,j,j_idx,t):
+
   return {'p':p,'s':s,'t':t,'j':np.asarray(j),\
            'p_idx':p_idx,'s_idx':s_idx,'j_idx':j_idx}
+  
 def writePickle(name,p,p_idx,s,s_idx,j,j_idx,t):
   # store to pickle
   # using 'asarray' since my 'j' was getting stored as its transpose 
   #data1 = {'p':p,'s':s,'t':t,'j':np.asarray(j),\
   #         'p_idx':p_idx,'s_idx':s_idx,'j_idx':j_idx}
+  
   data1 = makePackage(p,p_idx,s,s_idx,j,j_idx,t)
 
   #print "j again: ", len(j) 
@@ -99,72 +108,137 @@ def LoadPickles(caseDict,noOverwrite=False,verbose=True):
     else: 
       case.data = readPickle(case.name,verbose=verbose)
 
-def threeDDataLoader(filePath,temp,percents,loadedData,fullDataLimit,reducedDataLimit,downSampler=False):   
+### BDS made this on 01/11/2017 to streamline reducing files. 
+def threeDDataReducer(filePath,temp,percents,loadedData,fullDataLimit,reducedDataLimit):
 
-	case = empty()
+        case = empty()
 
-	num_percents = len(percents)
-	diffCai = np.zeros((num_percents, num_percents))
-	diffCaSR = np.zeros((num_percents, num_percents))
-	maxCaSR_all = np.zeros((num_percents, num_percents))
-	minCaSR_all = np.zeros((num_percents, num_percents))
-	maxNai_all = np.zeros((num_percents, num_percents))
+        num_percents = len(percents)
+        diffCai = np.zeros((num_percents, num_percents))
+        diffCaSR = np.zeros((num_percents, num_percents))
+        maxCaSR_all = np.zeros((num_percents, num_percents))
+        minCaSR_all = np.zeros((num_percents, num_percents))
+        maxNai_all = np.zeros((num_percents, num_percents))
 
-	limitsFull = np.array(fullDataLimit,dtype=int) # fullData
-	limits = np.array(reducedDataLimit,dtype=int) # reduced Data
+        limitsFull = np.array(fullDataLimit,dtype=int) # fullData
+        limits = np.array(reducedDataLimit,dtype=int) # reduced Data
 
-	for (i ,percent_i) in enumerate(percents):
-    		for (j, percent_j) in enumerate(percents):
-        		
-			if loadedData == "NKA":
-				fileName = "mouse_Temp_%sp00_leak%spct_nka%spct_SERCA100p00pct_freq1p0Hz_cat.pkl"%(temp,percent_i,percent_j)
-			elif loadedData == "SERCA":
-				fileName = "mouse_Temp_%sp00_leak%spct_nka100p00pct_SERCA%spct_freq1p0Hz_cat.pkl"%(temp,percent_i,percent_j)
-			else:
-				raise RuntimeError("Not supported at this time. Dying here. :(")
+        for (i ,percent_i) in enumerate(percents):
+                for (j, percent_j) in enumerate(percents):
 
-			reducedFile = fileName.replace(".pkl","_red.pkl")
+                        print ""
+                        print "#######"
+                        print "Trying new file!!!"
+                        print ""
+                        
+                        if loadedData == "NKA":
+                                fileName = "mouse_BASELINE_Temp_%sp00_leak%spct_nka%spct_SERCA100p00pct_freq1p0Hz_cat.pkl"%(temp,percent_i,percent_j)
+                        elif loadedData == "SERCA":
+                                fileName = "mouse_BASELINE_Temp_%sp00_leak%spct_nka100p00pct_SERCA%spct_freq1p0Hz_cat.pkl"%(temp,percent_i,percent_j)
+                        else:
+                                raise RuntimeError("Not supported at this time. Dying here. :(")
 
-        		if downSampler:
-            			fileName = filePath + fileName
-            			print fileName
-            			dsp.downsample(fileName,10)
+                        reducedFile = fileName.replace(".pkl","_red.pkl")
+
+                        fileName = filePath + fileName
+                        print fileName
+                        if os.path.isfile(filePath + reducedFile):
+                            print "File already downsampled!! :)"
+                        else:
+                            try:
+                                dsp.downsample(fileName,10)
+                            except IOError:
+                                print "Can't find file. Hopefully you already downsampled it."
+	return
+
+### BDS made this on 01/11/2017 to load data for 3D plots.
+def threeDDataLoader(filePath,temp,percents,loadedData,fullDataLimit,reducedDataLimit):
+
+        case = empty()
+
+        num_percents = len(percents)
+        diffCai = np.zeros((num_percents, num_percents))
+        diffCaSR = np.zeros((num_percents, num_percents))
+        maxCaSR_all = np.zeros((num_percents, num_percents))
+        minCaSR_all = np.zeros((num_percents, num_percents))
+        maxNai_all = np.zeros((num_percents, num_percents))
+
+        limitsFull = np.array(fullDataLimit,dtype=int) # fullData
+        limits = np.array(reducedDataLimit,dtype=int) # reduced Data
+
+        for (i ,percent_i) in enumerate(percents):
+                for (j, percent_j) in enumerate(percents):
+
+                        if loadedData == "NKA":
+                                fileName = "mouse_BASELINE_Temp_%sp00_leak%spct_nka%spct_SERCA100p00pct_freq1p0Hz_cat.pkl"%(temp,percent_i,percent_j)
+                        elif loadedData == "SERCA":
+                                fileName = "mouse_BASELINE_Temp_%sp00_leak%spct_nka100p00pct_SERCA%spct_freq1p0Hz_cat.pkl"%(temp,percent_i,percent_j)
+                        else:
+                                raise RuntimeError("Not supported at this time. Dying here. :(")
+
+                        reducedFile = fileName.replace(".pkl","_red.pkl")
+
+                        case.fileName = filePath + reducedFile
+                        try:
+                            case.data = ao.readPickle(case.fileName,verbose=False)
+                            print case.fileName
+
+                            s = case.data['s']
+                            s_idx = case.data['s_idx']
+
+                            ## Ca sha-izzle
+                            idx = s_idx.index("Cai")
+                            maxCai = np.amax(s[limits[0]:limits[1],idx])
+                            #print maxCai
+                            minCai = np.amin(s[limits[0]:limits[1],idx])
+                            #print minCai 
+                            diffCai[i,j] = maxCai - minCai
+                            #print diffCai
+                            if math.isnan(diffCai[i,j]):
+                                diffCai[i,j] = 0.0
+                                #print diffCai
+
+                            s = case.data['s']
+                            s_idx = case.data['s_idx']
+                            idx = s_idx.index("Ca_SR")
+                            maxCaSR = np.amax(s[limits[0]:limits[1],idx])
+                            #print maxCai
+                            minCaSR = np.amin(s[limits[0]:limits[1],idx])
+                            #print minCai
+                            maxCaSR_all[i,j] = maxCaSR
+                            if math.isnan(maxCaSR_all[i,j]):
+                                maxCaSR_all[i,j] = 0.0
+                            minCaSR_all[i,j] = minCaSR
+                            if math.isnan(minCaSR_all[i,j]):
+                                minCaSR_all[i,j] = 0.0
+                            diffCaSR[i,j] = maxCaSR - minCaSR
+                            if math.isnan(diffCaSR[i,j]):
+                                diffCaSR[i,j] = 0.0
+
+                            ## Na ma-pizzle
+                            idx = s_idx.index("Nai")
+                            maxNai = np.amax(s[limits[0]:limits[1],idx])
+                            #print maxCai
+                            maxNai_all[i,j] = maxNai
+                            if math.isnan(maxNai_all[i,j]):
+                                maxNai_all[i,j] = 0.0
+                        
+                        except IOError:
+                            print "Can't find file: " + case.fileName + " Generating placeholder data."
+                            diffCai[i,j] = 0.0
+                            diffCaSR[i,j] = 0.0
+                            maxCaSR_all[i,j] = 0.0
+                            maxNai_all[i,j] = 0.0
+                            
+                        print "######"
+                        print ""
+        #print "diffCai: ", diffCai
+        #print "diffCaSR: ", diffCaSR
+        #print "maxCaSR_all: ", maxCaSR_all
+        #print "maxNai_all: ", maxNai_all
         
-        		case.fileName = filePath + reducedFile
-        		case.data = ao.readPickle(case.fileName,verbose=False)
-        		print case.fileName
-            
-        		s = case.data['s']
-        		s_idx = case.data['s_idx']
-        
-        		## Ca sha-izzle
-        		idx = s_idx.index("Cai")  
-        		maxCai = np.amax(s[limits[0]:limits[1],idx])
-        		#print maxCai
-        		minCai = np.amin(s[limits[0]:limits[1],idx])
-        		#print minCai 
-        		diffCai[i,j] = maxCai - minCai
-        		#print diffCai
-        
-        		s = case.data['s']
-        		s_idx = case.data['s_idx']
-        		idx = s_idx.index("Ca_SR")
-        		maxCaSR = np.amax(s[limits[0]:limits[1],idx])
-        		#print maxCai
-        		minCaSR = np.amin(s[limits[0]:limits[1],idx])
-        		#print minCai
-        		maxCaSR_all[i,j] = maxCaSR
-        		minCaSR_all[i,j] = minCaSR
-        		diffCaSR[i,j] = maxCaSR - minCaSR
-        
-        		## Na ma-pizzle
-        		idx = s_idx.index("Nai")
-        		maxNai = np.amax(s[limits[0]:limits[1],idx])
-        		#print maxCai
-        		maxNai_all[i,j] = maxNai          
-        
-	return diffCai, diffCaSR, maxCaSR_all, maxNai_all
- 
+        return diffCai, diffCaSR, maxCaSR_all, minCaSR_all, maxNai_all
+
 ###
 ### Mostly plotting 
 ### 
@@ -300,7 +374,8 @@ def TwoDPlots(allKeys,allVars,outsMin, outsMax,label0="",label1="",state="Cai"):
     plt.gcf().savefig(name) 
     return       
 
-def GetData(data,idxName): 
+def GetData(data,idxName):
+    #print "getting data" 
     datac = empty()
     datac.t = data['t'] * ms_to_s
     datac.s = data['s'] / mM_to_uM
@@ -321,98 +396,28 @@ def GetData(data,idxName):
 
     idx = datac.v_idx.index(idxName)
     datac.valsIdx = datac.v[:,idx] 
+    #print "datac: ", datac
+
     return datac
 
-# trange can set 't' limit
-def PlotPickleData_OLD(data1,data2=None,idxName="V",ylabel="V (mV)",trange=None,
-    case1legend = None, case2legend=None,ylim=False,
-    color='r'):    
-  #  idx1=runner.model.state_indices(idxName)     
-  # fluxes
-
-  datac1 = GetData(data1,idxName) 
-  if data2!=None:
-    datac2 = GetData(data2,idxName) 
-
-  fig = plt.figure()
-
-  if trange==None:
-    fig.add_subplot(111)
-
-  else:
-    trange = np.asarray(trange) 
-    plt.subplot(1,2,2)
-    if datac1.v !=None:
-      idx1 = datac1.v_idx.index(idxName)
-      plt.plot(datac1.t,datac1.v[:,idx1],color,label=case1legend)
-    if data2!=None and datac2.v !=None:
-      idx2 = datac2.v_idx.index(idxName)
-      plt.plot(datac2.t,datac2.v[:,idx2],'k',label=case2legend)
-    if ylim != False:
-      plt.ylim(ylim)
-    plt.xlim(trange*ms_to_s)
-    plt.tight_layout()
-    plt.subplot(1,2,1)
-
-  if datac1.v !=None:
-    idx1 = datac1.v_idx.index(idxName)
-    plt.plot(datac1.t,datac1.v[:,idx1],color,label=case1legend)
-  if data2!=None and datac2.v !=None:
-    idx2 = datac2.v_idx.index(idxName)
-    plt.plot(datac2.t,datac2.v[:,idx2],'k',label=case2legend)
-  plt.xlim(0,60)
-  plt.xlabel('time [s]',fontsize=14)
-  if idxName == "Cai"or"Ca_SR":
-      plt.ylabel(ylabel+' [uM]',fontsize=14)
-  if idxName == "Nai":
-      plt.ylabel(ylabel+' [mM]',fontsize=14)
-  if idxName == "V":
-      plt.ylabel(ylabel+' [mV]',fontsize=14)
-  legend = plt.legend(loc=3)
-  legend.get_frame().set_facecolor('white')
-  plt.tight_layout()
-  
 ### Below definition made by BDS on 10/13/2016 ###  
 def Plot_Pickle_Data(rootOutput,datas,state=None,colors=None,xlabel=None,ylabel=None,
                    Full_image_xlim=None,Zoomed_image_xlim=None,plot_ylim=None,unit_scaler=None,
-                   legends=None,time_range=None,legendMover1=1.0,legendMover2=1.0):
+                   legends=None,time_range=None,legendMover1=None,legendMover2=None,legendPlacer=None):
 
     Zoomed_image = plt.subplot(1,2,2)
     Full_image = plt.subplot(1,2,1)
     File_Name_Cases = ""
- 
-    def GetData(data,idxName):
-    	datac = empty()
-    	datac.t = data['t'] * ms_to_s
-    	datac.s = data['s'] / mM_to_uM
-    	datac.s_idx = data['s_idx']
-    	datac.j = data['j']
-    	datac.j_idx = data['j_idx']
-
-    	if idxName in datac.j_idx:
-      		datac.v = datac.j
-      		datac.v_idx = datac.j_idx
-    	# states 
-    	elif idxName in datac.s_idx:
-      		datac.v = datac.s
-      		datac.v_idx = datac.s_idx
-    	else:
-      		print idxName, " not found"
-      		datac.v =None
-
-    	idx = datac.v_idx.index(idxName)
-    	datac.valsIdx = datac.v[:,idx]
-    	return datac    
-
+    
     for i,data in enumerate(datas):
+        #print state #data
         extracted_data = GetData(data,state)
-        
+        #print "here: ",extracted_data.v_idx.index(state)
         idx = extracted_data.v_idx.index(state)
+        #print "value: ", extracted_data.v[:,idx]*unit_scaler
         Full_image.plot(extracted_data.t,(extracted_data.v[:,idx]*unit_scaler),colors[i],label=legends[i])
         Zoomed_image.plot(extracted_data.t,(extracted_data.v[:,idx]*unit_scaler),colors[i],label=legends[i])
         File_Name_Cases += "%s_" %legends[i]
-
-        Full_image.legend(loc=3)
 
     #plt.locator_params(nbins=6)
     Full_image.locator_params(nbins=8)
@@ -425,39 +430,68 @@ def Plot_Pickle_Data(rootOutput,datas,state=None,colors=None,xlabel=None,ylabel=
     plt.xlabel(xlabel, weight="bold",fontsize=14)
     plt.ylabel(ylabel, weight="bold",fontsize=14)
     plt.tight_layout()
-
-    art = []
-    lgd = plt.legend(bbox_to_anchor=(legendMover1,legendMover2))
-    art.append(lgd)
-
+   
+    Zoomed_image.locator_params(axis='x',nbins=4) 
+    Zoomed_image.get_xaxis().get_major_formatter().set_useOffset(False)
+    
     outFile = rootOutput+"Intracellular_%s_%splots.png"%(state,File_Name_Cases)
     print outFile
-    plt.gcf().savefig(outFile,additional_artists=art,bbox_inches='tight',dpi=300)
+    
+    if legendPlacer == state or legendPlacer == None:
+        
+        art = []
+        lgd = plt.legend(bbox_to_anchor=(legendMover1,legendMover2))
+        art.append(lgd)
+
+        plt.gcf().savefig(outFile,additional_artists=art,bbox_inches='tight',dpi=300)
+    else:
+        plt.gcf().savefig(outFile,dpi=300)
+        
     plt.show()
     plt.close()
 
-def GetData(data,idxName):
-    datac = empty()
-    datac.t = data['t'] * ms_to_s
-    datac.s = data['s'] / mM_to_uM
-    datac.s_idx = data['s_idx']
-    datac.j = data['j']
-    datac.j_idx = data['j_idx']
+def Plot_Pickle_Data_One_Plot(rootOutput,datas,state=None,colors=None,xlabel=None,ylabel=None,
+                   Full_image_xlim=None,Zoomed_image_xlim=None,plot_ylim=None,unit_scaler=None,
+                   legends=None,time_range=None,legendMover1=None,legendMover2=None,legendPlacer=None):
 
-    if idxName in datac.j_idx:
-      datac.v = datac.j
-      datac.v_idx = datac.j_idx
-    # states 
-    elif idxName in datac.s_idx:
-      datac.v = datac.s
-      datac.v_idx = datac.s_idx
+    File_Name_Cases = ""
+    
+    for i,data in enumerate(datas):
+        extracted_data = GetData(data,state)
+        print extracted_data
+        idx = extracted_data.v_idx.index(state)
+        plt.plot(extracted_data.t,(extracted_data.v[:,idx]*unit_scaler),colors[i],label=legends[i])
+        File_Name_Cases += "%s_" %legends[i]
+
+    #plt.locator_params(nbins=6)
+    plt.locator_params(nbins=8)
+    plt.xlim(Full_image_xlim)
+    plt.ylim(plot_ylim)
+    
+    plt.xlabel(xlabel, weight="bold",fontsize=14)
+    plt.ylabel(ylabel, weight="bold",fontsize=14)
+    plt.tight_layout()
+    
+    ax = plt.gca()
+    ax.get_xaxis().get_major_formatter().set_useOffset(False)
+
+    #Full_image.legend(loc=3)
+    outFile = rootOutput+"Intracellular_%s_%splots.png"%(state,File_Name_Cases)
+    print outFile
+    
+    if legendPlacer == state or legendPlacer == None:
+        
+        art = []
+        lgd = plt.legend(bbox_to_anchor=(legendMover1,legendMover2))
+        art.append(lgd)
+
+        plt.gcf().savefig(outFile,additional_artists=art,bbox_inches='tight',dpi=300)
     else:
-      print idxName, " not found"
-      datac.v =None
+        plt.gcf().savefig(outFile,dpi=300)
+        
+    plt.show()
+    plt.close()
 
-    idx = datac.v_idx.index(idxName)
-    datac.valsIdx = datac.v[:,idx]
-    return datac
 
 def PlotFluxes(t,j,idx1=None,idx1Name="i_Ca",label1="flux1",idx2=None,label2=None):      
 
@@ -756,7 +790,6 @@ def ProcessTransients(case,pacingInterval,tstart=8000):
 
 ## Power spectral density stuff 
         
-import scipy.fftpack as fftp
 def doPSD(sca):
   dm = sca - np.mean(sca,axis=0)
   M = fftp.fft(dm,axis=0)
@@ -906,6 +939,7 @@ def StateDecompositionAnalysisBetter(rootOutput,caseDict,
                   legendMover1=None,
                   legendMover2=None,
                   j_to_i = 26.92, # convert j into i, done for mouse model
+                  tag="",  # optional tag
                   autolabel = False
 		 ):
 
@@ -933,12 +967,13 @@ def StateDecompositionAnalysisBetter(rootOutput,caseDict,
                 ref= case.data[v_key]
                 vcp = np.copy(ref)
                 # Rescale j by j_to_i conversion factor (uM/ms --> pA/pF)
+                # do NOT do this (it's wrong) 
                 # INEFFICIENT, BUT NEED TO WRAP THIS UP 
-                fluxIdxs = case.data[v_key+"_idx"]
-                for i in np.arange(np.shape(vcp)[1]):
-                   if "j_" in fluxIdxs[i]:
-                     vcp[:,i] = vcp[:,i] * j_to_i
-                     print "Converting ",fluxIdxs[i]," [uM/ms] --> [pA/pF] FOR MICE!!"
+                #fluxIdxs = case.data[v_key+"_idx"]
+                #for i in np.arange(np.shape(vcp)[1]):
+                #   if "j_" in fluxIdxs[i]:
+                #     vcp[:,i] = vcp[:,i] # * j_to_i
+                #     print "Converting ",fluxIdxs[i]," [uM/ms] --> [pA/pF] FOR MICE!!"
 
                 sub = vcp[int(indSS[0]):int(indSS[1])]
                 case.min,case.max, case.amp,case.dc, case.psd2 = PSDAnaly(sub,verbose=False)
@@ -968,6 +1003,7 @@ def StateDecompositionAnalysisBetter(rootOutput,caseDict,
     elif sortby == "amp":
         valueChg = wanted[1].amp-wanted[0].amp
     sort_index = (np.argsort(np.abs(valueChg)))[::-1]
+    # verify we're getting the right numbers 
     #print valueChg[sort_index] #[0:5]]
     daIdx=97
 
@@ -1009,7 +1045,7 @@ def StateDecompositionAnalysisBetter(rootOutput,caseDict,
                                                                                   wanted[1].amp[idx],
                                                                                   wanted[1].amp[idx]-wanted[0].amp[idx],
                                                                                   100*wanted[1].amp[idx]/wanted[0].amp[idx]-100)
-        #print "idx(%d/%d): "%(i,idx),line
+        print "idx(%d/%d): "%(i,idx),line
 
         # store 
         lines.append(line)
@@ -1071,7 +1107,7 @@ def StateDecompositionAnalysisBetter(rootOutput,caseDict,
     lb4 = wanted[3].label
 
     plt.title(Title)
-    ax.set_ylabel("% of Baseline")
+    ax.set_ylabel("% of Control")
     plt.tight_layout()
 
     art = []
@@ -1080,6 +1116,7 @@ def StateDecompositionAnalysisBetter(rootOutput,caseDict,
 
     #plt.gcf().savefig(root+versionPrefix+"comparative.png",dpi=300)
     outFile = rootOutput+"comparative_%s_%s_%s_%s_%s_%s"%(mode,wanted[0].label,wanted[1].label,wanted[2].label,wanted[3].label,sortby)
+    outFile+=tag
     plt.gcf().savefig(outFile+".png",additional_artists=art, bbox_inches="tight",dpi=300)
 
     f = open(outFile+'.txt', 'w')

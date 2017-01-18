@@ -58,15 +58,17 @@ def namer(var1Name, var1Val, var2Name=None,var2Val=None,stim_period=1000,tag=Non
 # Made it so that name of file can handle more cases.
 # Does percentage math for you and puts into name. 
 # Switches out pesky "." for "p" so computers do not confuse tags.
-def NamerBetter(stim_period=1000,temp=None, var1Name=None, var1Val=None, var2Name=None,var2Val=None,var3Name=None,var3Val=None):
+def NamerBetter(stim_period=1000,temp=None,caseTag=None, var1Name=None, var1Val=None, var2Name=None,var2Val=None,var3Name=None,var3Val=None):
 
-    fileOutputDirectory = "/net/share/bdst227/Despa/Despa_Simulations_Data/"
+    #fileOutputDirectory = "/home/AD/bdst227/ipython/ipython-notebooks/Despa/wholecell/despaJobs/ranJobs/"
 
     leak_Base = 7.539e-4
     nka_Base = 5.0
     SERCA_Base = 7.02e-3
     
-    name  = fileOutputDirectory + "mouse_"
+    #name  = fileOutputDirectory + "mouse_BASELINE_"
+    #name = "mouse_BASELINE_"
+    name = "mouse_%s_" %(caseTag)
     if temp != None:
 	name += "Temp_%3.2f_" %(temp)
     else:
@@ -229,7 +231,8 @@ def GenSweptParamsBetter(
     varDict, # variables that are 'swept' over 
     Time = 10000, stim_period = 1000, iters = 3,
     odeName = "shannon_2004_mouse.ode",
-    nameTag=".pkl",dt=0.1,downsampleRate=None):
+    nameTag=".pkl",dt=0.1,fileOutputDirectory=None,finalOutputDirectory=None,downsampleRate=None,
+    caseTag=None,fileNameSpecialTag=None):
 
     #Command_line_input_pre  = "nohup python daisychain.py"
     commandLineInputPre  = "python daisychain.py"
@@ -238,8 +241,12 @@ def GenSweptParamsBetter(
     commandLineInputPre += " -stim %d" % stim_period
     commandLineInputPre += " -T %d" % Time
     commandLineInputPre += " -iters %d" % iters
+    commandLineInputPre += " -fileOutputDirectory %s" % fileOutputDirectory
+    commandLineInputPre += " -finalOutputDirectory %s" % finalOutputDirectory
     if downsampleRate != None:
         commandLineInputPre += " -downsampleRate %d" % downsampleRate
+    if fileNameSpecialTag != None:
+	fileOutputDirectory = fileOutputDirectory + fileNameSpecialTag
    
     for key,value in sorted(stateDict.items()):           
     	#print keys
@@ -278,27 +285,26 @@ def GenSweptParamsBetter(
             for i, rvar1 in enumerate(var1s):
 		args1.append("-var %s %f"%(key,rvar1))
             allArgs.append(args1)
-            #print args1
 
     print "Total number of jobs: ", totalCounter
     # iter over one var
     names = []
     if len(allArgs) == 0:
-        name = NamerBetter(temp)
+        name = NamerBetter(stim_period,temp,caseTag)
 	commandLineInput  = commandLineInputPre
 	commandLineInput += " -odeName " + str(odeName)
-        commandLineInput += " -name " + name
+        commandLineInput += " -name " + fileOutputDirectory + name
 	commandLineInput += " &"
 	print commandLineInput
 
     elif len(allArgs)==1:
         for i, arg1 in enumerate(allArgs[0]):
        	    var1 = (allVars[0])[i]
-            name = namerBetter(stim_period,temp,Non_Fixed_keys[0],var1)
+            name = NamerBetter(stim_period,temp,caseTag,Non_Fixed_keys[0],var1)
             commandLineInput  = commandLineInputPre
             commandLineInput += " " + str(arg1)
             commandLineInput += " -odeName " + str(odeName)
-            commandLineInput += " -name " + name
+            commandLineInput += " -name " + fileOutputDirectory + name
             #commandLineInput += " &"
             #print commandLineInput
 	    names.append(commandLineInput)        
@@ -308,12 +314,12 @@ def GenSweptParamsBetter(
             for j, arg2 in enumerate(allArgs[1]):
                 var1 = (allVars[0])[i]
                 var2 = (allVars[1])[j]
-                name = NamerBetter(stim_period,temp,Non_Fixed_keys[0],var1,Non_Fixed_keys[1],var2)
+                name = NamerBetter(stim_period,temp,caseTag,Non_Fixed_keys[0],var1,Non_Fixed_keys[1],var2)
                 commandLineInput  = commandLineInputPre
                 commandLineInput += " " + str(arg1)
                 commandLineInput += " " + str(arg2)
                 commandLineInput += " -odeName " + str(odeName)
-                commandLineInput += " -name " + name
+                commandLineInput += " -name " + fileOutputDirectory + name
                 #commandLineInput += " &"
 		counter += 1.0
       		percentageDone = round((counter/totalCounter) * 100,2)
@@ -331,13 +337,13 @@ def GenSweptParamsBetter(
 		var1 = (allVars[0])[i]
                 var2 = (allVars[1])[i]
                 var3 = (allVars[2])[j]
-                name = NamerBetter(stim_period,temp,Non_Fixed_keys[0],var1,Non_Fixed_keys[2],var3)
+                name = NamerBetter(stim_period,temp,caseTag,Non_Fixed_keys[0],var1,Non_Fixed_keys[2],var3)
                 commandLineInput  = commandLineInputPre
                 commandLineInput += " " + str(arg1)
                 commandLineInput += " " + str(arg2)
 		commandLineInput += " " + str(arg3)
                 commandLineInput += " -odeName " + str(odeName)
-                commandLineInput += " -name " + name
+                commandLineInput += " -name " + fileOutputDirectory + name
                 #commandLineInput += " &"
                 counter += 1.0
                 percentageDone = round((counter/totalCounter) * 100,2)
@@ -479,9 +485,7 @@ def GetMonitored(module, ode,tsteps,results,model_params):
 #stim_period = 1000.  # works (after adjusting odeint params)
 #stim_period = 500.
 # WARNING: here that parameters are SET, not rescaled, in contrast to runParams function
-def runParamsFast(
-  odeName = "shannon_2004.ode",
-  name="out", # if None, returns without writing pickle
+def runParamsFast(odeName = "shannon_2004.ode",name="out", # if None, returns without writing pickle
   varDict=None,stateDict=None,dt=0.1,dtn=2000,stim_period=1000.,mxsteps=None,downsampleRate=1,
   returnDict=dict() # basically a contained for returning results 
   ):
@@ -524,11 +528,11 @@ def runParamsFast(
   j_idx,j = GetMonitored(module, ode,tsteps,results,model_params)  
   #print "j", np.shape(j)
   #print "ji", len(j_idx)   
-
+  
   if name==None:
     returnDict['data'] = ao.makePackage(p,p_idx,s,s_idx,j,j_idx,t)
     return 
-  
+
   if downsampleRate >1:     
       sDs,jDs,tDs = downSamplePickles.downsampleData(s,j,t,downsampleRate)
       print "jds", np.shape(jDs)
