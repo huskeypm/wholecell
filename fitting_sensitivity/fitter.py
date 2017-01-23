@@ -8,8 +8,6 @@ Main idea:
   After completion, N outputs from the M jobs are recorded 
 """
 
-
-
 #from pathos.multiprocessing import ProcessingPool as Pool
 
 import multiprocessing
@@ -18,7 +16,9 @@ import sys
 sys.path.append("../")
 import runShannonTest as rs
 import numpy as np 
-
+import analyzeODE as ao
+import copy
+import pandas as pd
 
 ##
 ## Run parameters
@@ -50,15 +50,18 @@ parmDict[paramName] = ( defaultVal, stdDev )
 ## Outputs desired
 ##
 class outputObj:
-    def __init__(self,name,mode):
+    #def __init__(self,name,mode):
+    def __init__(self,name,mode,timeRange):
       self.name = name 
       self.mode = mode 
-      self.timeRange = [5e4,10e4]  # NEED TO ADD 
+      self.timeRange = timeRange #[5e4,10e4]  # NEED TO ADD 
       self.result = None
 
-#outputs = ["Cai","Nai"] 
-outputList = { "Cai":outputObj("Cai","max"), 
-               "Nai":outputObj("Nai","mean") }
+#outputs = ["Cai","Nai"]
+#outputListDefault = { "Nai":outputObj("Nai","mean"),
+#                      "Cai":outputObj("Cai","max")} 
+outputListDefault = { "Nai":outputObj("Nai","mean",[5e4,10e4]), 
+                      "Cai":outputObj("Cai","max",[5e4,10e4]) }
              # decayRate:outputObj("decayRate","tau") 
 
 class empty:pass
@@ -82,15 +85,24 @@ def worker(procnum):
                        varDict=varDict)
     return procnum,getpid()
 
-
 #
 # Launch, same as worker, but accepts parameter dictionary
 #
 def workerParams(jobDict):
+    #print "poop"
     jobNum =jobDict['jobNum']
     dtn = jobDict['jobDuration'] # [ms]
     varDict = jobDict['varDict']
     print "Worker bee %d, Job %d "%(getpid(),jobNum)
+
+    print "varDict: ", varDict
+
+    outputList = jobDict['outputList']
+    #print "outputList: ", outputList
+    #print "outputListDefault: ", outputListDefault
+    if outputList == None:
+	outputList = outputListDefault
+	print "No outputList given, using outputListDefault."
 
     verbose = False
     if verbose:
@@ -98,7 +110,7 @@ def workerParams(jobDict):
         print "  ",key,val
 
     ## create varDict for runParams
-
+    #print "before runParamsFast"
     ## Launch job with parameter set 
     name = None  # don't write a pickle
     returnDict = dict() # return results vector 
@@ -107,14 +119,15 @@ def workerParams(jobDict):
                      dtn=dtn,
                      returnDict=returnDict)
 
-
+    #print "after runParamsFast"
+    
     ## do output processing 
     data = returnDict['data']
+    #print "DATA: ", data
     outputResults = ProcessWorkerOutputs(data,outputList,tag=jobNum)
     if verbose: 
       for key,val in outputResults.iteritems() :
         print "  ",key,val.result
-
 
     ## package additional useful information 
     results = empty()
@@ -126,27 +139,39 @@ def workerParams(jobDict):
     
     return jobNum,results  
 
-
-
 ##
 ##  Data processing
 ## 
 
-import analyzeODE as ao
-
 # computes desired outputs based on data returned from ode model 
 def ProcessWorkerOutputs(data,outputList,tag=99):
   outputResults = {}
+  #print "made it to ProcessWorkerOutputs"
+  #print "outputList: ", outputList
   for key,obj in outputList.iteritems():
+    #print "key: ", key, "obj: ", obj
+    #print "outputList: ", outputList
+    #print "in the for loop"
+    #print "obj.timeRange: ", obj.timeRange
+
     dataSub = ao.GetData(data, obj.name)
-    #print np.shape(dataSub.valsIdx)
+    print "dataSub: ", dataSub
+    print "dataSub.valsIdx: ", dataSub.valsIdx
+    dataSub = dataSub.valsIdx[int(obj.timeRange[0]:int(obj.timeRange[1]))]
+    print "obj.timeRange[0]: ", obj.timeRange[0]
+
+    #print "HERE: ", np.shape(dataSub.valsIdx)
     if key=="Cai": # for debug
       np.savetxt("test%d"%tag,dataSub.valsIdx)
-    
+    #print "dataSub.valsIdx: ", dataSub.valsIdx 
     if obj.mode == "max":
         result = np.max(dataSub.valsIdx)
-    elif obj.mode =="mean":
+    elif obj.mode == "min":
+        result = np.min(dataSub.valsIdx) 
+    elif obj.mode == "mean":
         result = np.mean(dataSub.valsIdx)
+    elif obj.mode == "amp":
+        result = (np.max(dataSub.valsIdx) - np.min(dataSub.valsIdx))
     else:
         raise RuntimeError("%s is not yet implemented"%output.mode)
     #output.result = result    
@@ -156,9 +181,6 @@ def ProcessWorkerOutputs(data,outputList,tag=99):
     outputResults[key]=resultObj 
 
   return outputResults 
-    
-
-
 
 
 def test():
@@ -198,28 +220,34 @@ def SimpleRun(numCores=3,jobs=5):
 # Launches randomized parameters and collects 
 # results 
 #
-import copy 
+
 def ParameterSensitivity(
   numCores=5,  # number of cores over which jobs are run
   numRandomDraws=3,  # number of random draws for each parameter
-  jobDuration = 2000 # job run time, [ms]
-  ):
+  jobDuration = 2000, # job run time, [ms]
+  paramVarDict = None,
+  outputList = None):
 
-  
-  
   ## Create 'master' varDict list 
-  defaultVarDict= dict()
+  
   numParams = 0
+
+  defaultVarDict= dict()
+
+  if paramVarDict != None:
+     parmDict = paramVarDict
+
   for parameter,values in parmDict.iteritems():
-    defaultVarDict[parameter]=values[0]  # default value
-    print "Defaults: ", parameter, values[0]
-    numParams+=1
+  	defaultVarDict[parameter]=values[0]  # default value
+        print "Inputs: ", parameter, values[0]
+        numParams+=1
 
   ## determine core count 
   numJobs = numRandomDraws*numParams
   numCores = np.min( [numCores, numJobs])
   print "Using %d cores for %d jobs"%(numCores,numJobs)
 
+  print "outputList: ", outputList
   ## Create a list of jobs with randomized parameters
   jobList = []
   ctr=0 
@@ -235,19 +263,21 @@ def ParameterSensitivity(
     print randomDraws
     #listN = [{parameter:val,'jobNum':i} for i,val in enumerate(randomDraws)]
     #jobList+=listN
+    #print "JobList: ", jobList
     for val in randomDraws:
       varDict = copy.copy(defaultVarDict)
       varDict[parameter] = val 
 
-      jobDict =  {'varDict':varDict,'jobNum':ctr,'jobDuration':jobDuration} 
+      jobDict =  {'varDict':varDict,'jobNum':ctr,'jobDuration':jobDuration, 'outputList':outputList} 
       jobList.append( jobDict )
       ctr+=1
+      #print "JobList2: ", jobList
     
   #print jobList
 
   ## Run jobs
   pool = multiprocessing.Pool(processes= numCores) 
-  jobOutputs = dict( pool.map(workerParams, jobList ) )
+  jobOutputs = dict( pool.map(workerParams, jobList))#, outputList ) )
   #for key, results in outputs.iteritems():
   #  print key
 
@@ -280,7 +310,6 @@ def StoreJob(job1):
 
     return pandasDict
 
-import pandas as pd
 #
 # stores all data into a pandas object, which simplifies analyses later 
 #
@@ -299,10 +328,7 @@ def PandaData(jobOutputs,csvFile="example.csv"):
   df.to_csv(csvFile)
   return df 
 
-
-
 #!/usr/bin/env python
-import sys
 ##################################
 #
 # Revisions
@@ -339,7 +365,6 @@ Notes:
 # MAIN routine executed when launching this script from command line 
 #
 if __name__ == "__main__":
-  import sys
   msg = helpmsg()
   remap = "none"
 
@@ -369,12 +394,6 @@ if __name__ == "__main__":
       exit()
   
 
-
-
-
-
   raise RuntimeError("Arguments not understood")
-
-
 
 

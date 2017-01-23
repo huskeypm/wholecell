@@ -26,6 +26,20 @@ If fitting,
   define the parameter values as the new default
   repeat init-run-post sequence until happy  
 
-  
-  
+Key Inputs
+
+  Temp (T)
+  Background Ca (G_CaBk)
+  Background Na (G_NaBk)
+  SERCA pump (V_max_Jpump)
+  NKA (I_NaK_max)
+
+Key Outputs  
+
+  Cai amp (max - min)
+  Nai
+  Tao Cai
+  Ca_SR (diastolic load)
+  delta BD (min to half max)
+  Cai diasole
 
