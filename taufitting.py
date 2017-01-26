@@ -137,14 +137,12 @@ def GetSubRegion(tsteps,cai,subMin,subMax,si):
 ##
 ## Tau estimation 
 ## 
-def GetTau(case,pacingInterval,tstart,idxCai): # subMin=2300,subMax=2600,si=2364):
+def GetTau(case,pacingInterval,tstart,idxCai,doPlot=False): # subMin=2300,subMax=2600,si=2364):
     ## Find suitable region
     #tsub, caisub = GetSubRegion(tsteps,cai,subMin,subMax,si)
     tsub, caisub = GetInterval(case,pacingInterval,tstart=tstart,idx=idxCai)
-     
     
     #print tsub
-    doPlot=False
     if doPlot:
       plt.figure()
       cais=cai[1:]
@@ -157,7 +155,7 @@ def GetTau(case,pacingInterval,tstart,idxCai): # subMin=2300,subMax=2600,si=2364
     ## do fitting 
     fitted = FitExp(tsub,caisub)
     tau = fitted[1]
-    print "tau [ms] ", tau
+    #print "tau [ms] ", tau
     return tau
 
 def GetExtreme(tsteps,cai,subMin=2300,subMax=2600,si=2364):

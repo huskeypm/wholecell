@@ -141,12 +141,69 @@ def workerParams(jobDict):
     results.jobDict = jobDict
     results.jobNum = jobNum 
     
-    
+
     return jobNum,results  
 
 ##
 ##  Data processing
 ## 
+
+# THIS SHOULD GET MOVED TO ANALYZEODE OR SOMEWHERE ELSE APPROPRIATE 
+def ProcessDataArray(dataSub,mode,timeRange=[0,1e3],key=None): 
+      
+      # PRINT NO, NEED TO PASS IN TIME TOO 
+      timeSeries = dataSub.t
+      idxMin = (np.abs(timeSeries-timeRange[0])).argmin()  # looks for entry closest to timeRange[i]
+      idxMax = (np.abs(timeSeries-timeRange[1])).argmin()
+      valueTimeSeries = dataSub.valsIdx[idxMin:idxMax]
+      #print "obj.timeRange[0]: ", obj.timeRange[0]
+      #print "valueTimeSeries: ", valueTimeSeries
+  
+      #print "HERE: ", np.shape(dataSub.valsIdx)
+      if key=="Cai": # for debug
+        np.savetxt("test%d"%tag,valueTimeSeries)
+      #print "dataSub.valsIdx: ", dataSub.valsIdx 
+      if mode == "max":
+          result = np.max(valueTimeSeries)
+      elif mode == "min":
+          result = np.min(valueTimeSeries) 
+      elif mode == "mean":
+          result = np.mean(valueTimeSeries)
+      elif mode == "amp":
+          result = (np.max(valueTimeSeries) - np.min(valueTimeSeries))
+      elif mode == "delta":
+          print "delta"
+          #daMaxPlace = 0
+          #daMaxHalfPlace = 0
+          daMin = abs(np.min(valueTimeSeries))
+          daMax = (np.max(valueTimeSeries) + daMin)
+          daMaxHalf = (daMax / 2)
+          print "daMax: ", daMax
+          print "daMaxHalf: ", daMaxHalf
+          for i, val in enumerate(valueTimeSeries):
+              #print "val - daMaxHalf: ", (val-daMaxHalf)
+              if daMax == (val + daMin):
+                 #print "did we get here"
+                 daMaxPlace = i
+              if (val + daMin) - daMaxHalf >= 0:
+                 #print "how about here"
+                 daMaxHalfPlace = i 
+          result = (daMaxHalfPlace - daMaxPlace) * 0.1 * ms_to_s
+          #result = valueTimeSeries[daMaxPlace] - valueTimeSeries[daMaxHalfPlace]
+          #print "daMaxPlace: ", daMaxPlace
+      	#print "daMaxVal: ", valueTimeSeries[daMaxPlace]
+      	#print "daMaxHalfPlace: ", daMaxHalfPlace
+      	#print "daMaxHalfVal: ", valueTimeSeries[daMaxHalfPlace]
+      elif mode == "tau":
+          #print "made it to tau"
+          #print "data: ", data
+          #print "t: ", data['t']
+          #result = tf.GetTau(data, pacingInterval=1000.0, tstart=1000, idxCai=True) 
+          result = -1  # This code isn't correct, will have to work with you on this 
+      else:
+          raise RuntimeError("%s is not yet implemented"%output.mode)
+
+      return result 
 
 # computes desired outputs based on data returned from ode model 
 def ProcessWorkerOutputs(data,outputList,tag=99):
@@ -158,57 +215,12 @@ def ProcessWorkerOutputs(data,outputList,tag=99):
     #print "outputList: ", outputList
     #print "in the for loop"
     #print "obj.timeRange: ", obj.timeRange
-
     dataSub = ao.GetData(data, obj.name)
+
     #print "dataSub: ", dataSub
     #print "dataSub.valsIdx: ", dataSub.valsIdx
-    
-    dataSubChopped = dataSub.valsIdx[int(obj.timeRange[0]):int(obj.timeRange[1])]
-    #print "obj.timeRange[0]: ", obj.timeRange[0]
-    #print "dataSubChopped: ", dataSubChopped
+    result = ProcessDataArray(dataSub,obj.mode,obj.timeRange,key=key) 
 
-    #print "HERE: ", np.shape(dataSub.valsIdx)
-    if key=="Cai": # for debug
-      np.savetxt("test%d"%tag,dataSubChopped)
-    #print "dataSub.valsIdx: ", dataSub.valsIdx 
-    if obj.mode == "max":
-        result = np.max(dataSubChopped)
-    elif obj.mode == "min":
-        result = np.min(dataSubChopped) 
-    elif obj.mode == "mean":
-        result = np.mean(dataSubChopped)
-    elif obj.mode == "amp":
-        result = (np.max(dataSubChopped) - np.min(dataSubChopped))
-    elif obj.mode == "delta":
-        print "delta"
-        #daMaxPlace = 0
-        #daMaxHalfPlace = 0
-        daMin = abs(np.min(dataSubChopped))
-        daMax = (np.max(dataSubChopped) + daMin)
-        daMaxHalf = (daMax / 2)
-        print "daMax: ", daMax
-        print "daMaxHalf: ", daMaxHalf
-        for i, val in enumerate(dataSubChopped):
-            #print "val - daMaxHalf: ", (val-daMaxHalf)
-            if daMax == (val + daMin):
-               #print "did we get here"
-               daMaxPlace = i
-            if (val + daMin) - daMaxHalf >= 0:
-               #print "how about here"
-               daMaxHalfPlace = i 
-        result = (daMaxHalfPlace - daMaxPlace) * 0.1 * ms_to_s
-        #result = dataSubChopped[daMaxPlace] - dataSubChopped[daMaxHalfPlace]
-        #print "daMaxPlace: ", daMaxPlace
-    	#print "daMaxVal: ", dataSubChopped[daMaxPlace]
-    	#print "daMaxHalfPlace: ", daMaxHalfPlace
-    	#print "daMaxHalfVal: ", dataSubChopped[daMaxHalfPlace]
-    elif obj.mode == "tau":
-        #print "made it to tau"
-        #print "data: ", data
-        #print "t: ", data['t']
-        result = tf.GetTau(data, pacingInterval=1000.0, tstart=1000, idxCai=True) 
-    else:
-        raise RuntimeError("%s is not yet implemented"%output.mode)
     #output.result = result    
     resultObj = copy.copy(obj)
     resultObj.result = result
@@ -311,8 +323,15 @@ def ParameterSensitivity(
   #print jobList
 
   ## Run jobs
-  pool = multiprocessing.Pool(processes = numCores) 
-  jobOutputs = dict( pool.map(workerParams, jobList))#, outputList ) )
+  if numCores > 1:
+    print "Multi-threading" 
+    pool = multiprocessing.Pool(processes = numCores) 
+    jobOutputs = dict( pool.map(workerParams, jobList))#, outputList ) )
+  else: 
+    print "Restricting to one job only/assuming results are all that's needed" 
+    jobNum, results = workerParams(jobList[0])
+    return results 
+
   #for key, results in outputs.iteritems():
   #  print key
 
@@ -360,6 +379,7 @@ def PandaData(jobOutputs,csvFile="example.csv"):
     
   # store data in pandas dataframe 
   df = pd.DataFrame(masterDict)    
+  df = df.T
   df.to_csv(csvFile)
   return df 
 

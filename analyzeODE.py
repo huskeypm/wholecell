@@ -374,11 +374,14 @@ def TwoDPlots(allKeys,allVars,outsMin, outsMax,label0="",label1="",state="Cai"):
     plt.gcf().savefig(name) 
     return       
 
+# loads data stored in ode object
+# returns a single array with quantity of interest (valsIdx) 
+# which is the time series of the idxName 
 def GetData(data,idxName):
     #print "getting data" 
     datac = empty()
-    datac.t = data['t'] * ms_to_s
-    datac.s = data['s'] / mM_to_uM
+    datac.t = data['t'] * ms_to_s   # can't guarantee units are in [ms]
+    datac.s = data['s'] / mM_to_uM  # ??? not all states are in uM....
     datac.s_idx = data['s_idx']
     datac.j = data['j']
     datac.j_idx = data['j_idx']
