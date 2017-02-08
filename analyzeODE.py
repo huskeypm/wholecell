@@ -108,6 +108,63 @@ def LoadPickles(caseDict,noOverwrite=False,verbose=True):
     else: 
       case.data = readPickle(case.name,verbose=verbose)
 
+### taken from fitter.py, used to process data made to put into panda format at the end.
+def ProcessDataArray(dataSub,mode,timeRange=[0,1e3],key=None):
+
+      # PRINT NO, NEED TO PASS IN TIME TOO 
+      timeSeries = dataSub.t
+      idxMin = (np.abs(timeSeries-timeRange[0])).argmin()  # looks for entry closest to timeRange[i]
+      idxMax = (np.abs(timeSeries-timeRange[1])).argmin()
+      valueTimeSeries = dataSub.valsIdx[idxMin:idxMax]
+      #print "obj.timeRange[0]: ", obj.timeRange[0]
+      #print "valueTimeSeries: ", valueTimeSeries
+
+      #print "HERE: ", np.shape(dataSub.valsIdx)
+      if key=="Cai": # for debug
+        np.savetxt("test%d"%tag,valueTimeSeries)
+      #print "dataSub.valsIdx: ", dataSub.valsIdx 
+      if mode == "max":
+          result = np.max(valueTimeSeries)
+      elif mode == "min":
+          result = np.min(valueTimeSeries)
+      elif mode == "mean":
+          result = np.mean(valueTimeSeries)
+      elif mode == "amp":
+          result = (np.max(valueTimeSeries) - np.min(valueTimeSeries))
+      elif mode == "APD":
+          #print "APD"
+          #daMaxPlace = 0
+          #daMaxHalfPlace = 0
+          daMin = abs(np.min(valueTimeSeries))
+          daMax = (np.max(valueTimeSeries) + daMin)
+          daMaxHalf = (daMax / 2)
+          #print "daMax: ", daMax
+          #print "daMaxHalf: ", daMaxHalf
+          for i, val in enumerate(valueTimeSeries):
+              #print "val - daMaxHalf: ", (val-daMaxHalf)
+              if daMax == (val + daMin):
+                 #print "did we get here"
+                 daMaxPlace = i
+              if (val + daMin) - daMaxHalf >= 0:
+                 #print "how about here"
+                 daMaxHalfPlace = i
+          result = (daMaxHalfPlace - daMaxPlace) * 0.1 * ms_to_s
+          #result = valueTimeSeries[daMaxPlace] - valueTimeSeries[daMaxHalfPlace]
+          #print "daMaxPlace: ", daMaxPlace
+        #print "daMaxVal: ", valueTimeSeries[daMaxPlace]
+        #print "daMaxHalfPlace: ", daMaxHalfPlace
+        #print "daMaxHalfVal: ", valueTimeSeries[daMaxHalfPlace]
+      elif mode == "tau":
+          #print "made it to tau"
+          #print "data: ", data
+          #print "t: ", data['t']
+          #result = tf.GetTau(data, pacingInterval=1000.0, tstart=1000, idxCai=True) 
+          result = -1  # This code isn't correct, will have to work with you on this 
+      else:
+          raise RuntimeError("%s is not yet implemented"%output.mode)
+
+      return result
+
 ### BDS made this on 01/11/2017 to streamline reducing files. 
 def threeDDataReducer(filePath,temp,percents,loadedData,fullDataLimit,reducedDataLimit):
 
@@ -141,7 +198,7 @@ def threeDDataReducer(filePath,temp,percents,loadedData,fullDataLimit,reducedDat
                         reducedFile = fileName.replace(".pkl","_red.pkl")
 
                         fileName = filePath + fileName
-                        print fileName
+                        #print fileName
                         if os.path.isfile(filePath + reducedFile):
                             print "File already downsampled!! :)"
                         else:
@@ -225,6 +282,7 @@ def threeDDataLoader(filePath,temp,percents,loadedData,fullDataLimit,reducedData
                         
                         except IOError:
                             print "Can't find file: " + case.fileName + " Generating placeholder data."
+                            print ":( :( :( :( :("
                             diffCai[i,j] = 0.0
                             diffCaSR[i,j] = 0.0
                             maxCaSR_all[i,j] = 0.0
