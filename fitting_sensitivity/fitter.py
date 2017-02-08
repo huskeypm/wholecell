@@ -349,6 +349,7 @@ def StoreJob(job1):
     pandasDict = dict()
     tag = "%d_%d"%(job1.jobNum,job1.pid)
     pandasDict['jobID']=tag
+    pandasDict['jobNum']=job1.jobNum
 
     # pull out inputs
     varDict = job1.jobDict['varDict']
@@ -380,7 +381,8 @@ def PandaData(jobOutputs,csvFile="example.csv"):
   # store data in pandas dataframe 
   df = pd.DataFrame(masterDict)    
   df = df.T
-  df.to_csv(csvFile)
+  if csvFile!=None: 
+    df.to_csv(csvFile)
   return df 
 
 #!/usr/bin/env python

@@ -1,5 +1,5 @@
 import sys
-#sys.path.append("../") 
+sys.path.append("./fitting_sensitivity/") 
 
 import multiprocessing
 from os import getpid
@@ -10,6 +10,7 @@ import copy
 import pandas as pd
 import taufitting as tf
 import matplotlib.pylab as plt
+import fitter
 
 
 class outputObj:
@@ -109,6 +110,7 @@ def ProcessWorkerOutputs(data,outputList,tag=99):
   return outputResults
 
 def PandaData(jobOutputs,csvFile="example.csv"):
+  raise RuntimeError("Not using") 
   masterDict = dict()
 
   # get dictionary for each job and append it to a 'master' dictionary
@@ -152,6 +154,7 @@ def fittingAlgorithm(
   paramVarDict = None,
   outputList = None,
   truthValues = None,
+  sigmaScaleRate = 1., # rate at which sigma is reduced by iteration 
   numIters = 10):
     
   trialParamVarDict = copy.copy( paramVarDict ) 
@@ -191,18 +194,28 @@ def fittingAlgorithm(
       jobList = []
       ctr=0
       for parameter,values in parmDict.iteritems():
-          print parameter, " random draws:"
 
           ## generate random pertubrations
           # draw from normal distribution
           mu,sigma = values
           #print "sigma: ", sigma
-          rescaledSigma = sigma/(iters)
-          #print "rescaledSigma: ", rescaledSigma
+          print "Should probably rescale sigma by the tolerated error vs current error" 
+          #rescaledSigma = sigma/(sigmaScaleRate * iters)
+          rescaledSigma = sigma*np.exp(-sigmaScaleRate * (iters-1)) 
+          print "rescaledSigma: ", rescaledSigma, " rate ", sigmaScaleRate
           #rescaledSigma = sigma
-          randomDraws = np.random.normal(mu,rescaledSigma,numRandomDraws)
+          distro = "lognormal"
+          if distro=="normal":
+            randomDraws = np.random.normal(mu,rescaledSigma,numRandomDraws)
+          if distro=="lognormal":
+            unif = np.random.normal(0,rescaledSigma,numRandomDraws)
+            randomDraws = np.exp(unif) * mu 
+            
+  
+          randomDraws = np.sort(randomDraws)
 
           # create a list of jobs 
+          print parameter, " random draws:"
           print randomDraws
           randomDrawAllIters.append(randomDraws)
           #listN = [{parameter:val,'jobNum':i} for i,val in enumerate(randomDraws)]
@@ -228,20 +241,23 @@ def fittingAlgorithm(
           print "Restricting to one job only/assuming results are all that's needed"
           jobNum, results = workerParams(jobList[0])
       
-      myDataFrame = PandaData(jobOutputs,csvFile="example.csv")
+      # Shouldn't have to write csv for these 
+      myDataFrame = fitter.PandaData(jobOutputs,csvFile=None) # "example.csv")
       
       #allErrors.append([])
       #errorsGood_array.append([])
       
-      print "myDataFrame: "
-      print myDataFrame
       jobFitnesses = np.ones( len(myDataFrame.index) )*-1
+      jobNums      = np.ones( len(myDataFrame.index),dtype=int )*-1
       for i in range(len(myDataFrame.index)):
           #jobOutputs_copy = jobOutputs.copy()
           #slicedJobOutputs = jobOutputs_copy[slicer[]]
           #allErrors.append([myDataFrame.index[i]])
           #errorsGood_array.append([myDataFrame.index[i]])
           #print myDataFrame.index[i]
+          #print myDataFrame.loc[myDataFrame.index[i],'jobNum']
+
+          # score 'fitnesss' based on the squared error wrt each output parameter 
           fitness = 0. 
           for key,obj in outputList.iteritems():
               #print "outputList: ", key
@@ -256,11 +272,23 @@ def fittingAlgorithm(
                   #errorsGood_array[iters-1].append(False)
               fitness += error
               
-          jobFitnesses[i] =  fitness 
+          # compute sqrt
+          jobFitnesses[i] =  np.sqrt(fitness) 
+
+          # These lines are intended to correct for a discrepancy between the pandas numbering and the job list
+          # It works, but its confusing 
+          jobNums[i] = myDataFrame.loc[myDataFrame.index[i],'jobNum']  
+          myDataFrame.loc[myDataFrame.index[i],'fitness'] = jobFitnesses[i] 
+      #
+      # Summarize results
+      #
+      print "myDataFrame: "
+      print myDataFrame
           
       print "jobFitnesses: ", jobFitnesses
       # find best job
-      jobIndex = np.argmin( jobFitnesses )
+      pandasIndex = np.argmin( jobFitnesses )
+      jobIndex = jobNums[ pandasIndex ]           
       print "jobIndex: ", jobIndex
       #print "jobFitnes: " , jobFitnesses[jobIndex]
       # grab the job 'object' corresponding to that index
@@ -308,15 +336,13 @@ def fittingAlgorithm(
 
 # Here we try to optimize the sodium buffer to get the correct free Na concentration 
 ms_to_s = 1e-3
-def validation(
-  numCores = 2, # maximum number of processors used at a time
-  numRandomDraws = 2,# number of random draws for parameters list in 'parmDict' (parmDict should probably be passed in)
-  jobDuration = 4e3, # [ms] simulation length 
-  numIters=2
-  ):
 
+
+def validation():
+  # define job length and period during which data will be analyzed (assume sys. reaches steady state) 
+  jobDuration = 4e3 # [ms] simulation length 
   timeRange = [1.0,jobDuration*ms_to_s] # [s] range for data (It's because of the way GetData rescales the time series)
-  
+
   ## Define parameter, its mean starting value and the starting std dev 
   # Bmax_SL
   myVariedParam="Bmax_SL"
@@ -326,14 +352,59 @@ def validation(
   ## Define the observables and the truth value
   outputList = {"Nai":outputObj("Nai","mean",timeRange,12.0e-3)}
   
+  # Run 
+  trial(paramDict=paramDict,outputList=outputList)
+
+
+def test1():
+  # define job length and period during which data will be analyzed (assume sys. reaches steady state) 
+  jobDuration = 20e3 # [ms] simulation length 
+  timeRange = [1.0,jobDuration*ms_to_s] # [s] range for data (It's because of the way GetData rescales the time series)
+
+  ## Define parameter, its mean starting value and the starting std dev 
+  # Bmax_SL
+  myVariedParam="I_NaK_max"
+  paramDict = dict()  
+  truthVal = 5.0 
+  #paramDict[myVariedParam] = [2*truthVal, 1.0]
+  paramDict[myVariedParam] = [2*truthVal, 0.2] # for log normal
+  sigmaScaleRate = .15
+  
+  ## Define the observables and the truth value
+  outputList = {"Nai":outputObj("Nai","mean",timeRange,12e-3)}
+  
+  # Run 
+  numRandomDraws = 10 
+  numCores = np.min([numRandomDraws,30]) 
+  numIters = 20 
+  trial(paramDict=paramDict,outputList=outputList,numRandomDraws=numRandomDraws,numCores=numCores,numIters=numIters,sigmaScaleRate=sigmaScaleRate)
+
+  
+
+
+def trial(
+  paramDict,
+  outputList,
+  numCores = 2, # maximum number of processors used at a time
+  numRandomDraws = 2,# number of random draws for parameters list in 'parmDict' (parmDict should probably be passed in)
+  jobDuration = 4e3, # [ms] simulation length 
+  numIters=2,
+  sigmaScaleRate = 1.
+  ):
+
+  # get varied parameter (should only be one for now) 
+  keys = [key for key in paramDict.iterkeys()]
+  variedParam = keys[0]
+
+
   
   ## do fitting and get back debugging details 
   allDraws,bestDraws = fittingAlgorithm(
-    myVariedParam,numCores, numRandomDraws, jobDuration, paramDict, outputList,numIters=numIters)
+    variedParam,numCores, numRandomDraws, jobDuration, paramDict, outputList,numIters=numIters, sigmaScaleRate=sigmaScaleRate)
 
-  PlotDebuggingData(allDraws,bestDraws,numIters,numRandomDraws)
+  PlotDebuggingData(allDraws,bestDraws,numIters,numRandomDraws,title="Varied param %s"%variedParam) 
   
-def PlotDebuggingData(allDraws,bestDraws,numIters,numRandomDraws):
+def PlotDebuggingData(allDraws,bestDraws,numIters,numRandomDraws,title=None):
   # put into array form 
   allDraws = np.asarray(allDraws)
   bestDraws = np.asarray(bestDraws)
@@ -346,6 +417,8 @@ def PlotDebuggingData(allDraws,bestDraws,numIters,numRandomDraws):
   plt.scatter(scatteredData[:,0], scatteredData[:,1],label="draws")
   plt.plot(np.arange(numIters), bestDraws, label="best")
   plt.legend()
+  if title!= None:
+    plt.title(title) 
   plt.gcf().savefig("mytest.png")
 
 
@@ -405,6 +478,9 @@ if __name__ == "__main__":
     # calls 'doit' with the next argument following the argument '-validation'
     if(arg=="-validation"):
       validation()
+      quit()       
+    if(arg=="-test1"):
+      test1()
       quit()       
   
 
