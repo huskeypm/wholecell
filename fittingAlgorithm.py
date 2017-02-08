@@ -1,5 +1,5 @@
 import sys
-sys.path.append("../") 
+#sys.path.append("../") 
 
 import multiprocessing
 from os import getpid
@@ -11,39 +11,6 @@ import pandas as pd
 import taufitting as tf
 import matplotlib.pylab as plt
 
-
-####
-####iters = 9
-####truthParam = 0.5 
-####
-##### init
-####trialParam = truthParam + 4*np.random.randn(1)
-####allErrors = []
-####allParams = []
-####for i in np.arange(iters):
-####    nProcs = 5
-####    ## fake randomizer
-####    diff = np.abs(trialParam - truthParam)
-####    trialParams = trialParam + genwalkers(nProcs,diff)
-####    print "##########", i
-####    print "t",trialParam, i
-####    print "w",trialParams
-####    
-####    ## fake multiprocess launch
-####    errors = modelToExpError(trialParams, truthParam)
-####    print  "err", errors    
-####    
-####    ## get bests
-####    bestErrorParam = trialParams[np.argmin(errors)]
-####    print "best",bestErrorParam
-####    
-####    ## store for debugging
-####    allErrors.append(errors)
-####    allParams.append(trialParam)
-####    
-####    ## update
-####    trialParam = bestErrorParam
-####
 
 class outputObj:
     #def __init__(self,name,mode):
@@ -90,7 +57,8 @@ def workerParams(jobDict):
     ## Launch job with parameter set 
     name = None  # don't write a pickle
     returnDict = dict() # return results vector 
-    rs.runParamsFast(odeName=odeName,name=name,
+    rs.runParamsFast(odeName=odeName, 
+                     name=name,
                      varDict = varDict,
                      dt=0.1,
                      dtn=dtn,
@@ -379,5 +347,73 @@ def PlotDebuggingData(allDraws,bestDraws,numIters,numRandomDraws):
   plt.plot(np.arange(numIters), bestDraws, label="best")
   plt.legend()
   plt.gcf().savefig("mytest.png")
+
+
+#!/usr/bin/env python
+import sys
+##################################
+#
+# Revisions
+#       10.08.10 inception
+#
+##################################
+
+#
+# ROUTINE  
+#
+def doit(fileIn):
+  1
+
+
+#
+# Message printed when program run without arguments 
+#
+def helpmsg():
+  scriptName= sys.argv[0]
+  msg="""
+Purpose: 
+ 
+Usage:
+"""
+  msg+="  %s -validation" % (scriptName)
+  msg+="""
+  
+ 
+Notes:
+
+"""
+  return msg
+
+#
+# MAIN routine executed when launching this script from command line 
+#
+if __name__ == "__main__":
+  import sys
+  msg = helpmsg()
+  remap = "none"
+
+  if len(sys.argv) < 2:
+      raise RuntimeError(msg)
+
+  #fileIn= sys.argv[1]
+  #if(len(sys.argv)==3):
+  #  1
+  #  #print "arg"
+
+  # Loops over each argument in the command line 
+  for i,arg in enumerate(sys.argv):
+    # calls 'doit' with the next argument following the argument '-validation'
+    if(arg=="-validation"):
+      validation()
+      quit()       
+  
+
+
+
+
+
+  raise RuntimeError("Arguments not understood")
+
+
 
 
