@@ -28,7 +28,7 @@ ms_to_s = 1e-3
 ##
 generation =1
 progenyNumber= 2
-odeName = "shannon_2004_mouse.ode"
+odeName = "shannon_2004_rat.ode"
 #odeName = "../simpleRyR.ode"
 
 ##
@@ -115,7 +115,7 @@ def workerParams(jobDict):
     ## create varDict for runParams
     #print "before runParamsFast"
     ## Launch job with parameter set 
-    name = None  # don't write a pickle
+    name = jobDict['pklName']  # don't write a pickle
     returnDict = dict() # return results vector 
     rs.runParamsFast(odeName=odeName,name=name,
                      varDict = varDict,
@@ -159,6 +159,7 @@ def ProcessDataArray(dataSub,mode,timeRange=[0,1e3],key=None):
       #print "obj.timeRange[0]: ", obj.timeRange[0]
       #print "valueTimeSeries: ", valueTimeSeries
   
+      #print "HERE: ", dataSub
       #print "HERE: ", np.shape(dataSub.valsIdx)
       if key=="Cai": # for debug
         np.savetxt("test%d"%tag,valueTimeSeries)
@@ -171,15 +172,14 @@ def ProcessDataArray(dataSub,mode,timeRange=[0,1e3],key=None):
           result = np.mean(valueTimeSeries)
       elif mode == "amp":
           result = (np.max(valueTimeSeries) - np.min(valueTimeSeries))
-      elif mode == "delta":
-          print "delta"
+      elif mode == "APD":
           #daMaxPlace = 0
           #daMaxHalfPlace = 0
           daMin = abs(np.min(valueTimeSeries))
           daMax = (np.max(valueTimeSeries) + daMin)
           daMaxHalf = (daMax / 2)
-          print "daMax: ", daMax
-          print "daMaxHalf: ", daMaxHalf
+          #print "daMax: ", daMax
+          #print "daMaxHalf: ", daMaxHalf
           for i, val in enumerate(valueTimeSeries):
               #print "val - daMaxHalf: ", (val-daMaxHalf)
               if daMax == (val + daMin):
@@ -199,7 +199,22 @@ def ProcessDataArray(dataSub,mode,timeRange=[0,1e3],key=None):
           #print "data: ", data
           #print "t: ", data['t']
           #result = tf.GetTau(data, pacingInterval=1000.0, tstart=1000, idxCai=True) 
-          result = -1  # This code isn't correct, will have to work with you on this 
+          #result = -1  # This code isn't correct, will have to work with you on this
+	  tRange = timeSeries[idxMin:idxMax] - timeSeries[idxMin] 
+	  #print "shape: ", np.shape(valueTimeSeries)
+          #print "dataSub.valsIdx: ", dataSub.valsIdx
+	  #print "timeSeriesMinAndMax: ", timeSeries[idxMin], timeSeries[idxMax]
+	  #print "timeSeries: ", timeSeries
+	  #print "tRange: ", tRange
+	  #print "valueTimeSeries: ", valueTimeSeries
+	  waveMax = np.argmax(valueTimeSeries)
+	  tRangeSub = tRange[waveMax:]
+	  caiSub = valueTimeSeries[waveMax:] 
+
+	  fitted = tf.FitExp(tRangeSub,caiSub)
+	  result = fitted[1]  # Tau value
+	  #print "Tau: ", result   
+	 
       else:
           raise RuntimeError("%s is not yet implemented"%output.mode)
 
@@ -217,7 +232,7 @@ def ProcessWorkerOutputs(data,outputList,tag=99):
     #print "obj.timeRange: ", obj.timeRange
     dataSub = ao.GetData(data, obj.name)
 
-    #print "dataSub: ", dataSub
+    print "dataSub: ", dataSub
     #print "dataSub.valsIdx: ", dataSub.valsIdx
     result = ProcessDataArray(dataSub,obj.mode,obj.timeRange,key=key) 
 
@@ -273,7 +288,8 @@ def ParameterSensitivity(
   numRandomDraws=3,  # number of random draws for each parameter
   jobDuration = 2000, # job run time, [ms]
   paramVarDict = None,
-  outputList = None):
+  outputList = None,
+  pklName = None):
 
   ## Create 'master' varDict list 
   
@@ -315,7 +331,7 @@ def ParameterSensitivity(
       varDict = copy.copy(defaultVarDict)
       varDict[parameter] = val 
 
-      jobDict =  {'varDict':varDict,'jobNum':ctr,'jobDuration':jobDuration, 'outputList':outputList} 
+      jobDict =  {'varDict':varDict,'jobNum':ctr,'jobDuration':jobDuration, 'outputList':outputList, 'pklName': pklName} 
       jobList.append( jobDict )
       ctr+=1
       #print "JobList2: ", jobList

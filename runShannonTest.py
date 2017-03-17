@@ -133,9 +133,58 @@ def NamerBetter(stim_period=1000,temp=None,caseTag=None, var1Name=None, var1Val=
     return name
 
 
+def hollyBashFileMaker(numProcs,totalJobs,names):
+                       
+	 fileName = "submitJobsBradHolly.bash" 
+         theFile = open(fileName,"w")
+         theFile.write("#!/bin/bash")
+         theFile.write("\n")
+         theFile.write("#PBS -l nodes=1:ppn=%d" %numProcs)
+         theFile.write("\n")
+         theFile.write("#PBS -q long")
+         theFile.write("\n")
+         theFile.write("#PBS -m abe")
+         theFile.write("\n")
+         theFile.write("\n")
+         theFile.write("export BASEDIR=$PBS_O_WORKDIR")
+         theFile.write("\n")
+         theFile.write("export PROCS=%d" %numProcs)
+         theFile.write("\n")
+         theFile.write("export OMPI_MCA_orte_default_hostfile=$PBS_NODEFILE")
+         theFile.write("\n")
+         theFile.write("export OMPI_MCA_orte_leave_session_attached=1")
+         theFile.write("\n")
+         theFile.write(". /etc/profile.d/modules.sh")
+         theFile.write("\n")
+         theFile.write("\n")
+         theFile.write("module load FEniCS.15")
+         theFile.write("\n")
+         theFile.write("export LOC=$HOME/sources")
+         theFile.write("\n")
+         theFile.write("export MYPATH=$LOC/mypython")
+         theFile.write("\n")
+         theFile.write("export PYTHONPATH=$PYTHONPATH:$MYPATH/lib/python2.7/site-packages/")
+         theFile.write("\n")
+         theFile.write("\n")
+         theFile.write("cd /home/pmke226/sources/wholecell/")
+         theFile.write("\n")
+         theFile.write("\n")
+
+         for i, name in enumerate(names):
+
+                print "Writting the following name:"
+                print name
+		print ""
+
+		theFile.write(name)
+                theFile.write("\n")
+		theFile.write("\n")
+
+	 theFile.close
+
 ### Wrote by BDS on 11/07/2016
 ### Used to make the bash files to run jobs
-def BashFileMaker(numProcs,totalJobs,names):
+def BashFileMaker(numProcs,totalJobs,names,hollyJob=False):
 	maxJobsPerProcs = (totalJobs / numProcs) + 1.0
 	print "Jobs per processor: ", maxJobsPerProcs
 	counter = 0.0
@@ -147,6 +196,39 @@ def BashFileMaker(numProcs,totalJobs,names):
     		if counter == 0.0:
         		fileName = "submitJobsBrad%d.bash" %fileCounter
         		theFile = open(fileName,"w")
+			if hollyJob:
+				theFile.write("#!/bin/bash")
+				theFile.write("\n")
+                                theFile.write("#PBS -l nodes=1:ppn=1")
+                                theFile.write("\n")
+				theFile.write("#PBS -q long")
+				theFile.write("\n")
+                                theFile.write("#PBS -m abe")
+				theFile.write("\n")
+				theFile.write("\n")
+				theFile.write("export BASEDIR=$PBS_O_WORKDIR")
+				theFile.write("\n")
+				theFile.write("export PROCS=1")
+				theFile.write("\n")
+				theFile.write("export OMPI_MCA_orte_default_hostfile=$PBS_NODEFILE")
+				theFile.write("\n")
+				theFile.write("export OMPI_MCA_orte_leave_session_attached=1")
+				theFile.write("\n")
+				theFile.write(". /etc/profile.d/modules.sh")
+				theFile.write("\n")
+				theFile.write("\n")
+				theFile.write("module load FEniCS.15")
+				theFile.write("\n")
+				theFile.write("export LOC=$HOME/sources")
+				theFile.write("\n")
+				theFile.write("export MYPATH=$LOC/mypython")
+				theFile.write("\n")
+				theFile.write("export PYTHONPATH=$PYTHONPATH:$MYPATH/lib/python2.7/site-packages/")
+				theFile.write("\n")
+				theFile.write("\n")
+				theFile.write("cd /home/pmke226/sources/wholecell/")
+				theFile.write("\n")
+				theFile.write("\n")
     
     		if fileCounter != numProcs:
         		totalCounter = maxJobsPerProcs
@@ -541,6 +623,7 @@ def runParamsFast(odeName = "shannon_2004.ode",name="out", # if None, returns wi
       ao.writePickle(red,p,p_idx,sDs,s_idx,jDs,j_idx,tDs)
   else:
       ao.writePickle(name,p,p_idx,s,s_idx,j,j_idx,t)
+      returnDict['data'] = ao.makePackage(p,p_idx,s,s_idx,j,j_idx,t)
 
 #!/usr/bin/env python
 import sys

@@ -160,6 +160,20 @@ def ProcessDataArray(dataSub,mode,timeRange=[0,1e3],key=None):
           #print "t: ", data['t']
           #result = tf.GetTau(data, pacingInterval=1000.0, tstart=1000, idxCai=True) 
           result = -1  # This code isn't correct, will have to work with you on this 
+          tRange = timeSeries[idxMin:idxMax] - timeSeries[idxMin]
+          #print "shape: ", np.shape(valueTimeSeries)
+          #print "dataSub.valsIdx: ", dataSub.valsIdx
+          #print "timeSeriesMinAndMax: ", timeSeries[idxMin], timeSeries[idxMax]
+          #print "timeSeries: ", timeSeries
+          #print "tRange: ", tRange
+          #print "valueTimeSeries: ", valueTimeSeries
+          waveMax = np.argmax(valueTimeSeries)
+          tRangeSub = tRange[waveMax:]
+          caiSub = valueTimeSeries[waveMax:]
+
+          fitted = tf.FitExp(tRangeSub,caiSub)
+          result = fitted[1]  # Tau value
+          #print "Tau: ", result   
       else:
           raise RuntimeError("%s is not yet implemented"%output.mode)
 
@@ -495,6 +509,9 @@ def Plot_Pickle_Data(rootOutput,datas,state=None,colors=None,xlabel=None,ylabel=
     Zoomed_image.locator_params(axis='x',nbins=4) 
     Zoomed_image.get_xaxis().get_major_formatter().set_useOffset(False)
     
+    #Full_image.plot([-1,300],[0.00,0.00],"k")   
+    #Zoomed_image.plot([-1,300],[0.00,0.00],"k")
+ 
     outFile = rootOutput+"Intracellular_%s_%splots.png"%(state,File_Name_Cases)
     print outFile
     

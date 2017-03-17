@@ -47,7 +47,6 @@ def FitExp(tsub,caisub,doPlot=False):
 
   #print varsFit
 
-  doPlot=True  
   if doPlot:  
     #plt.figure()
     #plt.plot(ts,yn,'b',label="data")
