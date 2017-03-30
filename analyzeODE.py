@@ -132,6 +132,12 @@ def ProcessDataArray(dataSub,mode,timeRange=[0,1e3],key=None):
       elif mode == "amp":
           result = (np.max(valueTimeSeries) - np.min(valueTimeSeries))
       elif mode == "APD":
+##val = 0.5
+##sqdErr = (ys - val)**2
+##print sqdErr
+##daMin = np.argmin(sqdErr)
+##print ts[daMin],ys[ daMin  ]
+
           #print "APD"
           #daMaxPlace = 0
           #daMaxHalfPlace = 0
