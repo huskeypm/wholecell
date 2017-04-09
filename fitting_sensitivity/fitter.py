@@ -159,8 +159,11 @@ def ProcessDataArray(dataSub,mode,timeRange=[0,1e3],key=None):
       #print "obj.timeRange[0]: ", obj.timeRange[0]
       #print "valueTimeSeries: ", valueTimeSeries
   
-      #print "HERE: ", dataSub
-      #print "HERE: ", np.shape(dataSub.valsIdx)
+      tRange = timeSeries[idxMin:idxMax] - timeSeries[idxMin]
+      waveMax = np.argmax(valueTimeSeries)
+      tRangeSub = tRange[waveMax:]
+      caiSub = valueTimeSeries[waveMax:]
+
       if key=="Cai": # for debug
         np.savetxt("test%d"%tag,valueTimeSeries)
       #print "dataSub.valsIdx: ", dataSub.valsIdx 
@@ -175,45 +178,34 @@ def ProcessDataArray(dataSub,mode,timeRange=[0,1e3],key=None):
       elif mode == "APD":
           #daMaxPlace = 0
           #daMaxHalfPlace = 0
-          daMin = abs(np.min(valueTimeSeries))
-          daMax = (np.max(valueTimeSeries) + daMin)
-          daMaxHalf = (daMax / 2)
-          #print "daMax: ", daMax
-          #print "daMaxHalf: ", daMaxHalf
-          for i, val in enumerate(valueTimeSeries):
+          waveMin = np.argmin(caiSub)
+          APDSub = caiSub[:waveMin]
+          APDShift = APDSub + abs(APDSub[-1])
+	  APDMean = (APDShift[0] + APDShift[-1]) / 2
+	  APDSearch = APDShift - APDMean
+          APDTimeidx = np.argmax(APDSearch <= 0)
+          #daMin = abs(np.min(valueTimeSeries))
+          #daMax = (np.max(valueTimeSeries) + daMin)
+          #daMaxHalf = (daMax / 2)
+          #for i, val in enumerate(valueTimeSeries):
               #print "val - daMaxHalf: ", (val-daMaxHalf)
-              if daMax == (val + daMin):
+          #    if daMax == (val + daMin):
                  #print "did we get here"
-                 daMaxPlace = i
-              if (val + daMin) - daMaxHalf >= 0:
+          #       daMaxPlace = i
+          #    if (val + daMin) - daMaxHalf >= 0:
                  #print "how about here"
-                 daMaxHalfPlace = i 
-          result = (daMaxHalfPlace - daMaxPlace) * 0.1 * ms_to_s
+          #       daMaxHalfPlace = i 
+          result = APDTimeidx * 0.1 * ms_to_s
+          #result = (daMaxHalfPlace - daMaxPlace) * 0.1 * ms_to_s
           #result = valueTimeSeries[daMaxPlace] - valueTimeSeries[daMaxHalfPlace]
-          #print "daMaxPlace: ", daMaxPlace
-      	#print "daMaxVal: ", valueTimeSeries[daMaxPlace]
-      	#print "daMaxHalfPlace: ", daMaxHalfPlace
-      	#print "daMaxHalfVal: ", valueTimeSeries[daMaxHalfPlace]
       elif mode == "tau":
-          #print "made it to tau"
-          #print "data: ", data
-          #print "t: ", data['t']
-          #result = tf.GetTau(data, pacingInterval=1000.0, tstart=1000, idxCai=True) 
-          #result = -1  # This code isn't correct, will have to work with you on this
-	  tRange = timeSeries[idxMin:idxMax] - timeSeries[idxMin] 
-	  #print "shape: ", np.shape(valueTimeSeries)
-          #print "dataSub.valsIdx: ", dataSub.valsIdx
-	  #print "timeSeriesMinAndMax: ", timeSeries[idxMin], timeSeries[idxMax]
-	  #print "timeSeries: ", timeSeries
-	  #print "tRange: ", tRange
-	  #print "valueTimeSeries: ", valueTimeSeries
-	  waveMax = np.argmax(valueTimeSeries)
-	  tRangeSub = tRange[waveMax:]
-	  caiSub = valueTimeSeries[waveMax:] 
+	  #tRange = timeSeries[idxMin:idxMax] - timeSeries[idxMin] 
+	  #waveMax = np.argmax(valueTimeSeries)
+	  #tRangeSub = tRange[waveMax:]
+	  #caiSub = valueTimeSeries[waveMax:] 
 
 	  fitted = tf.FitExp(tRangeSub,caiSub)
 	  result = fitted[1]  # Tau value
-	  #print "Tau: ", result   
 	 
       else:
           raise RuntimeError("%s is not yet implemented"%output.mode)
@@ -232,7 +224,7 @@ def ProcessWorkerOutputs(data,outputList,tag=99):
     #print "obj.timeRange: ", obj.timeRange
     dataSub = ao.GetData(data, obj.name)
 
-    print "dataSub: ", dataSub
+    #print "dataSub: ", dataSub
     #print "dataSub.valsIdx: ", dataSub.valsIdx
     result = ProcessDataArray(dataSub,obj.mode,obj.timeRange,key=key) 
 

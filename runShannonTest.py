@@ -62,13 +62,17 @@ def NamerBetter(stim_period=1000,temp=None,caseTag=None, var1Name=None, var1Val=
 
     #fileOutputDirectory = "/home/AD/bdst227/ipython/ipython-notebooks/Despa/wholecell/despaJobs/ranJobs/"
 
-    leak_Base = 7.539e-4
-    nka_Base = 5.0
-    SERCA_Base = 7.02e-3
+    #leak_Base = 7.539e-4
+    #nka_Base = 5.0
+    #SERCA_Base = 3.510e-3
     
+    leak_Base = 7.539e-4
+    nka_Base = 3.85
+    SERCA_Base = 9.977826e-3
+
     #name  = fileOutputDirectory + "mouse_BASELINE_"
     #name = "mouse_BASELINE_"
-    name = "mouse_%s_" %(caseTag)
+    name = "rat_%s_" %(caseTag)
     if temp != None:
 	name += "Temp_%3.2f_" %(temp)
     else:
@@ -312,7 +316,7 @@ def GenSweptParamsBetter(
     stateDict, # states that are 'swept' over
     varDict, # variables that are 'swept' over 
     Time = 10000, stim_period = 1000, iters = 3,
-    odeName = "shannon_2004_mouse.ode",
+    odeName = "shannon_2004_rat.ode",
     nameTag=".pkl",dt=0.1,fileOutputDirectory=None,finalOutputDirectory=None,downsampleRate=None,
     caseTag=None,fileNameSpecialTag=None):
 
@@ -608,7 +612,8 @@ def runParamsFast(odeName = "shannon_2004.ode",name="out", # if None, returns wi
 
   # get monitored fluxes   
   j_idx,j = GetMonitored(module, ode,tsteps,results,model_params)  
-  #print "j", np.shape(j)
+  #print "s", "j", "t", np.shape(s), np.shape(j), np.shape(t)
+  #print "s_for_real", s
   #print "ji", len(j_idx)   
   
   if name==None:

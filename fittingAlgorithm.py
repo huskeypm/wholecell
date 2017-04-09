@@ -300,20 +300,29 @@ def fittingAlgorithm(
 
       # grab the job 'object' corresponding to that index
       bestJob = jobList[ jobIndex ]
+      currentFitness = jobFitnesses[pandasIndex]
       #print "bestJob: ", bestJob
 
-      # get its input params/values
-      bestVarDict = bestJob[ 'varDict' ]
-      print "bestVarDict: " , bestVarDict
-      
-      variedParamVal = bestVarDict[ myVariedParam ]
-      bestDrawAllIters.append(variedParamVal)
+      if iters == 1:
+	previousDraw = currentFitness
+        print "previousDraw: ", previousDraw
 
-      # update 'trialParamDict' with new values, [0] represents mean value of paramater
-      trialParamVarDict[ myVariedParam ][0]  = variedParamVal 
-      # [1] to represent updating stdDev value
-      #trialParamVarDict[ myVariedParam ][1]  = variedStdDevVal
-      
+      if currentFitness <= previousDraw:
+
+      	# get its input params/values
+      	bestVarDict = bestJob[ 'varDict' ]
+      	print "bestVarDict: " , bestVarDict
+
+      	variedParamVal = bestVarDict[ myVariedParam ]
+        #bestDrawAllIters.append(variedParamVal)
+
+      	# update 'trialParamDict' with new values, [0] represents mean value of paramater
+      	trialParamVarDict[ myVariedParam ][0]  = variedParamVal 
+      	# [1] to represent updating stdDev value
+      	# trialParamVarDict[ myVariedParam ][1]  = variedStdDevVal
+     
+      else:
+	print "Old draw is better starting point, not overwriting starting point" 
       #print allErrors
       
       #if errorsGood_array[iters-1].count(False) == 0:
@@ -324,6 +333,8 @@ def fittingAlgorithm(
       
       #iters += 1
       
+      bestDrawAllIters.append(variedParamVal)
+
       print "iter", iters, " out of", numIters
       print ""
       print "######" 

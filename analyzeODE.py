@@ -119,7 +119,11 @@ def ProcessDataArray(dataSub,mode,timeRange=[0,1e3],key=None):
       #print "obj.timeRange[0]: ", obj.timeRange[0]
       #print "valueTimeSeries: ", valueTimeSeries
 
-      #print "HERE: ", np.shape(dataSub.valsIdx)
+      tRange = timeSeries[idxMin:idxMax] - timeSeries[idxMin]
+      waveMax = np.argmax(valueTimeSeries)
+      tRangeSub = tRange[waveMax:]
+      caiSub = valueTimeSeries[waveMax:]
+
       if key=="Cai": # for debug
         np.savetxt("test%d"%tag,valueTimeSeries)
       #print "dataSub.valsIdx: ", dataSub.valsIdx 
@@ -132,54 +136,37 @@ def ProcessDataArray(dataSub,mode,timeRange=[0,1e3],key=None):
       elif mode == "amp":
           result = (np.max(valueTimeSeries) - np.min(valueTimeSeries))
       elif mode == "APD":
-##val = 0.5
-##sqdErr = (ys - val)**2
-##print sqdErr
-##daMin = np.argmin(sqdErr)
-##print ts[daMin],ys[ daMin  ]
-
-          #print "APD"
           #daMaxPlace = 0
           #daMaxHalfPlace = 0
-          daMin = abs(np.min(valueTimeSeries))
-          daMax = (np.max(valueTimeSeries) + daMin)
-          daMaxHalf = (daMax / 2)
-          #print "daMax: ", daMax
-          #print "daMaxHalf: ", daMaxHalf
-          for i, val in enumerate(valueTimeSeries):
+          waveMin = np.argmin(caiSub)
+          APDSub = caiSub[:waveMin]
+          APDShift = APDSub + abs(APDSub[-1])
+          APDMean = (APDShift[0] + APDShift[-1]) / 2
+          APDSearch = APDShift - APDMean
+          APDTimeidx = np.argmax(APDSearch <= 0)
+          #daMin = abs(np.min(valueTimeSeries))
+          #daMax = (np.max(valueTimeSeries) + daMin)
+          #daMaxHalf = (daMax / 2)
+          #for i, val in enumerate(valueTimeSeries):
               #print "val - daMaxHalf: ", (val-daMaxHalf)
-              if daMax == (val + daMin):
+          #    if daMax == (val + daMin):
                  #print "did we get here"
-                 daMaxPlace = i
-              if (val + daMin) - daMaxHalf >= 0:
+          #       daMaxPlace = i
+          #    if (val + daMin) - daMaxHalf >= 0:
                  #print "how about here"
-                 daMaxHalfPlace = i
-          result = (daMaxHalfPlace - daMaxPlace) * 0.1 * ms_to_s
+          #       daMaxHalfPlace = i 
+          result = APDTimeidx * 0.1 * ms_to_s
+          #result = (daMaxHalfPlace - daMaxPlace) * 0.1 * ms_to_s
           #result = valueTimeSeries[daMaxPlace] - valueTimeSeries[daMaxHalfPlace]
-          #print "daMaxPlace: ", daMaxPlace
-        #print "daMaxVal: ", valueTimeSeries[daMaxPlace]
-        #print "daMaxHalfPlace: ", daMaxHalfPlace
-        #print "daMaxHalfVal: ", valueTimeSeries[daMaxHalfPlace]
       elif mode == "tau":
-          #print "made it to tau"
-          #print "data: ", data
-          #print "t: ", data['t']
-          #result = tf.GetTau(data, pacingInterval=1000.0, tstart=1000, idxCai=True) 
-          result = -1  # This code isn't correct, will have to work with you on this 
-          tRange = timeSeries[idxMin:idxMax] - timeSeries[idxMin]
-          #print "shape: ", np.shape(valueTimeSeries)
-          #print "dataSub.valsIdx: ", dataSub.valsIdx
-          #print "timeSeriesMinAndMax: ", timeSeries[idxMin], timeSeries[idxMax]
-          #print "timeSeries: ", timeSeries
-          #print "tRange: ", tRange
-          #print "valueTimeSeries: ", valueTimeSeries
-          waveMax = np.argmax(valueTimeSeries)
-          tRangeSub = tRange[waveMax:]
-          caiSub = valueTimeSeries[waveMax:]
+          #tRange = timeSeries[idxMin:idxMax] - timeSeries[idxMin] 
+          #waveMax = np.argmax(valueTimeSeries)
+          #tRangeSub = tRange[waveMax:]
+          #caiSub = valueTimeSeries[waveMax:] 
 
           fitted = tf.FitExp(tRangeSub,caiSub)
           result = fitted[1]  # Tau value
-          #print "Tau: ", result   
+
       else:
           raise RuntimeError("%s is not yet implemented"%output.mode)
 
@@ -208,10 +195,14 @@ def threeDDataReducer(filePath,temp,percents,loadedData,fullDataLimit,reducedDat
                         print "Trying new file!!!"
                         print ""
                         
-                        if loadedData == "NKA":
+                        if loadedData == "NKA_mouse":
                                 fileName = "mouse_BASELINE_Temp_%sp00_leak%spct_nka%spct_SERCA100p00pct_freq1p0Hz_cat.pkl"%(temp,percent_i,percent_j)
-                        elif loadedData == "SERCA":
+                        elif loadedData == "SERCA_mouse":
                                 fileName = "mouse_BASELINE_Temp_%sp00_leak%spct_nka100p00pct_SERCA%spct_freq1p0Hz_cat.pkl"%(temp,percent_i,percent_j)
+                        elif loadedData == "NKA_rat":
+                                fileName = "rat_BASELINE_Temp_%sp00_leak%spct_nka%spct_SERCA100p00pct_freq1p0Hz_cat.pkl"%(temp,percent_i,percent_j)
+                        elif loadedData == "SERCA_rat":
+                                fileName = "rat_BASELINE_Temp_%sp00_leak%spct_nka100p00pct_SERCA%spct_freq1p0Hz_cat.pkl"%(temp,percent_i,percent_j)
                         else:
                                 raise RuntimeError("Not supported at this time. Dying here. :(")
 
@@ -229,27 +220,32 @@ def threeDDataReducer(filePath,temp,percents,loadedData,fullDataLimit,reducedDat
 	return
 
 ### BDS made this on 01/11/2017 to load data for 3D plots.
-def threeDDataLoader(filePath,temp,percents,loadedData,fullDataLimit,reducedDataLimit):
+def threeDDataLoader(filePath,temp,percents_one,percents_two,loadedData,fullDataLimit,reducedDataLimit):
 
         case = empty()
 
-        num_percents = len(percents)
-        diffCai = np.zeros((num_percents, num_percents))
-        diffCaSR = np.zeros((num_percents, num_percents))
-        maxCaSR_all = np.zeros((num_percents, num_percents))
-        minCaSR_all = np.zeros((num_percents, num_percents))
-        maxNai_all = np.zeros((num_percents, num_percents))
+        num_percents_one = len(percents_one)
+	num_percents_two = len(percents_two)
+        diffCai = np.zeros((num_percents_one, num_percents_two))
+        diffCaSR = np.zeros((num_percents_one, num_percents_two))
+        maxCaSR_all = np.zeros((num_percents_one, num_percents_two))
+        minCaSR_all = np.zeros((num_percents_one, num_percents_two))
+        maxNai_all = np.zeros((num_percents_one, num_percents_two))
 
         limitsFull = np.array(fullDataLimit,dtype=int) # fullData
         limits = np.array(reducedDataLimit,dtype=int) # reduced Data
 
-        for (i ,percent_i) in enumerate(percents):
-                for (j, percent_j) in enumerate(percents):
+        for (i ,percent_i) in enumerate(percents_one):
+                for (j, percent_j) in enumerate(percents_two):
 
-                        if loadedData == "NKA":
+                        if loadedData == "NKA_mouse":
                                 fileName = "mouse_BASELINE_Temp_%sp00_leak%spct_nka%spct_SERCA100p00pct_freq1p0Hz_cat.pkl"%(temp,percent_i,percent_j)
-                        elif loadedData == "SERCA":
+                        elif loadedData == "SERCA_mouse":
                                 fileName = "mouse_BASELINE_Temp_%sp00_leak%spct_nka100p00pct_SERCA%spct_freq1p0Hz_cat.pkl"%(temp,percent_i,percent_j)
+                        elif loadedData == "NKA_rat":
+                                fileName = "rat_BASELINE_Temp_%sp00_leak%spct_nka%spct_SERCA100p00pct_freq1p0Hz_cat.pkl"%(temp,percent_i,percent_j)
+                        elif loadedData == "SERCA_rat":
+                                fileName = "rat_BASELINE_Temp_%sp00_leak%spct_nka100p00pct_SERCA%spct_freq1p0Hz_cat.pkl"%(temp,percent_i,percent_j)
                         else:
                                 raise RuntimeError("Not supported at this time. Dying here. :(")
 
@@ -257,7 +253,7 @@ def threeDDataLoader(filePath,temp,percents,loadedData,fullDataLimit,reducedData
 
                         case.fileName = filePath + reducedFile
                         try:
-                            case.data = ao.readPickle(case.fileName,verbose=False)
+                            case.data = readPickle(case.fileName,verbose=False)
                             print case.fileName
 
                             s = case.data['s']
@@ -512,7 +508,7 @@ def Plot_Pickle_Data(rootOutput,datas,state=None,colors=None,xlabel=None,ylabel=
     plt.ylabel(ylabel, weight="bold",fontsize=14)
     plt.tight_layout()
    
-    Zoomed_image.locator_params(axis='x',nbins=4) 
+    Zoomed_image.locator_params(axis='x',nbins=6) 
     Zoomed_image.get_xaxis().get_major_formatter().set_useOffset(False)
     
     #Full_image.plot([-1,300],[0.00,0.00],"k")   
@@ -527,9 +523,9 @@ def Plot_Pickle_Data(rootOutput,datas,state=None,colors=None,xlabel=None,ylabel=
         lgd = plt.legend(bbox_to_anchor=(legendMover1,legendMover2))
         art.append(lgd)
 
-        plt.gcf().savefig(outFile,additional_artists=art,bbox_inches='tight',dpi=300)
+        plt.gcf().savefig(outFile,additional_artists=art,bbox_inches='tight',dpi=600)
     else:
-        plt.gcf().savefig(outFile,dpi=300)
+        plt.gcf().savefig(outFile,dpi=600)
         
     plt.show()
     plt.close()
@@ -1201,7 +1197,7 @@ def StateDecompositionAnalysisBetter(rootOutput,caseDict,
     #plt.gcf().savefig(root+versionPrefix+"comparative.png",dpi=300)
     outFile = rootOutput+"comparative_%s_%s_%s_%s_%s_%s"%(mode,wanted[0].label,wanted[1].label,wanted[2].label,wanted[3].label,sortby)
     outFile+=tag
-    plt.gcf().savefig(outFile+".png",additional_artists=art, bbox_inches="tight",dpi=300)
+    plt.gcf().savefig(outFile+".png",additional_artists=art, bbox_inches="tight",dpi=1200)
 
     f = open(outFile+'.txt', 'w')
     json.dump(lines, f)
