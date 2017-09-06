@@ -1,4 +1,7 @@
-export LOC=/u1/pmke226/srcs/            
+
+#export LOC=$HOME/sources/            
+export NAME=bdst227
+export LOC=/home/AD/$NAME/sources/            
 export MYPATH=$LOC/mypython/
 export PYTHONPATH=$PYTHONPATH:$MYPATH/lib/python2.7/site-packages/
 export PATH=$PATH:$LOC/gotran/scripts/
