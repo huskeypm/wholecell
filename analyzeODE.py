@@ -60,7 +60,7 @@ def PlotViaPlotly(casesSubset,state):
 #fig = go.Figure(data=data, layout=layout)
 
   plot_url = py.iplot(plotly_fig, filename = title)
-  print plot_url.resource
+  print "%s",plot_url.resource
 
 ### 
 ### I/O 
@@ -81,7 +81,8 @@ def writePickle(name,p,p_idx,s,s_idx,j,j_idx,t):
   #print "j again: ", len(j) 
   #print "j_idx: ",np.shape(j_idx)
   print "name: ", name
-  if ".pkl" not in name[-4:]:
+  #if ".pkl" not in name[-4:]: 
+  if ".pkl" not in name and ".pickle" not in name:
     name += ".pkl"
   output = open(name, 'wb')
   pickle.dump(data1, output)
