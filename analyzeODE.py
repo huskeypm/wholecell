@@ -89,16 +89,32 @@ def writePickle(name,p,p_idx,s,s_idx,j,j_idx,t):
   output.close()
   print "SUCCESS! Wrote output to", name
 
-def readPickle(name = "PCa0.75kss0.25.pkl",verbose=True):          
+def readPickle(name = "PCa0.75kss0.25.pkl",verbose=True,readSubset=None):          
   if verbose: 
     print "Reading " + name  
   pkl_file = open(name, 'rb')
   data1 = pickle.load(pkl_file)  
   pkl_file.close()
 
-  return data1  
+  if readSubset!=None:
+    print "HARDCODED TO Cai, Ca_jct, Ca_SR for now"
+    subsets = ["Cai","Ca_jct1","Ca_SR"]
+    nTs = np.shape( data1["t"] )[0]
+    ar = np.zeros([nTs, len(subsets)]) 
+    si = data1["s"]
+    s_idx = data1["s_idx"]
+    for i,subset in enumerate(subsets):
+      idx = s_idx.index(subset)
+      ar[:,i] =  si[:, idx ] 
+    # overwrite 
+    data1["s"] = ar                  
+    data1["s_idx"] = subsets             
+  
 
-def LoadPickles(caseDict,noOverwrite=False,verbose=True):
+  return data1  
+# subset: None - load all attributes
+#         [state1,state2, ...] 
+def LoadPickles(caseDict,noOverwrite=False,verbose=True,readSubset=None):
   for key,case in caseDict.iteritems():
     if verbose:
       print "# ", key
@@ -107,7 +123,7 @@ def LoadPickles(caseDict,noOverwrite=False,verbose=True):
     if hasattr(case,'data') and noOverwrite==True:
       print "Skipping read, since already populated"
     else: 
-      case.data = readPickle(case.name,verbose=verbose)
+      case.data = readPickle(case.name,verbose=verbose,readSubset=None)
 
 ### taken from fitter.py, used to process data made to put into panda format at the end.
 def ProcessDataArray(dataSub,mode,timeRange=[0,1e3],key=None):

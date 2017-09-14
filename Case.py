@@ -1,6 +1,7 @@
 ##
 ## Case defintion for simulations
 ##
+import numpy as np
 
 class Case:
   def __init__(self,
@@ -17,6 +18,13 @@ class Case:
     self.name = name 
     self.odeName = odeName 
     self.prefix=name # store as prefix, since 'name' gets rewritten in daisychain
+
+    # Grab 'T' from command line args. 
+    for arg in args:
+      if "-T" in arg:
+        T = arg.split()[1]
+        T = np.float(T)
+        print "Using T=%f from command line args"%T
 
     self.CommandLine(T,nIntervals)
 

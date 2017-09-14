@@ -33,7 +33,11 @@ def downsample(fileName, fileOutName=None,rate=10):
     redFileName = fileOutName 
   ao.writePickle(redFileName,p,p_idx,sDs,s_idx,jDs,j_idx,tDs)
 
+import numpy as np 
 def downsampleData(s,j,t,rate):
+  if isinstance(rate,float):
+    print "WARNING: changing rate %f into int"
+    rate = np.int( rate ) 
   sDs = s[::rate,]
   jDs = j[::rate,]
   tDs = t[::rate,]
