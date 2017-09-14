@@ -174,7 +174,7 @@ def ConcatenateTrajs(pickleNames,writeCat=False,downsampleRate=1):
 
   #return ts, allsisi, s_idx
   data = dict()
-  print "This is embarrasingly wrong. Fix this " 
+  print "Downsampling is based on integers/indices; use with caution" 
   data['s']    = allsisi[::downsampleRate,]
   data['s_idx']= s_idx 
   data['j']    = alljisi[::downsampleRate,]
