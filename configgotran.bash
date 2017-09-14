@@ -1,6 +1,7 @@
 
 #export LOC=$HOME/sources/            
-export NAME=bdst227
+#export NAME=bdst227
+export NAME=pmke226 
 export LOC=/home/AD/$NAME/sources/            
 export MYPATH=$LOC/mypython/
 export PYTHONPATH=$PYTHONPATH:$MYPATH/lib/python2.7/site-packages/
