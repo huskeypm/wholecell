@@ -20,11 +20,15 @@ class Case:
     self.prefix=name # store as prefix, since 'name' gets rewritten in daisychain
 
     # Grab 'T' from command line args. 
+    newArgs = []
     for arg in args:
       if "-T" in arg:
         T = arg.split()[1]
         T = np.float(T)
         print "Using T=%f from command line args"%T
+      else:
+        newArgs.append(arg) 
+    self.args = newArgs
 
     self.CommandLine(T,nIntervals)
 

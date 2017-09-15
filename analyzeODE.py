@@ -89,7 +89,15 @@ def writePickle(name,p,p_idx,s,s_idx,j,j_idx,t):
   output.close()
   print "SUCCESS! Wrote output to", name
 
-def readPickle(name = "PCa0.75kss0.25.pkl",verbose=True,readSubset=None):          
+
+import re
+def readPickle(name = "PCa0.75kss0.25.pkl",verbose=True,readSubset=None,readConcat=False):          
+
+  if readConcat:
+    print name 
+    name = re.sub(r'\d+\.p', 'cat.p', name)  # pickle 
+    print "Reading concatenated file %s instead" % name
+
   if verbose: 
     print "Reading " + name  
   pkl_file = open(name, 'rb')
@@ -114,7 +122,8 @@ def readPickle(name = "PCa0.75kss0.25.pkl",verbose=True,readSubset=None):
   return data1  
 # subset: None - load all attributes
 #         [state1,state2, ...] 
-def LoadPickles(caseDict,noOverwrite=False,verbose=True,readSubset=None):
+def LoadPickles(caseDict,noOverwrite=False,
+                verbose=True,readSubset=None,readConcat=False):
   for key,case in caseDict.iteritems():
     if verbose:
       print "# ", key
@@ -123,7 +132,8 @@ def LoadPickles(caseDict,noOverwrite=False,verbose=True,readSubset=None):
     if hasattr(case,'data') and noOverwrite==True:
       print "Skipping read, since already populated"
     else: 
-      case.data = readPickle(case.name,verbose=verbose,readSubset=None)
+      case.data = readPickle(case.name,verbose=verbose,readSubset=readSubset, 
+                             readConcat=readConcat) 
 
 ### taken from fitter.py, used to process data made to put into panda format at the end.
 def ProcessDataArray(dataSub,mode,timeRange=[0,1e3],key=None):

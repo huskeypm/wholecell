@@ -183,8 +183,10 @@ def ConcatenateTrajs(pickleNames,writeCat=False,downsampleRate=1):
   data['p_idx']= p_idx 
   data['t']    = ts[::downsampleRate]
 
+  import re
   if writeCat:
-    pickleCatName = pickleNames[0].replace("_1","_cat")
+    pickleCatName = re.sub(r'_\d+.pickle', '_cat.pickle', pickleNames[0])
+    print pickleNames[0],pickleCatName 
     ao.writePickle(pickleCatName,
                    data['p'],
                    data['p_idx'],

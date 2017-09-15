@@ -55,6 +55,7 @@ parameters("Model parameters",
            toggleTime = ScalarParam(99999, unit="steps"),
            toggleRate_CaSR = ScalarParam(0, unit="uM/ms"),
            toggleRate_Cajct1= ScalarParam(0, unit="uM/ms"),
+           toggleRate_Cai= ScalarParam(0, unit="uM/ms"),
            cell_radius = ScalarParam(10.25, unit="um"))
 
 parameters("INa",
@@ -617,6 +618,8 @@ toggle_CaSR = Conditional(Lt(toggle,1),
   0.0, toggleRate_CaSR)
 toggle_Cajct1 = Conditional(Lt(toggle,1),
   0.0, toggleRate_Cajct1) 
+toggle_Cai   = Conditional(Lt(toggle,1),
+  0.0, toggleRate_Cai) 
 
 expressions("Ca buffer")
 dCalsequestrin = kon_Calsequestrin*Ca_SR*(Bmax_Calsequestrin*Vol_myo/Vol_SR - Ca_Calsequestrin) - koff_Calsequestrin*Ca_Calsequestrin # mM*ms**-1
@@ -639,7 +642,8 @@ dCa_SR_dt = j_pump_SR - (j_leak_SR*Vol_myo/Vol_SR + j_rel_SR) - dCalsequestrin +
 dCa_jct1_dt = -i_Ca_jct1_tot*Cm/(Vol_jct1*2*F) - J_Ca_jct1_SL/Vol_jct1 + j_rel_SR*Vol_SR/Vol_jct1 + j_leak_SR*Vol_myo/Vol_jct1 - 1*dCa_jct1_tot_bound + toggle_Cajct1
 #dCa_jct1_dt = toggle_Ca_jct1
 dCa_SL_dt = -i_Ca_SL_tot*Cm/(Vol_SL*2*F) + (J_Ca_jct1_SL - J_Ca_SL_myo)/Vol_SL - 1*dCa_SL_tot_bound
-dCai_dt = -j_pump_SR*Vol_SR/Vol_myo + J_Ca_SL_myo/Vol_myo - 1*dCa_cytosol_tot_bound
+# PKH includes toggle 
+dCai_dt = -j_pump_SR*Vol_SR/Vol_myo + J_Ca_SL_myo/Vol_myo - 1*dCa_cytosol_tot_bound + toggle_Cai
 
 
 
