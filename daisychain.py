@@ -77,7 +77,7 @@ def daisychain(\
   
   # subsequent runs     
   for i in range(iters):
-      print "Running iter ", i+1, "for ", dtn, " [ms]"
+      print "Running iter ", i+1, "for ", dtn, " [ms] at ", stim_period/1e3, "Hz"
       # initialize
       if i==0:
         # first run 
@@ -305,6 +305,7 @@ if __name__ == "__main__":
     dt = dt,
     dtn=dtn, # elapsed time [ms]
     iters = iters,
+    stim_period = stim_period,
     downsampleRate=downsampleRate,
     outBase = outBase,       
     stateDict = stateDict,

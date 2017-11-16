@@ -32,3 +32,5 @@ templateGotran.py -validation
 \item gen figures for biophys paper 
 templateGotran.py -biophys
 
+\item run example
+gotranrun shannon_2004_rat.ode  --plot_y Cai --tstop=2000 --dt 0.1  --parameter  stim_period 500 
