@@ -482,17 +482,17 @@ def GetData(data,idxName):
     #print "getting data" 
     datac = empty()
     datac.t = data['t'] * ms_to_s   # can't guarantee units are in [ms]
-    datac.s = data['s'] / mM_to_uM  # ??? not all states are in uM....
+    #datac.s = data['s'] / mM_to_uM  # ??? not all states are in uM....
     datac.s_idx = data['s_idx']
-    datac.j = data['j']
+    #datac.j = data['j']
     datac.j_idx = data['j_idx']
 
     if idxName in datac.j_idx:
-      datac.v = datac.j
+      datac.v = data['j']   
       datac.v_idx = datac.j_idx
     # states 
     elif idxName in datac.s_idx:
-      datac.v = datac.s
+      datac.v = data['s'] 
       datac.v_idx = datac.s_idx
     else:
       print idxName, " not found"
@@ -500,7 +500,6 @@ def GetData(data,idxName):
 
     idx = datac.v_idx.index(idxName)
     datac.valsIdx = datac.v[:,idx] 
-    #print "datac: ", datac
 
     return datac
 
